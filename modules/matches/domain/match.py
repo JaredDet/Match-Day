@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
+from hashlib import sha256
 
 from django.db import models
 from django.utils import timezone
@@ -17,6 +18,7 @@ class Match(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     home_team_name = models.CharField(max_length=200)
     away_team_name = models.CharField(max_length=200)
+    fixture_key = models.CharField(max_length=64, unique=True, editable=False)
     status = models.CharField(
         max_length=20,
         choices=MatchStatus.choices,
@@ -43,8 +45,21 @@ class Match(models.Model):
         return cls(
             home_team_name=home,
             away_team_name=away,
+            fixture_key=cls.build_fixture_key(home, away, scheduled_at),
             scheduled_at=scheduled_at,
         )
+
+    @staticmethod
+    def build_fixture_key(
+        home_team_name: str,
+        away_team_name: str,
+        scheduled_at: datetime,
+    ) -> str:
+        teams = sorted((home_team_name.strip().casefold(), away_team_name.strip().casefold()))
+        if timezone.is_naive(scheduled_at):
+            scheduled_at = scheduled_at.replace(tzinfo=UTC)
+        instant = scheduled_at.astimezone(UTC).isoformat()
+        return sha256(f"{teams[0]}\0{teams[1]}\0{instant}".encode()).hexdigest()
 
     def start(self, started_at: datetime | None = None) -> None:
         if self.status != MatchStatus.SCHEDULED:

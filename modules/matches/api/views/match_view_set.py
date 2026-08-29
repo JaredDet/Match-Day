@@ -7,6 +7,7 @@ from rest_framework.viewsets import ViewSet
 from core.dependency_injector import injector_instance
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
+from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 
 
@@ -40,5 +41,16 @@ class MatchViewSet(ViewSet):
     @action(detail=True, methods=["post"], url_path="start")
     def start(self, request, pk=None):
         use_case = injector_instance.get(StartMatchUseCase)
+        use_case.execute(pk)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_finish",
+        request=None,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["post"], url_path="finish")
+    def finish(self, request, pk=None):
+        use_case = injector_instance.get(FinishMatchUseCase)
         use_case.execute(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)

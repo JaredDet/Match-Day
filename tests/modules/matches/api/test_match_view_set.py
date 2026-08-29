@@ -48,6 +48,28 @@ def test_returns_domain_error_when_teams_are_equal():
     }
 
 
+def test_rejects_duplicate_match_with_reversed_teams():
+    scheduled_at = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+    Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=scheduled_at,
+    ).save()
+
+    response = APIClient().post(
+        reverse("matches-list"),
+        {
+            "home_team_name": "universidad de chile",
+            "away_team_name": "COLO-COLO",
+            "scheduled_at": scheduled_at.isoformat(),
+        },
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.data["code"] == "match_already_exists"
+
+
 def test_formats_invalid_request_with_common_error_contract():
     response = APIClient().post(
         reverse("matches-list"),
@@ -98,6 +120,45 @@ def test_rejects_starting_match_twice():
 
 def test_returns_not_found_when_starting_unknown_match():
     response = APIClient().post(reverse("matches-start", args=[uuid4()]))
+
+    assert response.status_code == 404
+    assert response.data["code"] == "match_not_found"
+
+
+def test_finishes_live_match_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    response = APIClient().post(reverse("matches-finish", args=[match.id]))
+
+    assert response.status_code == 204
+    assert response.content == b""
+    match.refresh_from_db()
+    assert match.status == MatchStatus.FINISHED
+    assert match.finished_at is not None
+
+
+def test_rejects_finishing_match_that_is_not_live():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+
+    response = APIClient().post(reverse("matches-finish", args=[match.id]))
+
+    assert response.status_code == 409
+    assert response.data["code"] == "invalid_match_state"
+
+
+def test_returns_not_found_when_finishing_unknown_match():
+    response = APIClient().post(reverse("matches-finish", args=[uuid4()]))
 
     assert response.status_code == 404
     assert response.data["code"] == "match_not_found"

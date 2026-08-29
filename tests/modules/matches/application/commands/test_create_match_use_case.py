@@ -13,6 +13,7 @@ pytestmark = pytest.mark.django_db
 
 def test_creates_and_persists_scheduled_match():
     repository = Mock()
+    repository.exists_fixture.return_value = False
     use_case = CreateMatchUseCase(repository)
     scheduled_at = timezone.now() + timedelta(days=1)
 
@@ -30,6 +31,22 @@ def test_creates_and_persists_scheduled_match():
     assert saved_match.scheduled_at == scheduled_at
     assert saved_match.status == MatchStatus.SCHEDULED
     repository.save.assert_called_once_with(saved_match)
+
+
+def test_rejects_duplicate_fixture_even_when_home_and_away_are_reversed():
+    repository = Mock()
+    repository.exists_fixture.return_value = True
+    use_case = CreateMatchUseCase(repository)
+
+    with pytest.raises(type(MatchErrors.AlreadyExists)) as exc_info:
+        use_case.execute(
+            home_team_name="Universidad de Chile",
+            away_team_name="Colo-Colo",
+            scheduled_at=timezone.now(),
+        )
+
+    assert exc_info.value.code == "match_already_exists"
+    repository.save.assert_not_called()
 
 
 def test_does_not_persist_match_when_domain_rejects_teams():

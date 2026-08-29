@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from datetime import timezone as datetime_timezone
 
 import pytest
 from django.utils import timezone
@@ -21,6 +22,27 @@ def test_schedules_match_with_normalized_team_names():
     assert match.away_team_name == "Universidad de Chile"
     assert match.scheduled_at == scheduled_at
     assert match.status == MatchStatus.SCHEDULED
+
+
+def test_fixture_key_ignores_team_order_case_and_timezone_offset():
+    first = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=datetime(2026, 9, 1, 20, tzinfo=UTC),
+    )
+    second = Match.schedule(
+        home_team_name="universidad de chile",
+        away_team_name="COLO-COLO",
+        scheduled_at=datetime(
+            2026,
+            9,
+            1,
+            16,
+            tzinfo=datetime_timezone(timedelta(hours=-4)),
+        ),
+    )
+
+    assert first.fixture_key == second.fixture_key
 
 
 @pytest.mark.parametrize(

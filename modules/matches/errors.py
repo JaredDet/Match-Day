@@ -2,6 +2,11 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    AlreadyExists = AppException(
+        "match_already_exists",
+        "Ya existe un partido entre los mismos equipos para esa fecha",
+        ErrorType.CONFLICT,
+    )
     NotFound = AppException(
         "match_not_found",
         "Partido no encontrado",
