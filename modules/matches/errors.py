@@ -17,3 +17,23 @@ class MatchErrors:
         "El partido no puede finalizar antes de haber comenzado",
         ErrorType.VALIDATION,
     )
+    InvalidPlayerName = AppException(
+        "invalid_player_name",
+        "El nombre del jugador es obligatorio",
+        ErrorType.VALIDATION,
+    )
+    InvalidMinute = AppException(
+        "invalid_match_minute",
+        "El minuto debe estar entre 0 y 130",
+        ErrorType.VALIDATION,
+    )
+    InvalidTeamSide = AppException(
+        "invalid_team_side",
+        "El lado del equipo no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidCardType = AppException(
+        "invalid_card_type",
+        "El tipo de tarjeta no es válido",
+        ErrorType.VALIDATION,
+    )

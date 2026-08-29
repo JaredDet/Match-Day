@@ -61,6 +61,56 @@ class Match(models.Model):
         self.status = MatchStatus.FINISHED
         self.finished_at = resolved_finished_at
 
+    def register_goal(
+        self,
+        *,
+        team_side: str,
+        player_name: str,
+        minute: int,
+        event_id: uuid.UUID | None = None,
+    ):
+        from modules.matches.domain.goal import Goal
+        from modules.matches.domain.match_event import validate_match_event
+
+        self._ensure_live()
+        normalized_player_name = validate_match_event(team_side, player_name, minute)
+        return Goal(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            team_side=team_side,
+            player_name=normalized_player_name,
+            minute=minute,
+        )
+
+    def register_card(
+        self,
+        *,
+        team_side: str,
+        player_name: str,
+        card_type: str,
+        minute: int,
+        event_id: uuid.UUID | None = None,
+    ):
+        from modules.matches.domain.card import Card, CardType
+        from modules.matches.domain.match_event import validate_match_event
+
+        self._ensure_live()
+        normalized_player_name = validate_match_event(team_side, player_name, minute)
+        if card_type not in CardType.values:
+            raise MatchErrors.InvalidCardType
+        return Card(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            team_side=team_side,
+            player_name=normalized_player_name,
+            card_type=card_type,
+            minute=minute,
+        )
+
+    def _ensure_live(self) -> None:
+        if self.status != MatchStatus.LIVE:
+            raise MatchErrors.InvalidState
+
     class Meta:
         db_table = "matches"
         ordering = ["-scheduled_at"]
