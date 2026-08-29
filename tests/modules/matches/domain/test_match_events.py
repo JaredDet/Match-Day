@@ -44,6 +44,8 @@ def test_registers_card_during_live_match():
     assert isinstance(card, Card)
     assert card.match == match
     assert card.card_type == CardType.YELLOW
+    assert match.home_card_count == 0
+    assert match.away_card_count == 1
 
 
 @pytest.mark.parametrize("status", [MatchStatus.SCHEDULED, MatchStatus.FINISHED])

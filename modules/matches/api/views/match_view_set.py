@@ -6,9 +6,11 @@ from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
+from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 
@@ -76,3 +78,23 @@ class MatchViewSet(ViewSet):
         goal_id = use_case.execute(match_id=pk, **request_contract.validated_data)
 
         return Response({"id": str(goal_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_card",
+        request=RegisterCardRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterCardResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="cards")
+    def register_card(self, request, pk=None):
+        request_contract = RegisterCardRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterCardUseCase)
+        card_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response({"id": str(card_id)}, status=status.HTTP_201_CREATED)

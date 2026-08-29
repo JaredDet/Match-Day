@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.domain.match_event import TeamSide
 
@@ -209,3 +210,55 @@ def test_rejects_goal_when_match_is_not_live():
     assert response.status_code == 409
     assert response.data["code"] == "invalid_match_state"
     assert match.goals.count() == 0
+
+
+def test_registers_card_and_updates_counter_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-card", args=[match.id]),
+        {
+            "team_side": TeamSide.AWAY,
+            "player_name": "Defensor visitante",
+            "card_type": CardType.RED,
+            "minute": 80,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    card = match.cards.get(id=UUID(response.data["id"]))
+    assert card.card_type == CardType.RED
+    match.refresh_from_db()
+    assert match.home_card_count == 0
+    assert match.away_card_count == 1
+
+
+def test_rejects_card_when_match_is_not_live():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-card", args=[match.id]),
+        {
+            "team_side": TeamSide.HOME,
+            "player_name": "Jugador",
+            "card_type": CardType.YELLOW,
+            "minute": 1,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.data["code"] == "invalid_match_state"
+    assert match.cards.count() == 0

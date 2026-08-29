@@ -1,12 +1,16 @@
 import uuid
 from datetime import UTC, datetime
 from hashlib import sha256
+from typing import TYPE_CHECKING
 
 from django.db import models
 from django.utils import timezone
 
 from modules.matches.domain.match_event import TeamSide, validate_match_event
 from modules.matches.errors import MatchErrors
+
+if TYPE_CHECKING:
+    from modules.matches.domain.card import CardType
 
 
 class MatchStatus(models.TextChoices):
@@ -22,6 +26,8 @@ class Match(models.Model):
     fixture_key = models.CharField(max_length=64, unique=True, editable=False)
     home_goal_count = models.PositiveSmallIntegerField(default=0)
     away_goal_count = models.PositiveSmallIntegerField(default=0)
+    home_card_count = models.PositiveSmallIntegerField(default=0)
+    away_card_count = models.PositiveSmallIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=MatchStatus.choices,
@@ -108,7 +114,7 @@ class Match(models.Model):
         *,
         team_side: TeamSide,
         player_name: str,
-        card_type: str,
+        card_type: CardType,
         minute: int,
         event_id: uuid.UUID | None = None,
     ):
@@ -116,8 +122,12 @@ class Match(models.Model):
 
         self._ensure_live()
         normalized_player_name = validate_match_event(team_side, player_name, minute)
-        if card_type not in CardType.values:
+        if not isinstance(card_type, CardType):
             raise MatchErrors.InvalidCardType
+        if team_side == TeamSide.HOME:
+            self.home_card_count += 1
+        else:
+            self.away_card_count += 1
         return Card(
             id=event_id or uuid.uuid4(),
             match=self,

@@ -1,0 +1,76 @@
+import uuid
+from unittest.mock import Mock
+
+import pytest
+
+from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
+from modules.matches.domain.card import CardType
+from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import TeamSide
+from modules.matches.errors import MatchErrors
+from tests.mothers.matches.match_mother import MatchMother
+
+pytestmark = pytest.mark.django_db
+
+
+def test_registers_card_and_updates_match_counter():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    card_repository = Mock()
+    use_case = RegisterCardUseCase(match_repository, card_repository)
+
+    card_id = use_case.execute(
+        match_id=match.id,
+        team_side=TeamSide.HOME,
+        player_name=" Defensor local ",
+        card_type=CardType.YELLOW,
+        minute=51,
+    )
+
+    card = card_repository.save.call_args.args[0]
+    assert card.id == card_id
+    assert card.player_name == "Defensor local"
+    assert card.card_type is CardType.YELLOW
+    assert match.home_card_count == 1
+    assert match.away_card_count == 0
+    match_repository.save.assert_called_once_with(match)
+
+
+def test_raises_not_found_without_persisting():
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = None
+    card_repository = Mock()
+    use_case = RegisterCardUseCase(match_repository, card_repository)
+
+    with pytest.raises(type(MatchErrors.NotFound)):
+        use_case.execute(
+            match_id=uuid.uuid4(),
+            team_side=TeamSide.HOME,
+            player_name="Jugador",
+            card_type=CardType.RED,
+            minute=1,
+        )
+
+    card_repository.save.assert_not_called()
+    match_repository.save.assert_not_called()
+
+
+def test_does_not_persist_card_when_match_is_not_live():
+    match = MatchMother.create()
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    card_repository = Mock()
+    use_case = RegisterCardUseCase(match_repository, card_repository)
+
+    with pytest.raises(type(MatchErrors.InvalidState)):
+        use_case.execute(
+            match_id=match.id,
+            team_side=TeamSide.HOME,
+            player_name="Jugador",
+            card_type=CardType.YELLOW,
+            minute=1,
+        )
+
+    card_repository.save.assert_not_called()
+    match_repository.save.assert_not_called()
