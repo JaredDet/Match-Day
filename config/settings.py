@@ -142,6 +142,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.exception_handler.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DATETIME_FORMAT": "iso-8601",
+    "DATETIME_INPUT_FORMATS": ["iso-8601"],
 }
 
 SPECTACULAR_SETTINGS = {
