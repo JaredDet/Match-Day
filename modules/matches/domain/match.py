@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -10,7 +12,8 @@ from modules.matches.domain.match_event import TeamSide, validate_match_event
 from modules.matches.errors import MatchErrors
 
 if TYPE_CHECKING:
-    from modules.matches.domain.card import CardType
+    from modules.matches.domain.card import Card, CardType
+    from modules.matches.domain.goal import Goal
 
 
 class MatchStatus(models.TextChoices):
@@ -46,7 +49,7 @@ class Match(models.Model):
         home_team_name: str,
         away_team_name: str,
         scheduled_at: datetime,
-    ) -> "Match":
+    ) -> Match:
         home = home_team_name.strip() if home_team_name else ""
         away = away_team_name.strip() if away_team_name else ""
         if not home or not away or home.casefold() == away.casefold():
@@ -136,6 +139,22 @@ class Match(models.Model):
             card_type=card_type,
             minute=minute,
         )
+
+    def cancel_goal(self, goal: Goal) -> None:
+        self._ensure_live()
+        goal.cancel()
+        if goal.team_side == TeamSide.HOME:
+            self.home_goal_count -= 1
+        else:
+            self.away_goal_count -= 1
+
+    def cancel_card(self, card: Card) -> None:
+        self._ensure_live()
+        card.cancel()
+        if card.team_side == TeamSide.HOME:
+            self.home_card_count -= 1
+        else:
+            self.away_card_count -= 1
 
     def _ensure_live(self) -> None:
         if self.status != MatchStatus.LIVE:

@@ -1,0 +1,86 @@
+import uuid
+from unittest.mock import Mock
+
+import pytest
+
+from modules.matches.application.commands.cancel_goal_use_case import CancelGoalUseCase
+from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import TeamSide
+from modules.matches.errors import MatchErrors
+from tests.mothers.matches.match_mother import MatchMother
+
+pytestmark = pytest.mark.django_db
+
+
+def test_cancels_goal_and_decrements_score():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    goal = match.register_goal(
+        team_side=TeamSide.HOME,
+        player_name="Goleador",
+        minute=34,
+    )
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    goal_repository = Mock()
+    goal_repository.get_for_update.return_value = goal
+    use_case = CancelGoalUseCase(match_repository, goal_repository)
+
+    use_case.execute(match_id=match.id, goal_id=goal.id)
+
+    assert goal.cancelled_at is not None
+    assert match.home_goal_count == 0
+    goal_repository.save.assert_called_once_with(goal)
+    match_repository.save.assert_called_once_with(match)
+
+
+def test_rejects_cancelling_goal_twice():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    goal = match.register_goal(
+        team_side=TeamSide.AWAY,
+        player_name="Goleador",
+        minute=20,
+    )
+    match.cancel_goal(goal)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    goal_repository = Mock()
+    goal_repository.get_for_update.return_value = goal
+    use_case = CancelGoalUseCase(match_repository, goal_repository)
+
+    with pytest.raises(type(MatchErrors.GoalAlreadyCancelled)):
+        use_case.execute(match_id=match.id, goal_id=goal.id)
+
+    assert match.away_goal_count == 0
+    goal_repository.save.assert_not_called()
+    match_repository.save.assert_not_called()
+
+
+def test_raises_not_found_when_goal_does_not_belong_to_match():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    goal_repository = Mock()
+    goal_repository.get_for_update.return_value = None
+    use_case = CancelGoalUseCase(match_repository, goal_repository)
+
+    with pytest.raises(type(MatchErrors.GoalNotFound)):
+        use_case.execute(match_id=match.id, goal_id=uuid.uuid4())
+
+    goal_repository.save.assert_not_called()
+    match_repository.save.assert_not_called()
+
+
+def test_rejects_cancelling_goal_when_match_is_not_live():
+    match = MatchMother.create()
+    goal = Mock()
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    goal_repository = Mock()
+    goal_repository.get_for_update.return_value = goal
+    use_case = CancelGoalUseCase(match_repository, goal_repository)
+
+    with pytest.raises(type(MatchErrors.InvalidState)):
+        use_case.execute(match_id=match.id, goal_id=uuid.uuid4())
+
+    goal_repository.save.assert_not_called()
+    match_repository.save.assert_not_called()

@@ -1,5 +1,7 @@
 import injector
 
+from modules.matches.application.commands.cancel_card_use_case import CancelCardUseCase
+from modules.matches.application.commands.cancel_goal_use_case import CancelGoalUseCase
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
@@ -20,3 +22,5 @@ class MatchesModule(injector.Module):
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
         binder.bind(StartMatchUseCase, to=StartMatchUseCase, scope=injector.singleton)
+        binder.bind(CancelGoalUseCase, to=CancelGoalUseCase, scope=injector.singleton)
+        binder.bind(CancelCardUseCase, to=CancelCardUseCase, scope=injector.singleton)

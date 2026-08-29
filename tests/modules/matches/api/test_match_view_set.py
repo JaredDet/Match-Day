@@ -262,3 +262,103 @@ def test_rejects_card_when_match_is_not_live():
     assert response.status_code == 409
     assert response.data["code"] == "invalid_match_state"
     assert match.cards.count() == 0
+
+
+def test_cancels_goal_and_decrements_score_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    goal = match.register_goal(
+        team_side=TeamSide.HOME,
+        player_name="Goleador Local",
+        minute=34,
+    )
+    match.save()
+    goal.save()
+
+    response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
+
+    assert response.status_code == 204
+    goal.refresh_from_db()
+    match.refresh_from_db()
+    assert goal.cancelled_at is not None
+    assert match.home_goal_count == 0
+
+
+def test_rejects_cancelling_goal_twice():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    goal = match.register_goal(
+        team_side=TeamSide.AWAY,
+        player_name="Goleador Visitante",
+        minute=50,
+    )
+    match.save()
+    goal.save()
+
+    first_response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
+    response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
+
+    assert first_response.status_code == 204
+    assert response.status_code == 409
+    assert response.data["code"] == "goal_already_cancelled"
+    match.refresh_from_db()
+    assert match.away_goal_count == 0
+
+
+def test_cancels_card_and_decrements_counter_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    card = match.register_card(
+        team_side=TeamSide.AWAY,
+        player_name="Defensor Visitante",
+        card_type=CardType.YELLOW,
+        minute=51,
+    )
+    match.save()
+    card.save()
+
+    response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
+
+    assert response.status_code == 204
+    card.refresh_from_db()
+    match.refresh_from_db()
+    assert card.cancelled_at is not None
+    assert match.away_card_count == 0
+
+
+def test_rejects_cancelling_card_twice():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    card = match.register_card(
+        team_side=TeamSide.HOME,
+        player_name="Defensor Local",
+        card_type=CardType.RED,
+        minute=80,
+    )
+    match.save()
+    card.save()
+
+    first_response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
+    response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
+
+    assert first_response.status_code == 204
+    assert response.status_code == 409
+    assert response.data["code"] == "card_already_cancelled"
+    match.refresh_from_db()
+    assert match.home_card_count == 0

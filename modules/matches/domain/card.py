@@ -1,8 +1,11 @@
 import uuid
+from datetime import datetime
 
 from django.db import models
+from django.utils import timezone
 
 from modules.matches.domain.match_event import TeamSide
+from modules.matches.errors import MatchErrors
 
 
 class CardType(models.TextChoices):
@@ -21,7 +24,13 @@ class Card(models.Model):
     player_name = models.CharField(max_length=200)
     card_type = models.CharField(max_length=10, choices=CardType.choices)
     minute = models.PositiveSmallIntegerField()
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def cancel(self, cancelled_at: datetime | None = None) -> None:
+        if self.cancelled_at is not None:
+            raise MatchErrors.CardAlreadyCancelled
+        self.cancelled_at = cancelled_at or timezone.now()
 
     class Meta:
         db_table = "match_cards"

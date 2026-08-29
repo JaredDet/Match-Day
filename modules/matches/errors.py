@@ -2,6 +2,26 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    CardNotFound = AppException(
+        "card_not_found",
+        "Tarjeta no encontrada",
+        ErrorType.NOT_FOUND,
+    )
+    CardAlreadyCancelled = AppException(
+        "card_already_cancelled",
+        "La tarjeta ya fue anulada",
+        ErrorType.CONFLICT,
+    )
+    GoalNotFound = AppException(
+        "goal_not_found",
+        "Gol no encontrado",
+        ErrorType.NOT_FOUND,
+    )
+    GoalAlreadyCancelled = AppException(
+        "goal_already_cancelled",
+        "El gol ya fue anulado",
+        ErrorType.CONFLICT,
+    )
     AlreadyExists = AppException(
         "match_already_exists",
         "Ya existe un partido entre los mismos equipos para esa fecha",
