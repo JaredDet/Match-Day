@@ -3,8 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from modules.matches.application.queries.get_match_query import GetMatchQuery
-from modules.matches.application.queries.match_detail import MatchDetail
+from modules.matches.application.queries.get_match_query import GetMatchQuery, MatchDetail
 from modules.matches.errors import MatchErrors
 
 

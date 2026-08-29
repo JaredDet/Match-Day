@@ -1,3 +1,4 @@
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import pytest
@@ -48,3 +49,38 @@ def test_builds_chronological_match_detail_without_cancelled_events():
 
 def test_returns_none_when_match_does_not_exist():
     assert MatchQueryRepository().get(uuid4()) is None
+
+
+def test_lists_matches_filtered_by_status_and_date_in_scheduled_order():
+    later = MatchMother.create(
+        home_team_name="Equipo C",
+        away_team_name="Equipo D",
+        scheduled_at=datetime(2026, 8, 30, 22, tzinfo=UTC),
+        status=MatchStatus.LIVE,
+    )
+    earlier = MatchMother.create(
+        home_team_name="Equipo A",
+        away_team_name="Equipo B",
+        scheduled_at=datetime(2026, 8, 30, 18, tzinfo=UTC),
+        status=MatchStatus.LIVE,
+    )
+    different_status = MatchMother.create(
+        home_team_name="Equipo E",
+        away_team_name="Equipo F",
+        scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
+    )
+    different_date = MatchMother.create(
+        home_team_name="Equipo G",
+        away_team_name="Equipo H",
+        scheduled_at=datetime(2026, 8, 31, 18, tzinfo=UTC),
+        status=MatchStatus.LIVE,
+    )
+    for match in (later, earlier, different_status, different_date):
+        match.save()
+
+    result = MatchQueryRepository().list(
+        status=MatchStatus.LIVE,
+        date=date(2026, 8, 30),
+    )
+
+    assert [match.id for match in result] == [earlier.id, later.id]

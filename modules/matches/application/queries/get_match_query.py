@@ -1,12 +1,44 @@
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 from injector import inject
 
-from modules.matches.application.queries.match_detail import MatchDetail
+from modules.matches.application.queries.team_detail import TeamDetail
+from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
 )
+
+
+class MatchEventType(StrEnum):
+    GOAL = "goal"
+    YELLOW_CARD = "yellow_card"
+    RED_CARD = "red_card"
+
+
+@dataclass(frozen=True, slots=True)
+class MatchEventDetail:
+    id: UUID
+    type: MatchEventType
+    team_side: TeamSide
+    player_name: str
+    minute: int
+
+
+@dataclass(frozen=True, slots=True)
+class MatchDetail:
+    id: UUID
+    status: MatchStatus
+    scheduled_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+    home_team: TeamDetail
+    away_team: TeamDetail
+    events: tuple[MatchEventDetail, ...]
 
 
 class GetMatchQuery:

@@ -8,6 +8,7 @@ from modules.matches.application.commands.register_card_use_case import Register
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.queries.get_match_query import GetMatchQuery
+from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
 )
@@ -30,3 +31,4 @@ class MatchesModule(injector.Module):
         binder.bind(CancelGoalUseCase, to=CancelGoalUseCase, scope=injector.singleton)
         binder.bind(CancelCardUseCase, to=CancelCardUseCase, scope=injector.singleton)
         binder.bind(GetMatchQuery, to=GetMatchQuery, scope=injector.singleton)
+        binder.bind(ListMatchesQuery, to=ListMatchesQuery, scope=injector.singleton)

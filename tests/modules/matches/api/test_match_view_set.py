@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -407,3 +407,44 @@ def test_returns_not_found_when_getting_unknown_match():
 
     assert response.status_code == 404
     assert response.data["code"] == "match_not_found"
+
+
+def test_lists_matches_filtered_by_status_and_date():
+    included = Match.schedule(
+        home_team_name="Equipo Local",
+        away_team_name="Equipo Visitante",
+        scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
+    )
+    included.start()
+    excluded = Match.schedule(
+        home_team_name="Otro Local",
+        away_team_name="Otro Visitante",
+        scheduled_at=datetime(2026, 8, 31, 20, tzinfo=UTC),
+    )
+    excluded.start()
+    included.save()
+    excluded.save()
+
+    response = APIClient().get(
+        reverse("matches-list"),
+        {"status": "live", "date": "2026-08-30"},
+    )
+
+    assert response.status_code == 200
+    assert response.data == [
+        {
+            "id": str(included.id),
+            "status": "live",
+            "scheduled_at": "2026-08-30T20:00:00Z",
+            "home_team": {"name": "Equipo Local", "goals": 0},
+            "away_team": {"name": "Equipo Visitante", "goals": 0},
+        }
+    ]
+
+
+def test_rejects_invalid_match_list_filters():
+    response = APIClient().get(reverse("matches-list"), {"status": "paused"})
+
+    assert response.status_code == 400
+    assert response.data["code"] == "validation_error"
+    assert "status" in response.data["details"]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from modules.matches.application.queries.match_detail import MatchEventType
+from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import TeamSide
 
