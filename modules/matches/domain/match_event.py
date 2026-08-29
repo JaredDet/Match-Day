@@ -8,8 +8,8 @@ class TeamSide(models.TextChoices):
     AWAY = "away"
 
 
-def validate_match_event(team_side: str, player_name: str, minute: int) -> str:
-    if team_side not in TeamSide.values:
+def validate_match_event(team_side: TeamSide, player_name: str, minute: int) -> str:
+    if not isinstance(team_side, TeamSide):
         raise MatchErrors.InvalidTeamSide
     normalized_player_name = player_name.strip() if player_name else ""
     if not normalized_player_name:

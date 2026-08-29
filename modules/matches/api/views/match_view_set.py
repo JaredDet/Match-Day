@@ -6,8 +6,10 @@ from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
+from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 
 
@@ -54,3 +56,23 @@ class MatchViewSet(ViewSet):
         use_case = injector_instance.get(FinishMatchUseCase)
         use_case.execute(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_register_goal",
+        request=RegisterGoalRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterGoalResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="goals")
+    def register_goal(self, request, pk=None):
+        request_contract = RegisterGoalRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterGoalUseCase)
+        goal_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response({"id": str(goal_id)}, status=status.HTTP_201_CREATED)

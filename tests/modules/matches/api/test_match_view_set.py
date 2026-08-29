@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from modules.matches.domain.match import Match, MatchStatus
+from modules.matches.domain.match_event import TeamSide
 
 pytestmark = pytest.mark.django_db
 
@@ -162,3 +163,49 @@ def test_returns_not_found_when_finishing_unknown_match():
 
     assert response.status_code == 404
     assert response.data["code"] == "match_not_found"
+
+
+def test_registers_goal_and_updates_score_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {
+            "team_side": TeamSide.HOME,
+            "player_name": "Goleador Local",
+            "minute": 34,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    goal = match.goals.get(id=UUID(response.data["id"]))
+    assert goal.player_name == "Goleador Local"
+    match.refresh_from_db()
+    assert match.home_goal_count == 1
+    assert match.away_goal_count == 0
+
+
+def test_rejects_goal_when_match_is_not_live():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {"team_side": TeamSide.HOME, "player_name": "Jugador", "minute": 1},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.data["code"] == "invalid_match_state"
+    assert match.goals.count() == 0

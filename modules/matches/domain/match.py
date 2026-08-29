@@ -5,6 +5,7 @@ from hashlib import sha256
 from django.db import models
 from django.utils import timezone
 
+from modules.matches.domain.match_event import TeamSide, validate_match_event
 from modules.matches.errors import MatchErrors
 
 
@@ -19,6 +20,8 @@ class Match(models.Model):
     home_team_name = models.CharField(max_length=200)
     away_team_name = models.CharField(max_length=200)
     fixture_key = models.CharField(max_length=64, unique=True, editable=False)
+    home_goal_count = models.PositiveSmallIntegerField(default=0)
+    away_goal_count = models.PositiveSmallIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=MatchStatus.choices,
@@ -79,16 +82,19 @@ class Match(models.Model):
     def register_goal(
         self,
         *,
-        team_side: str,
+        team_side: TeamSide,
         player_name: str,
         minute: int,
         event_id: uuid.UUID | None = None,
     ):
         from modules.matches.domain.goal import Goal
-        from modules.matches.domain.match_event import validate_match_event
 
         self._ensure_live()
         normalized_player_name = validate_match_event(team_side, player_name, minute)
+        if team_side == TeamSide.HOME:
+            self.home_goal_count += 1
+        else:
+            self.away_goal_count += 1
         return Goal(
             id=event_id or uuid.uuid4(),
             match=self,
@@ -100,14 +106,13 @@ class Match(models.Model):
     def register_card(
         self,
         *,
-        team_side: str,
+        team_side: TeamSide,
         player_name: str,
         card_type: str,
         minute: int,
         event_id: uuid.UUID | None = None,
     ):
         from modules.matches.domain.card import Card, CardType
-        from modules.matches.domain.match_event import validate_match_event
 
         self._ensure_live()
         normalized_player_name = validate_match_event(team_side, player_name, minute)

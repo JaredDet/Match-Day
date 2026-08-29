@@ -27,6 +27,8 @@ def test_registers_goal_during_live_match():
     assert goal.team_side == TeamSide.HOME
     assert goal.player_name == "Goleador Local"
     assert goal.minute == 34
+    assert match.home_goal_count == 1
+    assert match.away_goal_count == 0
 
 
 def test_registers_card_during_live_match():
