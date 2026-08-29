@@ -1,0 +1,84 @@
+from datetime import timedelta
+
+import pytest
+from django.utils import timezone
+
+from modules.matches.domain.match import Match, MatchStatus
+from modules.matches.errors import MatchErrors
+from tests.mothers.matches.match_mother import MatchMother
+
+
+def test_schedules_match_with_normalized_team_names():
+    scheduled_at = timezone.now() + timedelta(days=1)
+
+    match = Match.schedule(
+        home_team_name="  Colo-Colo ",
+        away_team_name=" Universidad de Chile  ",
+        scheduled_at=scheduled_at,
+    )
+
+    assert match.home_team_name == "Colo-Colo"
+    assert match.away_team_name == "Universidad de Chile"
+    assert match.scheduled_at == scheduled_at
+    assert match.status == MatchStatus.SCHEDULED
+
+
+@pytest.mark.parametrize(
+    ("home", "away"),
+    [
+        ("", "Visitante"),
+        ("Local", ""),
+        ("Colo-Colo", "colo-colo"),
+    ],
+)
+def test_rejects_invalid_teams(home, away):
+    with pytest.raises(type(MatchErrors.InvalidTeams)) as exc_info:
+        Match.schedule(
+            home_team_name=home,
+            away_team_name=away,
+            scheduled_at=timezone.now(),
+        )
+
+    assert exc_info.value.code == "invalid_match_teams"
+
+
+def test_starts_scheduled_match():
+    match = MatchMother.create()
+    started_at = timezone.now()
+
+    match.start(started_at)
+
+    assert match.status == MatchStatus.LIVE
+    assert match.started_at == started_at
+    assert match.finished_at is None
+
+
+def test_cannot_start_match_twice():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+
+    with pytest.raises(type(MatchErrors.InvalidState)):
+        match.start()
+
+
+def test_finishes_live_match():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    finished_at = match.started_at + timedelta(hours=2)
+
+    match.finish(finished_at)
+
+    assert match.status == MatchStatus.FINISHED
+    assert match.finished_at == finished_at
+
+
+def test_cannot_finish_scheduled_match():
+    match = MatchMother.create()
+
+    with pytest.raises(type(MatchErrors.InvalidState)):
+        match.finish()
+
+
+def test_cannot_finish_before_start():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+
+    with pytest.raises(type(MatchErrors.InvalidFinishTime)):
+        match.finish(match.started_at - timedelta(seconds=1))
