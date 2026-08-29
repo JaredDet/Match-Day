@@ -8,6 +8,7 @@ from core.dependency_injector import injector_instance
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.application.commands.cancel_card_use_case import CancelCardUseCase
 from modules.matches.application.commands.cancel_goal_use_case import CancelGoalUseCase
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
@@ -15,6 +16,7 @@ from modules.matches.application.commands.finish_match_use_case import FinishMat
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.queries.get_match_query import GetMatchQuery
 
 
 class MatchViewSet(ViewSet):
@@ -38,6 +40,15 @@ class MatchViewSet(ViewSet):
         match_id = use_case.execute(**request_contract.validated_data)
 
         return Response({"id": str(match_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_retrieve",
+        responses={status.HTTP_200_OK: GetMatchResponse},
+    )
+    def retrieve(self, request, pk=None):
+        query = injector_instance.get(GetMatchQuery)
+        match = query.execute(pk)
+        return Response(GetMatchResponse(match).data)
 
     @extend_schema(
         operation_id="matches_start",

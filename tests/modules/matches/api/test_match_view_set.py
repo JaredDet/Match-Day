@@ -362,3 +362,48 @@ def test_rejects_cancelling_card_twice():
     assert response.data["code"] == "card_already_cancelled"
     match.refresh_from_db()
     assert match.home_card_count == 0
+
+
+def test_gets_match_detail_with_unified_event_timeline():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    goal = match.register_goal(
+        team_side=TeamSide.HOME,
+        player_name="Goleador Local",
+        minute=30,
+    )
+    card = match.register_card(
+        team_side=TeamSide.AWAY,
+        player_name="Defensor Visitante",
+        card_type=CardType.RED,
+        minute=70,
+    )
+    match.save()
+    goal.save()
+    card.save()
+
+    response = APIClient().get(reverse("matches-detail", args=[match.id]))
+
+    assert response.status_code == 200
+    assert response.data["status"] == MatchStatus.LIVE
+    assert response.data["home_team"] == {"name": "Colo-Colo", "goals": 1}
+    assert response.data["away_team"] == {
+        "name": "Universidad de Chile",
+        "goals": 0,
+    }
+    assert [event["type"] for event in response.data["events"]] == [
+        "goal",
+        "red_card",
+    ]
+    assert response.data["events"][0]["id"] == str(goal.id)
+
+
+def test_returns_not_found_when_getting_unknown_match():
+    response = APIClient().get(reverse("matches-detail", args=[uuid4()]))
+
+    assert response.status_code == 404
+    assert response.data["code"] == "match_not_found"
