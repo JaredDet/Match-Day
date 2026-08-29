@@ -2,6 +2,11 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    NotFound = AppException(
+        "match_not_found",
+        "Partido no encontrado",
+        ErrorType.NOT_FOUND,
+    )
     InvalidState = AppException(
         "invalid_match_state",
         "El partido no se encuentra en un estado válido para esta operación",

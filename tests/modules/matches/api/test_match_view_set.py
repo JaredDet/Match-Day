@@ -1,5 +1,5 @@
 from datetime import timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from django.urls import reverse
@@ -62,3 +62,42 @@ def test_formats_invalid_request_with_common_error_contract():
     assert response.status_code == 400
     assert response.data["code"] == "validation_error"
     assert "scheduled_at" in response.data["details"]
+
+
+def test_starts_scheduled_match_through_injected_use_case():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now() + timedelta(hours=1),
+    )
+    match.save()
+
+    response = APIClient().post(reverse("matches-start", args=[match.id]))
+
+    assert response.status_code == 204
+    assert response.content == b""
+    match.refresh_from_db()
+    assert match.status == MatchStatus.LIVE
+    assert match.started_at is not None
+
+
+def test_rejects_starting_match_twice():
+    match = Match.schedule(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    response = APIClient().post(reverse("matches-start", args=[match.id]))
+
+    assert response.status_code == 409
+    assert response.data["code"] == "invalid_match_state"
+
+
+def test_returns_not_found_when_starting_unknown_match():
+    response = APIClient().post(reverse("matches-start", args=[uuid4()]))
+
+    assert response.status_code == 404
+    assert response.data["code"] == "match_not_found"
