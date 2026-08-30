@@ -12,6 +12,11 @@ class TeamErrors:
         "El nombre del jugador es obligatorio",
         ErrorType.VALIDATION,
     )
+    PlayerAlreadyExists = AppException(
+        "player_already_exists",
+        "Ya existe un jugador con ese nombre en el equipo",
+        ErrorType.CONFLICT,
+    )
     PlayerNotFound = AppException(
         "player_not_found",
         "Jugador no encontrado",

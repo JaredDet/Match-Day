@@ -4,6 +4,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
 pytestmark = pytest.mark.django_db
@@ -71,3 +72,45 @@ def test_rejects_duplicate_name_when_updating_team():
 
     assert response.status_code == 409
     assert response.data["code"] == "team_already_exists"
+
+
+def test_registers_player_for_team():
+    team = Team.objects.create(name="Colo-Colo")
+
+    response = APIClient().post(
+        reverse("teams-register-player", args=[team.id]),
+        {"name": "Arturo Vidal"},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    player = Player.objects.get(id=UUID(response.data["id"]))
+    assert player.team == team
+    assert player.name == "Arturo Vidal"
+
+
+def test_registers_complete_team_squad():
+    team = Team.objects.create(name="Colo-Colo")
+
+    response = APIClient().post(
+        reverse("teams-register-squad", args=[team.id]),
+        {"players": [{"name": "Jugador uno"}, {"name": "Jugador dos"}]},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert Player.objects.filter(team=team).count() == 2
+    assert len(response.data["ids"]) == 2
+
+
+def test_squad_registration_is_atomic_when_player_is_duplicated():
+    team = Team.objects.create(name="Colo-Colo")
+
+    response = APIClient().post(
+        reverse("teams-register-squad", args=[team.id]),
+        {"players": [{"name": "Jugador"}, {"name": "jugador"}]},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert Player.objects.filter(team=team).count() == 0

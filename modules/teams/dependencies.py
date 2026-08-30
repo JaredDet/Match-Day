@@ -1,6 +1,10 @@
 import injector
 
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
+from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
+from modules.teams.application.commands.register_team_squad_use_case import (
+    RegisterTeamSquadUseCase,
+)
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.infrastructure.repository.player_repository import PlayerRepository
 from modules.teams.infrastructure.repository.team_repository import TeamRepository
@@ -12,3 +16,9 @@ class TeamsModule(injector.Module):
         binder.bind(TeamRepository, to=TeamRepository, scope=injector.singleton)
         binder.bind(CreateTeamUseCase, to=CreateTeamUseCase, scope=injector.singleton)
         binder.bind(UpdateTeamUseCase, to=UpdateTeamUseCase, scope=injector.singleton)
+        binder.bind(RegisterPlayerUseCase, to=RegisterPlayerUseCase, scope=injector.singleton)
+        binder.bind(
+            RegisterTeamSquadUseCase,
+            to=RegisterTeamSquadUseCase,
+            scope=injector.singleton,
+        )
