@@ -421,12 +421,14 @@ def test_gets_match_detail_with_unified_event_timeline():
         "name": "Colo-Colo",
         "goals": 1,
         "formation": None,
+        "lineup": [],
     }
     assert response.data["away_team"] == {
         "id": str(match.away_team_id),
         "name": "Universidad de Chile",
         "goals": 0,
         "formation": None,
+        "lineup": [],
     }
     assert [event["type"] for event in response.data["events"]] == [
         "goal",

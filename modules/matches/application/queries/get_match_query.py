@@ -5,8 +5,7 @@ from uuid import UUID
 
 from injector import inject
 
-from modules.matches.application.queries.team_detail import TeamDetail
-from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
@@ -40,6 +39,15 @@ class MatchLineupPlayerDetail:
 
 
 @dataclass(frozen=True, slots=True)
+class MatchTeamDetail:
+    id: UUID
+    name: str
+    goals: int
+    formation: MatchFormation | None
+    lineup: tuple[MatchLineupPlayerDetail, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MatchDetail:
     id: UUID
     status: MatchStatus
@@ -48,9 +56,8 @@ class MatchDetail:
     finished_at: datetime | None
     stadium_name: str | None
     referee_name: str | None
-    home_team: TeamDetail
-    away_team: TeamDetail
-    lineup: tuple[MatchLineupPlayerDetail, ...]
+    home_team: MatchTeamDetail
+    away_team: MatchTeamDetail
     events: tuple[MatchEventDetail, ...]
 
 

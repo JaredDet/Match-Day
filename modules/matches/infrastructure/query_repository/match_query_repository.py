@@ -4,6 +4,8 @@ from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from django.db.models import Case, IntegerField, Value, When
+
 from modules.matches.application.queries.team_detail import TeamDetail
 from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
@@ -78,7 +80,10 @@ class MatchQueryRepository:
         )
 
     def get(self, match_id: UUID) -> MatchDetail | None:
-        from modules.matches.application.queries.get_match_query import MatchDetail
+        from modules.matches.application.queries.get_match_query import (
+            MatchDetail,
+            MatchTeamDetail,
+        )
 
         match = (
             Match.objects.filter(id=match_id)
@@ -106,6 +111,8 @@ class MatchQueryRepository:
 
         events = self._get_events(match_id)
         lineup = self._get_lineup(match_id)
+        home_lineup = tuple(player for player in lineup if player.team_side == TeamSide.HOME)
+        away_lineup = tuple(player for player in lineup if player.team_side == TeamSide.AWAY)
         return MatchDetail(
             id=match["id"],
             status=MatchStatus(match["status"]),
@@ -114,7 +121,7 @@ class MatchQueryRepository:
             finished_at=match["finished_at"],
             stadium_name=match["stadium_name"],
             referee_name=match["referee_name"],
-            home_team=TeamDetail(
+            home_team=MatchTeamDetail(
                 id=match["home_team_id"],
                 name=match["home_team_name"],
                 goals=match["home_goal_count"],
@@ -123,8 +130,9 @@ class MatchQueryRepository:
                     if match["home_formation"] is not None
                     else None
                 ),
+                lineup=home_lineup,
             ),
-            away_team=TeamDetail(
+            away_team=MatchTeamDetail(
                 id=match["away_team_id"],
                 name=match["away_team_name"],
                 goals=match["away_goal_count"],
@@ -133,8 +141,8 @@ class MatchQueryRepository:
                     if match["away_formation"] is not None
                     else None
                 ),
+                lineup=away_lineup,
             ),
-            lineup=lineup,
             events=events,
         )
 
@@ -143,12 +151,23 @@ class MatchQueryRepository:
             MatchLineupPlayerDetail,
         )
 
-        rows = MatchLineupPlayer.objects.filter(match_id=match_id).values(
-            "player_id",
-            "player__name",
-            "team_side",
-            "shirt_number",
-            "is_captain",
+        rows = (
+            MatchLineupPlayer.objects.filter(match_id=match_id)
+            .annotate(
+                team_order=Case(
+                    When(team_side=TeamSide.HOME, then=Value(0)),
+                    When(team_side=TeamSide.AWAY, then=Value(1)),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by("team_order", "shirt_number", "player_id")
+            .values(
+                "player_id",
+                "player__name",
+                "team_side",
+                "shirt_number",
+                "is_captain",
+            )
         )
         return tuple(
             MatchLineupPlayerDetail(

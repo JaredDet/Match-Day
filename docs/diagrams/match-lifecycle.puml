@@ -1,0 +1,31 @@
+@startuml Match Lifecycle
+title Matchday V2 - Ciclo de vida del partido
+
+[*] --> Scheduled : CreateMatch
+Scheduled --> Scheduled : UpdateMatchDetails
+Scheduled --> Scheduled : SetMatchLineup\n(crea o reemplaza)
+Scheduled --> Live : StartMatch
+Live --> Live : RegisterGoal
+Live --> Live : DisallowGoal
+Live --> Live : RegisterCard
+Live --> Live : RescindCard
+Live --> Finished : FinishMatch
+Finished --> [*]
+
+state Scheduled {
+  [*] --> Configurable
+  Configurable : estadio y árbitro opcionales
+  Configurable : formación local y visitante
+  Configurable : 11 jugadores y un capitán por equipo
+}
+
+note right of Live
+  El marcador y los contadores
+  se actualizan con cada evento.
+end note
+
+note right of Finished
+  Conserva snapshots de equipos,
+  jugadores y cronología válida.
+end note
+@enduml

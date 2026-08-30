@@ -1,0 +1,106 @@
+# Matchday
+
+API para administrar y consultar partidos de fútbol, incluyendo equipos,
+jugadores, formaciones, alineaciones, goles y tarjetas.
+
+## Requisitos
+
+- Python 3.11
+- [uv](https://docs.astral.sh/uv/)
+
+## Puesta en marcha
+
+Instala las dependencias:
+
+```bash
+uv sync
+```
+
+Crea la configuración local en PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+En macOS o Linux:
+
+```bash
+cp .env.example .env
+```
+
+La plantilla activa `DEBUG` y permite `localhost` y `127.0.0.1`. En producción
+deben configurarse una clave secreta, los hosts permitidos y
+`DJANGO_DEBUG=false`.
+
+Aplica las migraciones:
+
+```bash
+uv run python manage.py migrate
+```
+
+Inicia el servidor de desarrollo:
+
+```bash
+uv run python manage.py runserver
+```
+
+La documentación de la API queda disponible en:
+
+```text
+http://127.0.0.1:8000/api/docs/
+```
+
+## Datos de demostración
+
+Crea dos equipos ficticios, sus jugadores y un partido finalizado con estadio,
+árbitro, formaciones, alineaciones, goles y tarjetas:
+
+```bash
+uv run python manage.py seed_demo_match
+```
+
+El comando es idempotente: si el partido demostrativo ya existe, no vuelve a
+crearlo. La salida muestra el identificador generado para poder consultarlo.
+
+Para ejecutar las consultas de listado y detalle y mostrar sus respuestas como
+JSON:
+
+```bash
+uv run python manage.py show_demo_match
+```
+
+`show_demo_match` requiere haber ejecutado primero `seed_demo_match`.
+
+## Diagramas
+
+Los diagramas PlantUML de la V2 se encuentran en `docs/diagrams`:
+
+- `domain-model.puml`: entidades, relaciones y reglas principales.
+- `architecture.puml`: módulos y dependencias entre capas.
+- `use-cases.puml`: operaciones disponibles para administradores y espectadores.
+- `inputs-outputs.puml`: requests, casos de uso y respuestas de cada operación.
+- `match-lifecycle.puml`: estados y operaciones permitidas del partido.
+
+Pueden renderizarse con cualquier extensión o CLI compatible con PlantUML.
+
+## Pruebas y calidad
+
+Ejecuta toda la suite:
+
+```bash
+uv run pytest
+```
+
+Comprueba formato y reglas de Ruff:
+
+```bash
+uv run ruff format --check .
+uv run ruff check .
+```
+
+Comprueba la configuración de Django y que no falten migraciones:
+
+```bash
+uv run python manage.py check
+uv run python manage.py makemigrations --check --dry-run
+```

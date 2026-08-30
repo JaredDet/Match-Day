@@ -8,7 +8,7 @@ from tests.mothers.matches.match_mother import MatchMother
 
 def test_adds_player_to_match_lineup():
     match = MatchMother.create()
-    player = Player.create(team_id=match.home_team_id, name="CapitÃ¡n local")
+    player = Player.create(team_id=match.home_team_id, name="Capitán local")
 
     lineup_player = match.add_lineup_player(
         player=player,

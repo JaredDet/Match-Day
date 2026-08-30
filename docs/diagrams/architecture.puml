@@ -1,0 +1,59 @@
+@startuml Matchday Architecture
+title Matchday V2 - Arquitectura modular
+
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+package "core" {
+  component "Dependency Injector" as Injector
+  component "Exception Handler" as Exceptions
+  component "Shared API Fields" as ApiFields
+  component "Text Utilities" as TextUtils
+}
+
+package "teams" {
+  component "Team API\nViewSet + Contracts" as TeamApi
+  component "Team Commands" as TeamCommands
+  component "Team Domain\nTeam + Player" as TeamDomain
+  component "Team Repositories" as TeamRepositories
+}
+
+package "matches" {
+  component "Match API\nViewSet + Contracts" as MatchApi
+  component "Match Commands" as MatchCommands
+  component "Match Queries" as MatchQueries
+  component "Match Domain\nMatch + Events + Lineup" as MatchDomain
+  component "Match Repositories" as MatchRepositories
+  component "Match Query Repository" as MatchQueryRepository
+}
+
+database "Django ORM\nSQLite / PostgreSQL" as Database
+
+TeamApi --> Injector
+MatchApi --> Injector
+Injector --> TeamCommands
+Injector --> MatchCommands
+Injector --> MatchQueries
+
+TeamApi --> Exceptions
+MatchApi --> Exceptions
+TeamApi --> ApiFields
+MatchApi --> ApiFields
+
+TeamCommands --> TeamDomain
+TeamCommands --> TeamRepositories
+MatchCommands --> MatchDomain
+MatchCommands --> MatchRepositories
+MatchCommands --> TeamRepositories : jugadores / equipos
+MatchQueries --> MatchQueryRepository
+
+TeamDomain --> TextUtils
+TeamRepositories --> Database
+MatchRepositories --> Database
+MatchQueryRepository --> Database
+
+note bottom of MatchQueryRepository
+  Construye DTOs de lectura optimizados:
+  ListMatches y GetMatch.
+end note
+@enduml

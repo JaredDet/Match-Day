@@ -62,10 +62,11 @@ def test_builds_chronological_match_detail_without_disallowed_events():
     assert result.away_team.goals == 0
     assert result.home_team.formation == MatchFormation.FOUR_THREE_THREE
     assert result.away_team.formation == MatchFormation.FOUR_FOUR_TWO
-    assert len(result.lineup) == 1
-    assert result.lineup[0].player_id == home_player.id
-    assert result.lineup[0].shirt_number == 9
-    assert result.lineup[0].is_captain is True
+    assert len(result.home_team.lineup) == 1
+    assert result.home_team.lineup[0].player_id == home_player.id
+    assert result.home_team.lineup[0].shirt_number == 9
+    assert result.home_team.lineup[0].is_captain is True
+    assert result.away_team.lineup == ()
     assert [event.type for event in result.events] == ["yellow_card", "goal"]
     assert [event.minute for event in result.events] == [20, 60]
     assert [event.player_id for event in result.events] == [away_player.id, home_player.id]

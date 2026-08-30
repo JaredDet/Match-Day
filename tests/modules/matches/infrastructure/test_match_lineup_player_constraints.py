@@ -31,8 +31,8 @@ def test_rejects_repeated_shirt_number_for_same_team():
 def test_rejects_more_than_one_captain_for_same_team():
     match = MatchMother.create(persist_teams=True)
     match.save()
-    first = Player.objects.create(team=match.home_team, name="CapitÃ¡n uno")
-    second = Player.objects.create(team=match.home_team, name="CapitÃ¡n dos")
+    first = Player.objects.create(team=match.home_team, name="Capitán uno")
+    second = Player.objects.create(team=match.home_team, name="Capitán dos")
     match.add_lineup_player(player=first, shirt_number=8, is_captain=True).save()
 
     with pytest.raises(IntegrityError):

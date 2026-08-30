@@ -4,27 +4,27 @@ from core.exceptions import AppException, ErrorType
 class MatchErrors:
     InvalidLineupSize = AppException(
         "invalid_lineup_size",
-        "La alineaciÃ³n debe contener exactamente once jugadores",
+        "La alineación debe contener exactamente once jugadores",
         ErrorType.VALIDATION,
     )
     InvalidLineupCaptain = AppException(
         "invalid_lineup_captain",
-        "La alineaciÃ³n debe tener exactamente un capitÃ¡n",
+        "La alineación debe tener exactamente un capitán",
         ErrorType.VALIDATION,
     )
     DuplicateLineupPlayer = AppException(
         "duplicate_lineup_player",
-        "Un jugador no puede repetirse en la alineaciÃ³n",
+        "Un jugador no puede repetirse en la alineación",
         ErrorType.VALIDATION,
     )
     DuplicateLineupShirt = AppException(
         "duplicate_lineup_shirt",
-        "Un nÃºmero de camiseta no puede repetirse en la alineaciÃ³n",
+        "Un número de camiseta no puede repetirse en la alineación",
         ErrorType.VALIDATION,
     )
     InvalidShirtNumber = AppException(
         "invalid_shirt_number",
-        "El nÃºmero de camiseta debe estar entre 1 y 99",
+        "El número de camiseta debe estar entre 1 y 99",
         ErrorType.VALIDATION,
     )
     InvalidFormation = AppException(
@@ -69,7 +69,7 @@ class MatchErrors:
     )
     InvalidState = AppException(
         "invalid_match_state",
-        "El partido no se encuentra en un estado vÃ¡lido para esta operaciÃ³n",
+        "El partido no se encuentra en un estado válido para esta operación",
         ErrorType.CONFLICT,
     )
     InvalidTeams = AppException(
@@ -89,11 +89,11 @@ class MatchErrors:
     )
     InvalidTeamSide = AppException(
         "invalid_team_side",
-        "El lado del equipo no es vÃ¡lido",
+        "El lado del equipo no es válido",
         ErrorType.VALIDATION,
     )
     InvalidCardType = AppException(
         "invalid_card_type",
-        "El tipo de tarjeta no es vÃ¡lido",
+        "El tipo de tarjeta no es válido",
         ErrorType.VALIDATION,
     )

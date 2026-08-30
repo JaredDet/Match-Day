@@ -1,0 +1,150 @@
+@startuml Matchday Domain Model
+title Matchday V2 - Modelo de dominio
+
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "teams" {
+  class Team {
+    +UUID id
+    +string name
+    +datetime created_at
+    +datetime updated_at
+    --
+    +create(name): Team
+    +rename(name): void
+  }
+
+  class Player {
+    +UUID id
+    +UUID team_id
+    +string name
+    +datetime created_at
+    +datetime updated_at
+    --
+    +create(team_id, name): Player
+    +rename(name): void
+  }
+}
+
+package "matches" {
+  enum MatchStatus {
+    scheduled
+    live
+    finished
+  }
+
+  enum MatchFormation {
+    4-3-3
+    4-4-2
+    4-2-3-1
+    4-1-4-1
+    3-5-2
+    3-4-3
+  }
+
+  enum TeamSide {
+    home
+    away
+  }
+
+  enum CardType {
+    yellow
+    red
+  }
+
+  class Match {
+    +UUID id
+    +UUID home_team_id
+    +UUID away_team_id
+    +string home_team_name
+    +string away_team_name
+    +MatchFormation home_formation
+    +MatchFormation away_formation
+    +string stadium_name
+    +string referee_name
+    +int home_goal_count
+    +int away_goal_count
+    +int home_card_count
+    +int away_card_count
+    +MatchStatus status
+    +datetime scheduled_at
+    +datetime started_at
+    +datetime finished_at
+    --
+    +schedule(...): Match
+    +set_formation(...): void
+    +add_lineup_player(...): MatchLineupPlayer
+    +start(...): void
+    +finish(...): void
+    +register_goal(...): Goal
+    +register_card(...): Card
+    +disallow_goal(...): void
+    +rescind_card(...): void
+  }
+
+  class MatchLineupPlayer {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +TeamSide team_side
+    +int shirt_number
+    +bool is_captain
+  }
+
+  class Goal {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +TeamSide team_side
+    +string player_name
+    +int minute
+    +datetime disallowed_at
+    --
+    +disallow(...): void
+  }
+
+  class Card {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +TeamSide team_side
+    +string player_name
+    +CardType card_type
+    +int minute
+    +datetime rescinded_at
+    --
+    +rescind(...): void
+  }
+}
+
+Team "1" -- "0..*" Player : plantilla
+Team "1" <-- "0..*" Match : local
+Team "1" <-- "0..*" Match : visitante
+Match "1" *-- "0..22" MatchLineupPlayer : alineación
+Player "1" <-- "0..*" MatchLineupPlayer
+Match "1" *-- "0..*" Goal
+Match "1" *-- "0..*" Card
+Player "1" <-- "0..*" Goal
+Player "1" <-- "0..*" Card
+Match --> MatchStatus
+Match --> MatchFormation
+MatchLineupPlayer --> TeamSide
+Goal --> TeamSide
+Card --> TeamSide
+Card --> CardType
+
+note right of Match
+  Los nombres de equipos son snapshots.
+  Formación y alineación solo cambian
+  mientras el partido está programado.
+end note
+
+note bottom of MatchLineupPlayer
+  Por equipo y partido:
+  - 11 jugadores
+  - dorsales únicos
+  - exactamente un capitán
+end note
+@enduml

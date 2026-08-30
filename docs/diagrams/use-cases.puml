@@ -1,0 +1,52 @@
+@startuml Matchday Use Cases
+title Matchday V2 - Casos de uso
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor Administrador as Admin
+actor Espectador as Viewer
+
+rectangle "Teams" {
+  usecase "Crear equipo" as CreateTeam
+  usecase "Actualizar equipo" as UpdateTeam
+  usecase "Registrar jugador" as RegisterPlayer
+  usecase "Cargar nómina" as RegisterSquad
+}
+
+rectangle "Matches" {
+  usecase "Crear partido" as CreateMatch
+  usecase "Configurar o reemplazar\nformación y alineación" as SetLineup
+  usecase "Iniciar partido" as StartMatch
+  usecase "Finalizar partido" as FinishMatch
+  usecase "Registrar gol" as RegisterGoal
+  usecase "Anular gol" as DisallowGoal
+  usecase "Registrar tarjeta" as RegisterCard
+  usecase "Retirar tarjeta" as RescindCard
+  usecase "Actualizar estadio y árbitro" as UpdateDetails
+  usecase "Listar partidos" as ListMatches
+  usecase "Ver detalle del partido" as GetMatch
+}
+
+Admin --> CreateTeam
+Admin --> UpdateTeam
+Admin --> RegisterPlayer
+Admin --> RegisterSquad
+Admin --> CreateMatch
+Admin --> SetLineup
+Admin --> StartMatch
+Admin --> FinishMatch
+Admin --> RegisterGoal
+Admin --> DisallowGoal
+Admin --> RegisterCard
+Admin --> RescindCard
+Admin --> UpdateDetails
+Admin --> ListMatches
+Admin --> GetMatch
+Viewer --> ListMatches
+Viewer --> GetMatch
+
+RegisterSquad ..> CreateTeam : equipo existente
+SetLineup ..> RegisterSquad : jugadores existentes
+StartMatch ..> SetLineup : configuración previa
+@enduml
