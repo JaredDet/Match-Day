@@ -24,6 +24,8 @@ class CreateMatchUseCase:
         home_team_id: UUID,
         away_team_id: UUID,
         scheduled_at: datetime,
+        stadium_name: str | None = None,
+        referee_name: str | None = None,
     ) -> UUID:
         home_team = self.team_repository.get(home_team_id)
         away_team = self.team_repository.get(away_team_id)
@@ -33,6 +35,8 @@ class CreateMatchUseCase:
             home_team=home_team,
             away_team=away_team,
             scheduled_at=scheduled_at,
+            stadium_name=stadium_name,
+            referee_name=referee_name,
         )
         if self.match_repository.exists_fixture(match.fixture_key):
             raise MatchErrors.AlreadyExists

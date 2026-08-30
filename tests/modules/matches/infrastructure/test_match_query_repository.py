@@ -4,7 +4,8 @@ from uuid import uuid4
 import pytest
 
 from modules.matches.domain.card import CardType
-from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match import MatchFormation, MatchStatus
+from modules.matches.domain.match_event import TeamSide
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
 )
@@ -16,6 +17,14 @@ pytestmark = pytest.mark.django_db
 
 def test_builds_chronological_match_detail_without_disallowed_events():
     match = MatchMother.create(status=MatchStatus.LIVE, persist_teams=True)
+    match.set_formation(
+        team_side=TeamSide.HOME,
+        formation=MatchFormation.FOUR_THREE_THREE,
+    )
+    match.set_formation(
+        team_side=TeamSide.AWAY,
+        formation=MatchFormation.FOUR_FOUR_TWO,
+    )
     home_player = Player.objects.create(team=match.home_team, name="Goleador")
     away_player = Player.objects.create(team=match.away_team, name="Defensor")
     cancelled_player = Player.objects.create(team=match.away_team, name="Gol anulado")
@@ -33,7 +42,13 @@ def test_builds_chronological_match_detail_without_disallowed_events():
         minute=10,
     )
     match.disallow_goal(disallowed_goal)
+    lineup_player = match.add_lineup_player(
+        player=home_player,
+        shirt_number=9,
+        is_captain=True,
+    )
     match.save()
+    lineup_player.save()
     late_goal.save()
     early_card.save()
     disallowed_goal.save()
@@ -44,6 +59,12 @@ def test_builds_chronological_match_detail_without_disallowed_events():
     assert result.home_team.id == match.home_team_id
     assert result.home_team.goals == 1
     assert result.away_team.goals == 0
+    assert result.home_team.formation == MatchFormation.FOUR_THREE_THREE
+    assert result.away_team.formation == MatchFormation.FOUR_FOUR_TWO
+    assert len(result.lineup) == 1
+    assert result.lineup[0].player_id == home_player.id
+    assert result.lineup[0].shirt_number == 9
+    assert result.lineup[0].is_captain is True
     assert [event.type for event in result.events] == ["yellow_card", "goal"]
     assert [event.minute for event in result.events] == [20, 60]
     assert [event.player_id for event in result.events] == [away_player.id, home_player.id]

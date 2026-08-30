@@ -2,6 +2,16 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    InvalidShirtNumber = AppException(
+        "invalid_shirt_number",
+        "El nÃºmero de camiseta debe estar entre 1 y 99",
+        ErrorType.VALIDATION,
+    )
+    InvalidFormation = AppException(
+        "invalid_formation",
+        "La formación debe describir diez jugadores de campo",
+        ErrorType.VALIDATION,
+    )
     InvalidPlayerTeam = AppException(
         "invalid_player_team",
         "El jugador no pertenece a ninguno de los equipos del partido",

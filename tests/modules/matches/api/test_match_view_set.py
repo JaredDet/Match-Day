@@ -419,11 +419,13 @@ def test_gets_match_detail_with_unified_event_timeline():
         "id": str(match.home_team_id),
         "name": "Colo-Colo",
         "goals": 1,
+        "formation": None,
     }
     assert response.data["away_team"] == {
         "id": str(match.away_team_id),
         "name": "Universidad de Chile",
         "goals": 0,
+        "formation": None,
     }
     assert [event["type"] for event in response.data["events"]] == [
         "goal",
@@ -438,6 +440,26 @@ def test_returns_not_found_when_getting_unknown_match():
 
     assert response.status_code == 404
     assert response.data["code"] == "match_not_found"
+
+
+def test_updates_match_details_through_injected_use_case():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+
+    response = APIClient().patch(
+        reverse("matches-update-details", args=[match.id]),
+        {"stadium_name": " Estadio Monumental ", "referee_name": "Piero Maza"},
+        format="json",
+    )
+
+    assert response.status_code == 204
+    match.refresh_from_db()
+    assert match.stadium_name == "Estadio Monumental"
+    assert match.referee_name == "Piero Maza"
 
 
 def test_lists_matches_filtered_by_status_and_date():
@@ -471,11 +493,13 @@ def test_lists_matches_filtered_by_status_and_date():
                 "id": str(included.home_team_id),
                 "name": "Equipo Local",
                 "goals": 0,
+                "formation": None,
             },
             "away_team": {
                 "id": str(included.away_team_id),
                 "name": "Equipo Visitante",
                 "goals": 0,
+                "formation": None,
             },
         }
     ]

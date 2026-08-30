@@ -75,6 +75,28 @@ def test_starts_scheduled_match():
     assert match.finished_at is None
 
 
+def test_updates_and_normalizes_optional_match_details():
+    match = MatchMother.create()
+
+    match.update_details(
+        stadium_name="  Estadio   Monumental ",
+        referee_name="  Piero   Maza ",
+    )
+
+    assert match.stadium_name == "Estadio Monumental"
+    assert match.referee_name == "Piero Maza"
+
+
+def test_updates_one_detail_without_changing_the_other():
+    match = MatchMother.create()
+    match.update_details(stadium_name="Estadio Nacional", referee_name="Árbitro")
+
+    match.update_details(referee_name=None)
+
+    assert match.stadium_name == "Estadio Nacional"
+    assert match.referee_name is None
+
+
 def test_cannot_start_match_twice():
     match = MatchMother.create(status=MatchStatus.LIVE)
 

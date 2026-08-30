@@ -9,6 +9,9 @@ from modules.matches.api.contracts.requests.create_match_request import CreateMa
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.requests.update_match_details_request import (
+    UpdateMatchDetailsRequest,
+)
 from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.api.contracts.responses.list_matches_response import ListMatchesResponse
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
@@ -18,6 +21,9 @@ from modules.matches.application.commands.register_card_use_case import Register
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.update_match_details_use_case import (
+    UpdateMatchDetailsUseCase,
+)
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 
@@ -65,6 +71,20 @@ class MatchViewSet(ViewSet):
         query = injector_instance.get(GetMatchQuery)
         match = query.execute(pk)
         return Response(GetMatchResponse(match).data)
+
+    @extend_schema(
+        operation_id="matches_update_details",
+        request=UpdateMatchDetailsRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["patch"], url_path="details")
+    def update_details(self, request, pk=None):
+        request_contract = UpdateMatchDetailsRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(UpdateMatchDetailsUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         operation_id="matches_start",

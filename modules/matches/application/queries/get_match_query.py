@@ -31,14 +31,26 @@ class MatchEventDetail:
 
 
 @dataclass(frozen=True, slots=True)
+class MatchLineupPlayerDetail:
+    player_id: UUID
+    player_name: str
+    team_side: TeamSide
+    shirt_number: int
+    is_captain: bool
+
+
+@dataclass(frozen=True, slots=True)
 class MatchDetail:
     id: UUID
     status: MatchStatus
     scheduled_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
+    stadium_name: str | None
+    referee_name: str | None
     home_team: TeamDetail
     away_team: TeamDetail
+    lineup: tuple[MatchLineupPlayerDetail, ...]
     events: tuple[MatchEventDetail, ...]
 
 

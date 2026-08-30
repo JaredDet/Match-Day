@@ -7,6 +7,9 @@ from modules.matches.application.commands.register_card_use_case import Register
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.update_match_details_use_case import (
+    UpdateMatchDetailsUseCase,
+)
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.matches.infrastructure.query_repository.match_query_repository import (
@@ -28,6 +31,11 @@ class MatchesModule(injector.Module):
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
         binder.bind(StartMatchUseCase, to=StartMatchUseCase, scope=injector.singleton)
+        binder.bind(
+            UpdateMatchDetailsUseCase,
+            to=UpdateMatchDetailsUseCase,
+            scope=injector.singleton,
+        )
         binder.bind(DisallowGoalUseCase, to=DisallowGoalUseCase, scope=injector.singleton)
         binder.bind(RescindCardUseCase, to=RescindCardUseCase, scope=injector.singleton)
         binder.bind(GetMatchQuery, to=GetMatchQuery, scope=injector.singleton)

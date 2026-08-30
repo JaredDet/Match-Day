@@ -11,9 +11,12 @@ from django.utils import timezone
 from modules.matches.domain.match_event import TeamSide, validate_match_event
 from modules.matches.errors import MatchErrors
 
+_UNSET = object()
+
 if TYPE_CHECKING:
     from modules.matches.domain.card import Card, CardType
     from modules.matches.domain.goal import Goal
+    from modules.matches.domain.match_lineup_player import MatchLineupPlayer
     from modules.teams.domain.player import Player
     from modules.teams.domain.team import Team
 
@@ -22,6 +25,15 @@ class MatchStatus(models.TextChoices):
     SCHEDULED = "scheduled"
     LIVE = "live"
     FINISHED = "finished"
+
+
+class MatchFormation(models.TextChoices):
+    FOUR_THREE_THREE = "4-3-3", "4-3-3"
+    FOUR_FOUR_TWO = "4-4-2", "4-4-2"
+    FOUR_TWO_THREE_ONE = "4-2-3-1", "4-2-3-1"
+    FOUR_ONE_FOUR_ONE = "4-1-4-1", "4-1-4-1"
+    THREE_FIVE_TWO = "3-5-2", "3-5-2"
+    THREE_FOUR_THREE = "3-4-3", "3-4-3"
 
 
 class Match(models.Model):
@@ -38,6 +50,20 @@ class Match(models.Model):
     )
     home_team_name = models.CharField(max_length=200)
     away_team_name = models.CharField(max_length=200)
+    stadium_name = models.CharField(max_length=200, null=True, blank=True)
+    referee_name = models.CharField(max_length=200, null=True, blank=True)
+    home_formation = models.CharField(
+        max_length=20,
+        choices=MatchFormation.choices,
+        null=True,
+        blank=True,
+    )
+    away_formation = models.CharField(
+        max_length=20,
+        choices=MatchFormation.choices,
+        null=True,
+        blank=True,
+    )
     fixture_key = models.CharField(max_length=64, unique=True, editable=False)
     home_goal_count = models.PositiveSmallIntegerField(default=0)
     away_goal_count = models.PositiveSmallIntegerField(default=0)
@@ -61,6 +87,8 @@ class Match(models.Model):
         home_team: Team,
         away_team: Team,
         scheduled_at: datetime,
+        stadium_name: str | None = None,
+        referee_name: str | None = None,
     ) -> Match:
         if home_team.id == away_team.id:
             raise MatchErrors.InvalidTeams
@@ -69,9 +97,60 @@ class Match(models.Model):
             away_team=away_team,
             home_team_name=home_team.name,
             away_team_name=away_team.name,
+            stadium_name=cls._normalize_optional_name(stadium_name),
+            referee_name=cls._normalize_optional_name(referee_name),
             fixture_key=cls.build_fixture_key(home_team.id, away_team.id, scheduled_at),
             scheduled_at=scheduled_at,
         )
+
+    def update_details(
+        self,
+        *,
+        stadium_name=_UNSET,
+        referee_name=_UNSET,
+    ) -> None:
+        if stadium_name is not _UNSET:
+            self.stadium_name = self._normalize_optional_name(stadium_name)
+        if referee_name is not _UNSET:
+            self.referee_name = self._normalize_optional_name(referee_name)
+
+    def set_formation(
+        self,
+        *,
+        team_side: TeamSide,
+        formation: MatchFormation,
+    ) -> None:
+        if not isinstance(team_side, TeamSide):
+            raise MatchErrors.InvalidTeamSide
+        if not isinstance(formation, MatchFormation):
+            raise MatchErrors.InvalidFormation
+        if team_side == TeamSide.HOME:
+            self.home_formation = formation
+        else:
+            self.away_formation = formation
+
+    def add_lineup_player(
+        self,
+        *,
+        player: Player,
+        shirt_number: int,
+        is_captain: bool = False,
+    ) -> MatchLineupPlayer:
+        from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+
+        team_side = self._resolve_team_side(player.team_id)
+        return MatchLineupPlayer.create(
+            match=self,
+            player=player,
+            team_side=team_side,
+            shirt_number=shirt_number,
+            is_captain=is_captain,
+        )
+
+    @staticmethod
+    def _normalize_optional_name(value: str | None) -> str | None:
+        normalized_value = " ".join(value.split()) if value else ""
+        return normalized_value or None
 
     @staticmethod
     def build_fixture_key(
@@ -188,6 +267,20 @@ class Match(models.Model):
             models.CheckConstraint(
                 condition=models.Q(status__in=MatchStatus.values),
                 name="valid_match_status",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(home_formation__isnull=True)
+                    | models.Q(home_formation__in=MatchFormation.values)
+                ),
+                name="valid_home_match_formation",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(away_formation__isnull=True)
+                    | models.Q(away_formation__in=MatchFormation.values)
+                ),
+                name="valid_away_match_formation",
             ),
             models.CheckConstraint(
                 condition=~models.Q(home_team=models.F("away_team")),
