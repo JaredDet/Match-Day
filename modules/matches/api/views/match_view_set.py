@@ -117,6 +117,7 @@ class MatchViewSet(ViewSet):
             match_id=pk,
             team_side=resolved_team_side,
             formation=request_contract.validated_data["formation"],
+            captain_id=request_contract.validated_data.get("captain_id"),
             players=[
                 LineupPlayerInput(**player) for player in request_contract.validated_data["players"]
             ],

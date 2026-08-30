@@ -178,6 +178,36 @@ def test_registers_complete_team_squad():
     assert len(response.data["ids"]) == 2
 
 
+def test_sets_permanent_team_captain():
+    team = Team.objects.create(name="Colo-Colo")
+    player = Player.objects.create(team=team, name="Arturo Vidal")
+
+    response = APIClient().put(
+        reverse("teams-set-captain", args=[team.id]),
+        {"player_id": str(player.id)},
+        format="json",
+    )
+
+    assert response.status_code == 204
+    team.refresh_from_db()
+    assert team.captain == player
+
+
+def test_rejects_captain_from_another_team():
+    team = Team.objects.create(name="Colo-Colo")
+    other_team = Team.objects.create(name="Universidad de Chile")
+    player = Player.objects.create(team=other_team, name="Jugador rival")
+
+    response = APIClient().put(
+        reverse("teams-set-captain", args=[team.id]),
+        {"player_id": str(player.id)},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data["code"] == "invalid_team_captain"
+
+
 def test_squad_registration_is_atomic_when_player_is_duplicated():
     team = Team.objects.create(name="Colo-Colo")
 

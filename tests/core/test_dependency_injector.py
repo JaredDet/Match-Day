@@ -16,6 +16,7 @@ from modules.teams.application.commands.create_team_use_case import CreateTeamUs
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
+from modules.teams.application.commands.set_team_captain_use_case import SetTeamCaptainUseCase
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
@@ -35,6 +36,7 @@ def test_rejects_unregistered_dependencies():
         CreateTeamUseCase,
         RegisterTeamSquadUseCase,
         UpdateTeamUseCase,
+        SetTeamCaptainUseCase,
         CreateMatchUseCase,
         SetMatchLineupUseCase,
         StartMatchUseCase,

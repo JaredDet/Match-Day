@@ -7,9 +7,9 @@ from modules.matches.domain.match import MatchFormation
 class LineupPlayerRequest(serializers.Serializer):
     player_id = serializers.UUIDField()
     shirt_number = serializers.IntegerField(min_value=1, max_value=99)
-    is_captain = serializers.BooleanField(default=False)
 
 
 class SetMatchLineupRequest(serializers.Serializer):
     formation = EnumChoiceField(MatchFormation)
+    captain_id = serializers.UUIDField(required=False, allow_null=True)
     players = LineupPlayerRequest(many=True, min_length=11, max_length=11)

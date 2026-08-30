@@ -12,6 +12,13 @@ from modules.teams.errors import TeamErrors
 class Team(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    captain = models.ForeignKey(
+        "teams.Player",
+        on_delete=models.SET_NULL,
+        related_name="captained_teams",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -21,6 +28,11 @@ class Team(models.Model):
 
     def rename(self, name: str) -> None:
         self.name = self._normalize_name(name)
+
+    def assign_captain(self, player) -> None:
+        if player.team_id != self.id:
+            raise TeamErrors.InvalidCaptain
+        self.captain = player
 
     @staticmethod
     def _normalize_name(name: str) -> str:

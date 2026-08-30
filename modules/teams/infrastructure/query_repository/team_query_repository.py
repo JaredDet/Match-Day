@@ -24,7 +24,7 @@ class TeamQueryRepository:
         )
         from modules.teams.application.queries.list_teams_query import TeamMatchResult
 
-        team = Team.objects.filter(id=team_id).values("id", "name").first()
+        team = Team.objects.filter(id=team_id).values("id", "name", "captain_id").first()
         if team is None:
             return None
 
@@ -74,12 +74,7 @@ class TeamQueryRepository:
                     )
                 )
 
-        captain_id = (
-            self._latest_lineup(team_id)
-            .filter(is_captain=True)
-            .values_list("player_id", flat=True)
-            .first()
-        )
+        captain_id = team["captain_id"]
         players = tuple(
             TeamPlayerDetail(
                 id=player["id"],
@@ -206,21 +201,4 @@ class TeamQueryRepository:
             match["away_goal_count"],
             match["home_goal_count"],
             match["home_team_name"],
-        )
-
-    @staticmethod
-    def _latest_lineup(team_id):
-        from modules.matches.domain.match_lineup_player import MatchLineupPlayer
-
-        latest_match_id = (
-            MatchLineupPlayer.objects.filter(player__team_id=team_id)
-            .order_by("-match__scheduled_at", "-match_id")
-            .values_list("match_id", flat=True)
-            .first()
-        )
-        if latest_match_id is None:
-            return MatchLineupPlayer.objects.none()
-        return MatchLineupPlayer.objects.filter(
-            match_id=latest_match_id,
-            player__team_id=team_id,
         )

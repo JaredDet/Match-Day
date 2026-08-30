@@ -527,6 +527,8 @@ def test_sets_and_replaces_match_lineup_with_formation():
         Player.objects.create(team=match.home_team, name=f"Jugador {index}")
         for index in range(1, 12)
     ]
+    match.home_team.captain = players[0]
+    match.home_team.save()
 
     response = APIClient().put(
         reverse("matches-set-lineup", args=[match.id, TeamSide.HOME]),
@@ -536,7 +538,6 @@ def test_sets_and_replaces_match_lineup_with_formation():
                 {
                     "player_id": str(player.id),
                     "shirt_number": index,
-                    "is_captain": index == 1,
                 }
                 for index, player in enumerate(players, start=1)
             ],
@@ -554,16 +555,24 @@ def test_sets_and_replaces_match_lineup_with_formation():
         ).count()
         == 11
     )
+    assert (
+        MatchLineupPlayer.objects.get(
+            match=match,
+            team_side=TeamSide.HOME,
+            is_captain=True,
+        ).player
+        == players[0]
+    )
 
     response = APIClient().put(
         reverse("matches-set-lineup", args=[match.id, TeamSide.HOME]),
         {
             "formation": MatchFormation.FOUR_FOUR_TWO,
+            "captain_id": str(players[1].id),
             "players": [
                 {
                     "player_id": str(player.id),
                     "shirt_number": index + 20,
-                    "is_captain": index == 2,
                 }
                 for index, player in enumerate(players, start=1)
             ],

@@ -11,6 +11,9 @@ from modules.teams.api.contracts.requests.register_player_request import Registe
 from modules.teams.api.contracts.requests.register_team_squad_request import (
     RegisterTeamSquadRequest,
 )
+from modules.teams.api.contracts.requests.set_team_captain_request import (
+    SetTeamCaptainRequest,
+)
 from modules.teams.api.contracts.requests.update_team_request import UpdateTeamRequest
 from modules.teams.api.contracts.responses.get_team_response import GetTeamResponse
 from modules.teams.api.contracts.responses.list_teams_response import ListTeamsResponse
@@ -18,6 +21,9 @@ from modules.teams.application.commands.create_team_use_case import CreateTeamUs
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
+)
+from modules.teams.application.commands.set_team_captain_use_case import (
+    SetTeamCaptainUseCase,
 )
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.application.queries.get_team_query import GetTeamQuery
@@ -123,3 +129,17 @@ class TeamViewSet(ViewSet):
             {"ids": [str(player_id) for player_id in player_ids]},
             status=status.HTTP_201_CREATED,
         )
+
+    @extend_schema(
+        operation_id="teams_set_captain",
+        request=SetTeamCaptainRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["put"], url_path="captain")
+    def set_captain(self, request, pk=None):
+        request_contract = SetTeamCaptainRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(SetTeamCaptainUseCase)
+        use_case.execute(team_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)

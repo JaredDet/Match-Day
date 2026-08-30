@@ -24,6 +24,9 @@ from modules.teams.application.commands.create_team_use_case import CreateTeamUs
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
+from modules.teams.application.commands.set_team_captain_use_case import (
+    SetTeamCaptainUseCase,
+)
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -188,6 +191,8 @@ class Command(BaseCommand):
             name: self._ensure_team(name, player_names)
             for name, player_names in TEAM_PLAYERS.items()
         }
+        for team_id, player_ids in teams.values():
+            self.set_team_captain.execute(team_id=team_id, player_id=player_ids[8])
 
         created = 0
         for fixture in FIXTURES:
@@ -207,6 +212,7 @@ class Command(BaseCommand):
     def _resolve_use_cases(self) -> None:
         self.create_team = injector_instance.get(CreateTeamUseCase)
         self.register_squad = injector_instance.get(RegisterTeamSquadUseCase)
+        self.set_team_captain = injector_instance.get(SetTeamCaptainUseCase)
         self.create_match = injector_instance.get(CreateMatchUseCase)
         self.set_lineup = injector_instance.get(SetMatchLineupUseCase)
         self.start_match = injector_instance.get(StartMatchUseCase)
@@ -264,13 +270,13 @@ class Command(BaseCommand):
             match_id=match_id,
             team_side=TeamSide.HOME,
             formation=MatchFormation.FOUR_THREE_THREE,
-            players=self._lineup(home_players, captain_index=9),
+            players=self._lineup(home_players),
         )
         self.set_lineup.execute(
             match_id=match_id,
             team_side=TeamSide.AWAY,
             formation=MatchFormation.FOUR_FOUR_TWO,
-            players=self._lineup(away_players, captain_index=4),
+            players=self._lineup(away_players),
         )
         if fixture.score is None:
             return
@@ -323,12 +329,11 @@ class Command(BaseCommand):
         self.rescind_card.execute(match_id=match_id, card_id=rescinded_card_id)
 
     @staticmethod
-    def _lineup(player_ids, *, captain_index: int) -> list[LineupPlayerInput]:
+    def _lineup(player_ids) -> list[LineupPlayerInput]:
         return [
             LineupPlayerInput(
                 player_id=player_id,
                 shirt_number=index,
-                is_captain=index == captain_index,
             )
             for index, player_id in enumerate(player_ids, start=1)
         ]

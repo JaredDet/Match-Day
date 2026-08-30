@@ -13,18 +13,25 @@ def _players(count=11):
         {
             "player_id": str(uuid.uuid4()),
             "shirt_number": index,
-            "is_captain": index == 1,
         }
         for index in range(1, count + 1)
     ]
 
 
 def test_parses_formation_enum_and_players():
-    request = SetMatchLineupRequest(data={"formation": "4-3-3", "players": _players()})
+    captain_id = uuid.uuid4()
+    request = SetMatchLineupRequest(
+        data={
+            "formation": "4-3-3",
+            "captain_id": str(captain_id),
+            "players": _players(),
+        }
+    )
 
     assert request.is_valid(), request.errors
     assert request.validated_data["formation"] == MatchFormation.FOUR_THREE_THREE
     assert len(request.validated_data["players"]) == 11
+    assert request.validated_data["captain_id"] == captain_id
 
 
 @pytest.mark.parametrize("count", [0, 10, 12])

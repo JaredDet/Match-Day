@@ -3,8 +3,6 @@ from datetime import UTC, datetime
 import pytest
 
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
-from modules.matches.domain.match_lineup_player import MatchLineupPlayer
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 from modules.teams.infrastructure.query_repository.team_query_repository import (
@@ -83,13 +81,8 @@ def test_gets_team_statistics_players_captain_and_last_five_matches():
         match.home_goal_count, match.away_goal_count = score
         match.save()
         matches.append(match)
-    MatchLineupPlayer.objects.create(
-        match=matches[-1],
-        player=captain,
-        team_side=TeamSide.HOME,
-        shirt_number=10,
-        is_captain=True,
-    )
+    team.captain = captain
+    team.save()
 
     result = TeamQueryRepository().get(team.id)
 
