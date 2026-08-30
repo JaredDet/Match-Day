@@ -7,9 +7,9 @@ class MatchErrors:
         "Tarjeta no encontrada",
         ErrorType.NOT_FOUND,
     )
-    CardAlreadyCancelled = AppException(
-        "card_already_cancelled",
-        "La tarjeta ya fue anulada",
+    CardAlreadyRescinded = AppException(
+        "card_already_rescinded",
+        "La tarjeta ya fue retirada",
         ErrorType.CONFLICT,
     )
     GoalNotFound = AppException(
@@ -17,8 +17,8 @@ class MatchErrors:
         "Gol no encontrado",
         ErrorType.NOT_FOUND,
     )
-    GoalAlreadyCancelled = AppException(
-        "goal_already_cancelled",
+    GoalAlreadyDisallowed = AppException(
+        "goal_already_disallowed",
         "El gol ya fue anulado",
         ErrorType.CONFLICT,
     )

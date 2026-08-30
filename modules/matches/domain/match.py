@@ -140,17 +140,17 @@ class Match(models.Model):
             minute=minute,
         )
 
-    def cancel_goal(self, goal: Goal) -> None:
+    def disallow_goal(self, goal: Goal) -> None:
         self._ensure_live()
-        goal.cancel()
+        goal.disallow()
         if goal.team_side == TeamSide.HOME:
             self.home_goal_count -= 1
         else:
             self.away_goal_count -= 1
 
-    def cancel_card(self, card: Card) -> None:
+    def rescind_card(self, card: Card) -> None:
         self._ensure_live()
-        card.cancel()
+        card.rescind()
         if card.team_side == TeamSide.HOME:
             self.home_card_count -= 1
         else:

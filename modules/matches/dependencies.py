@@ -1,11 +1,11 @@
 import injector
 
-from modules.matches.application.commands.cancel_card_use_case import CancelCardUseCase
-from modules.matches.application.commands.cancel_goal_use_case import CancelGoalUseCase
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
+from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
@@ -28,7 +28,7 @@ class MatchesModule(injector.Module):
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
         binder.bind(StartMatchUseCase, to=StartMatchUseCase, scope=injector.singleton)
-        binder.bind(CancelGoalUseCase, to=CancelGoalUseCase, scope=injector.singleton)
-        binder.bind(CancelCardUseCase, to=CancelCardUseCase, scope=injector.singleton)
+        binder.bind(DisallowGoalUseCase, to=DisallowGoalUseCase, scope=injector.singleton)
+        binder.bind(RescindCardUseCase, to=RescindCardUseCase, scope=injector.singleton)
         binder.bind(GetMatchQuery, to=GetMatchQuery, scope=injector.singleton)
         binder.bind(ListMatchesQuery, to=ListMatchesQuery, scope=injector.singleton)

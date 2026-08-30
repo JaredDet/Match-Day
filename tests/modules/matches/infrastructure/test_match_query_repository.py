@@ -14,7 +14,7 @@ from tests.mothers.matches.match_mother import MatchMother
 pytestmark = pytest.mark.django_db
 
 
-def test_builds_chronological_match_detail_without_cancelled_events():
+def test_builds_chronological_match_detail_without_disallowed_events():
     match = MatchMother.create(status=MatchStatus.LIVE)
     late_goal = match.register_goal(
         team_side=TeamSide.HOME,
@@ -27,16 +27,16 @@ def test_builds_chronological_match_detail_without_cancelled_events():
         card_type=CardType.YELLOW,
         minute=20,
     )
-    cancelled_goal = match.register_goal(
+    disallowed_goal = match.register_goal(
         team_side=TeamSide.AWAY,
         player_name="Gol anulado",
         minute=10,
     )
-    match.cancel_goal(cancelled_goal)
+    match.disallow_goal(disallowed_goal)
     match.save()
     late_goal.save()
     early_card.save()
-    cancelled_goal.save()
+    disallowed_goal.save()
 
     result = MatchQueryRepository().get(match.id)
 

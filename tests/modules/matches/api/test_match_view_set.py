@@ -264,7 +264,7 @@ def test_rejects_card_when_match_is_not_live():
     assert match.cards.count() == 0
 
 
-def test_cancels_goal_and_decrements_score_through_injected_use_case():
+def test_disallows_goal_and_decrements_score_through_injected_use_case():
     match = Match.schedule(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
@@ -279,16 +279,16 @@ def test_cancels_goal_and_decrements_score_through_injected_use_case():
     match.save()
     goal.save()
 
-    response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
+    response = APIClient().post(reverse("matches-disallow-goal", args=[match.id, goal.id]))
 
     assert response.status_code == 204
     goal.refresh_from_db()
     match.refresh_from_db()
-    assert goal.cancelled_at is not None
+    assert goal.disallowed_at is not None
     assert match.home_goal_count == 0
 
 
-def test_rejects_cancelling_goal_twice():
+def test_rejects_disallowing_goal_twice():
     match = Match.schedule(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
@@ -303,17 +303,17 @@ def test_rejects_cancelling_goal_twice():
     match.save()
     goal.save()
 
-    first_response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
-    response = APIClient().post(reverse("matches-cancel-goal", args=[match.id, goal.id]))
+    first_response = APIClient().post(reverse("matches-disallow-goal", args=[match.id, goal.id]))
+    response = APIClient().post(reverse("matches-disallow-goal", args=[match.id, goal.id]))
 
     assert first_response.status_code == 204
     assert response.status_code == 409
-    assert response.data["code"] == "goal_already_cancelled"
+    assert response.data["code"] == "goal_already_disallowed"
     match.refresh_from_db()
     assert match.away_goal_count == 0
 
 
-def test_cancels_card_and_decrements_counter_through_injected_use_case():
+def test_rescinds_card_and_decrements_counter_through_injected_use_case():
     match = Match.schedule(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
@@ -329,16 +329,16 @@ def test_cancels_card_and_decrements_counter_through_injected_use_case():
     match.save()
     card.save()
 
-    response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
+    response = APIClient().post(reverse("matches-rescind-card", args=[match.id, card.id]))
 
     assert response.status_code == 204
     card.refresh_from_db()
     match.refresh_from_db()
-    assert card.cancelled_at is not None
+    assert card.rescinded_at is not None
     assert match.away_card_count == 0
 
 
-def test_rejects_cancelling_card_twice():
+def test_rejects_rescinding_card_twice():
     match = Match.schedule(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
@@ -354,12 +354,12 @@ def test_rejects_cancelling_card_twice():
     match.save()
     card.save()
 
-    first_response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
-    response = APIClient().post(reverse("matches-cancel-card", args=[match.id, card.id]))
+    first_response = APIClient().post(reverse("matches-rescind-card", args=[match.id, card.id]))
+    response = APIClient().post(reverse("matches-rescind-card", args=[match.id, card.id]))
 
     assert first_response.status_code == 204
     assert response.status_code == 409
-    assert response.data["code"] == "card_already_cancelled"
+    assert response.data["code"] == "card_already_rescinded"
     match.refresh_from_db()
     assert match.home_card_count == 0
 

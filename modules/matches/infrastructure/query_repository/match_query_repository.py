@@ -102,7 +102,7 @@ class MatchQueryRepository:
         )
 
         events_with_order = []
-        for goal in Goal.objects.filter(match_id=match_id, cancelled_at__isnull=True).values(
+        for goal in Goal.objects.filter(match_id=match_id, disallowed_at__isnull=True).values(
             "id", "team_side", "player_name", "minute", "created_at"
         ):
             events_with_order.append(
@@ -118,7 +118,7 @@ class MatchQueryRepository:
                     ),
                 )
             )
-        for card in Card.objects.filter(match_id=match_id, cancelled_at__isnull=True).values(
+        for card in Card.objects.filter(match_id=match_id, rescinded_at__isnull=True).values(
             "id", "team_side", "player_name", "card_type", "minute", "created_at"
         ):
             event_type = (
