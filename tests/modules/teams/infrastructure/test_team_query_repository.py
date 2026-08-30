@@ -3,6 +3,9 @@ from datetime import UTC, datetime
 import pytest
 
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 from modules.teams.infrastructure.query_repository.team_query_repository import (
     TeamQueryRepository,
@@ -61,3 +64,48 @@ def test_filters_teams_by_partial_case_insensitive_name():
     result = TeamQueryRepository().list(search="ATLÉTICO")
 
     assert [team.name for team in result] == ["Atlético Bahía"]
+
+
+def test_gets_team_statistics_players_captain_and_last_five_matches():
+    team = Team.objects.create(name="Atlético Bahía")
+    opponent = Team.objects.create(name="Deportivo Cordillera")
+    captain = Player.objects.create(team=team, name="Mateo Rojas")
+    Player.objects.create(team=team, name="Lucas Contreras")
+
+    matches = []
+    for day, score in enumerate(((1, 0), (1, 1), (0, 2), (3, 1), (2, 0), (0, 1)), start=1):
+        match = MatchMother.create(
+            home_team=team,
+            away_team=opponent,
+            scheduled_at=datetime(2026, 8, day, 20, tzinfo=UTC),
+            status=MatchStatus.FINISHED,
+        )
+        match.home_goal_count, match.away_goal_count = score
+        match.save()
+        matches.append(match)
+    MatchLineupPlayer.objects.create(
+        match=matches[-1],
+        player=captain,
+        team_side=TeamSide.HOME,
+        shirt_number=10,
+        is_captain=True,
+    )
+
+    result = TeamQueryRepository().get(team.id)
+
+    assert result.name == "Atlético Bahía"
+    assert result.statistics.matches_played == 6
+    assert result.statistics.wins == 3
+    assert result.statistics.draws == 1
+    assert result.statistics.losses == 2
+    assert result.statistics.goals_for == 7
+    assert result.statistics.goals_against == 5
+    assert len(result.recent_matches) == 5
+    assert result.recent_matches[0].match_id == matches[-1].id
+    assert result.recent_matches[0].result == "loss"
+    assert [player.name for player in result.players] == ["Lucas Contreras", "Mateo Rojas"]
+    assert [player.name for player in result.players if player.is_captain] == ["Mateo Rojas"]
+
+
+def test_returns_none_when_getting_unknown_team():
+    assert TeamQueryRepository().get(Team().id) is None

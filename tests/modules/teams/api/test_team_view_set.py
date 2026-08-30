@@ -45,6 +45,46 @@ def test_lists_teams_with_last_result_and_next_match():
     ]
 
 
+def test_gets_team_detail_with_statistics_and_current_players():
+    home_team = Team.objects.create(name="Atlético Bahía")
+    away_team = Team.objects.create(name="Deportivo Cordillera")
+    player = Player.objects.create(team=home_team, name="Mateo Rojas")
+    finished = Match.schedule(
+        home_team=home_team,
+        away_team=away_team,
+        scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
+    )
+    finished.start(datetime(2026, 8, 30, 20, tzinfo=UTC))
+    finished.home_goal_count = 2
+    finished.away_goal_count = 1
+    finished.finish(datetime(2026, 8, 30, 22, tzinfo=UTC))
+    finished.save()
+
+    response = APIClient().get(reverse("teams-detail", args=[home_team.id]))
+
+    assert response.status_code == 200
+    assert response.data["id"] == str(home_team.id)
+    assert response.data["statistics"] == {
+        "matches_played": 1,
+        "wins": 1,
+        "draws": 0,
+        "losses": 0,
+        "goals_for": 2,
+        "goals_against": 1,
+    }
+    assert response.data["players"] == [
+        {"id": str(player.id), "name": "Mateo Rojas", "is_captain": False}
+    ]
+    assert response.data["recent_matches"][0]["result"] == "win"
+
+
+def test_returns_not_found_when_getting_unknown_team():
+    response = APIClient().get(reverse("teams-detail", args=[UUID(int=0)]))
+
+    assert response.status_code == 404
+    assert response.data["code"] == "team_not_found"
+
+
 def test_creates_team_through_injected_use_case():
     response = APIClient().post(
         reverse("teams-list"),

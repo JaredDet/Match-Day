@@ -12,6 +12,7 @@ from modules.teams.api.contracts.requests.register_team_squad_request import (
     RegisterTeamSquadRequest,
 )
 from modules.teams.api.contracts.requests.update_team_request import UpdateTeamRequest
+from modules.teams.api.contracts.responses.get_team_response import GetTeamResponse
 from modules.teams.api.contracts.responses.list_teams_response import ListTeamsResponse
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
@@ -19,6 +20,7 @@ from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
+from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
 
 
@@ -55,6 +57,15 @@ class TeamViewSet(ViewSet):
         query = injector_instance.get(ListTeamsQuery)
         teams = query.execute(**request_contract.validated_data)
         return Response(ListTeamsResponse(teams, many=True).data)
+
+    @extend_schema(
+        operation_id="teams_retrieve",
+        responses={status.HTTP_200_OK: GetTeamResponse},
+    )
+    def retrieve(self, request, pk=None):
+        query = injector_instance.get(GetTeamQuery)
+        team = query.execute(pk)
+        return Response(GetTeamResponse(team).data)
 
     @extend_schema(
         operation_id="teams_update",

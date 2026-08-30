@@ -17,6 +17,7 @@ from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
+from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
 
 
@@ -45,6 +46,7 @@ def test_rejects_unregistered_dependencies():
         ListMatchesQuery,
         GetMatchQuery,
         ListTeamsQuery,
+        GetTeamQuery,
     ],
 )
 def test_resolves_demo_dependencies(dependency):
