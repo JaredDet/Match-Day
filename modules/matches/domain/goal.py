@@ -15,6 +15,11 @@ class Goal(models.Model):
         on_delete=models.CASCADE,
         related_name="goals",
     )
+    player = models.ForeignKey(
+        "teams.Player",
+        on_delete=models.PROTECT,
+        related_name="goals",
+    )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
     player_name = models.CharField(max_length=200)
     minute = models.PositiveSmallIntegerField()

@@ -2,6 +2,11 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    InvalidPlayerTeam = AppException(
+        "invalid_player_team",
+        "El jugador no pertenece a ninguno de los equipos del partido",
+        ErrorType.VALIDATION,
+    )
     CardNotFound = AppException(
         "card_not_found",
         "Tarjeta no encontrada",
@@ -34,22 +39,17 @@ class MatchErrors:
     )
     InvalidState = AppException(
         "invalid_match_state",
-        "El partido no se encuentra en un estado válido para esta operación",
+        "El partido no se encuentra en un estado vÃ¡lido para esta operaciÃ³n",
         ErrorType.CONFLICT,
     )
     InvalidTeams = AppException(
         "invalid_match_teams",
-        "Los equipos deben tener nombres válidos y ser diferentes",
+        "Los equipos deben ser diferentes",
         ErrorType.VALIDATION,
     )
     InvalidFinishTime = AppException(
         "invalid_finish_time",
         "El partido no puede finalizar antes de haber comenzado",
-        ErrorType.VALIDATION,
-    )
-    InvalidPlayerName = AppException(
-        "invalid_player_name",
-        "El nombre del jugador es obligatorio",
         ErrorType.VALIDATION,
     )
     InvalidMinute = AppException(
@@ -59,11 +59,11 @@ class MatchErrors:
     )
     InvalidTeamSide = AppException(
         "invalid_team_side",
-        "El lado del equipo no es válido",
+        "El lado del equipo no es vÃ¡lido",
         ErrorType.VALIDATION,
     )
     InvalidCardType = AppException(
         "invalid_card_type",
-        "El tipo de tarjeta no es válido",
+        "El tipo de tarjeta no es vÃ¡lido",
         ErrorType.VALIDATION,
     )

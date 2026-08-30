@@ -5,8 +5,8 @@ import pytest
 
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
+from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
 
 pytestmark = pytest.mark.django_db
@@ -14,11 +14,8 @@ pytestmark = pytest.mark.django_db
 
 def test_disallows_goal_and_decrements_score():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    goal = match.register_goal(
-        team_side=TeamSide.HOME,
-        player_name="Goleador",
-        minute=34,
-    )
+    player = Player.create(team=match.home_team, name="Goleador")
+    goal = match.register_goal(player=player, minute=34)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
@@ -35,11 +32,8 @@ def test_disallows_goal_and_decrements_score():
 
 def test_rejects_disallowing_goal_twice():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    goal = match.register_goal(
-        team_side=TeamSide.AWAY,
-        player_name="Goleador",
-        minute=20,
-    )
+    player = Player.create(team=match.away_team, name="Goleador")
+    goal = match.register_goal(player=player, minute=20)
     match.disallow_goal(goal)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match

@@ -14,6 +14,8 @@ from modules.matches.errors import MatchErrors
 if TYPE_CHECKING:
     from modules.matches.domain.card import Card, CardType
     from modules.matches.domain.goal import Goal
+    from modules.teams.domain.player import Player
+    from modules.teams.domain.team import Team
 
 
 class MatchStatus(models.TextChoices):
@@ -24,6 +26,16 @@ class MatchStatus(models.TextChoices):
 
 class Match(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    home_team = models.ForeignKey(
+        "teams.Team",
+        on_delete=models.PROTECT,
+        related_name="home_matches",
+    )
+    away_team = models.ForeignKey(
+        "teams.Team",
+        on_delete=models.PROTECT,
+        related_name="away_matches",
+    )
     home_team_name = models.CharField(max_length=200)
     away_team_name = models.CharField(max_length=200)
     fixture_key = models.CharField(max_length=64, unique=True, editable=False)
@@ -46,28 +58,28 @@ class Match(models.Model):
     def schedule(
         cls,
         *,
-        home_team_name: str,
-        away_team_name: str,
+        home_team: Team,
+        away_team: Team,
         scheduled_at: datetime,
     ) -> Match:
-        home = home_team_name.strip() if home_team_name else ""
-        away = away_team_name.strip() if away_team_name else ""
-        if not home or not away or home.casefold() == away.casefold():
+        if home_team.id == away_team.id:
             raise MatchErrors.InvalidTeams
         return cls(
-            home_team_name=home,
-            away_team_name=away,
-            fixture_key=cls.build_fixture_key(home, away, scheduled_at),
+            home_team=home_team,
+            away_team=away_team,
+            home_team_name=home_team.name,
+            away_team_name=away_team.name,
+            fixture_key=cls.build_fixture_key(home_team.id, away_team.id, scheduled_at),
             scheduled_at=scheduled_at,
         )
 
     @staticmethod
     def build_fixture_key(
-        home_team_name: str,
-        away_team_name: str,
+        home_team_id: uuid.UUID,
+        away_team_id: uuid.UUID,
         scheduled_at: datetime,
     ) -> str:
-        teams = sorted((home_team_name.strip().casefold(), away_team_name.strip().casefold()))
+        teams = sorted((str(home_team_id), str(away_team_id)))
         if timezone.is_naive(scheduled_at):
             scheduled_at = scheduled_at.replace(tzinfo=UTC)
         instant = scheduled_at.astimezone(UTC).isoformat()
@@ -91,15 +103,15 @@ class Match(models.Model):
     def register_goal(
         self,
         *,
-        team_side: TeamSide,
-        player_name: str,
+        player: Player,
         minute: int,
         event_id: uuid.UUID | None = None,
     ):
         from modules.matches.domain.goal import Goal
 
         self._ensure_live()
-        normalized_player_name = validate_match_event(team_side, player_name, minute)
+        team_side = self._resolve_team_side(player.team_id)
+        validate_match_event(team_side, minute)
         if team_side == TeamSide.HOME:
             self.home_goal_count += 1
         else:
@@ -107,16 +119,16 @@ class Match(models.Model):
         return Goal(
             id=event_id or uuid.uuid4(),
             match=self,
+            player=player,
             team_side=team_side,
-            player_name=normalized_player_name,
+            player_name=player.name,
             minute=minute,
         )
 
     def register_card(
         self,
         *,
-        team_side: TeamSide,
-        player_name: str,
+        player: Player,
         card_type: CardType,
         minute: int,
         event_id: uuid.UUID | None = None,
@@ -124,7 +136,8 @@ class Match(models.Model):
         from modules.matches.domain.card import Card, CardType
 
         self._ensure_live()
-        normalized_player_name = validate_match_event(team_side, player_name, minute)
+        team_side = self._resolve_team_side(player.team_id)
+        validate_match_event(team_side, minute)
         if not isinstance(card_type, CardType):
             raise MatchErrors.InvalidCardType
         if team_side == TeamSide.HOME:
@@ -134,8 +147,9 @@ class Match(models.Model):
         return Card(
             id=event_id or uuid.uuid4(),
             match=self,
+            player=player,
             team_side=team_side,
-            player_name=normalized_player_name,
+            player_name=player.name,
             card_type=card_type,
             minute=minute,
         )
@@ -160,6 +174,13 @@ class Match(models.Model):
         if self.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
 
+    def _resolve_team_side(self, team_id: uuid.UUID) -> TeamSide:
+        if team_id == self.home_team_id:
+            return TeamSide.HOME
+        if team_id == self.away_team_id:
+            return TeamSide.AWAY
+        raise MatchErrors.InvalidPlayerTeam
+
     class Meta:
         db_table = "matches"
         ordering = ["-scheduled_at"]
@@ -169,11 +190,7 @@ class Match(models.Model):
                 name="valid_match_status",
             ),
             models.CheckConstraint(
-                condition=~models.Q(home_team_name="") & ~models.Q(away_team_name=""),
-                name="match_team_names_not_empty",
-            ),
-            models.CheckConstraint(
-                condition=~models.Q(home_team_name=models.F("away_team_name")),
+                condition=~models.Q(home_team=models.F("away_team")),
                 name="match_teams_are_different",
             ),
             models.CheckConstraint(

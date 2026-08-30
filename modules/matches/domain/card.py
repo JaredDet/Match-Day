@@ -20,6 +20,11 @@ class Card(models.Model):
         on_delete=models.CASCADE,
         related_name="cards",
     )
+    player = models.ForeignKey(
+        "teams.Player",
+        on_delete=models.PROTECT,
+        related_name="cards",
+    )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
     player_name = models.CharField(max_length=200)
     card_type = models.CharField(max_length=10, choices=CardType.choices)

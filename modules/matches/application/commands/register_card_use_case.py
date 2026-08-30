@@ -4,10 +4,11 @@ from django.db import transaction
 from injector import inject
 
 from modules.matches.domain.card import CardType
-from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.repository.card_repository import CardRepository
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
+from modules.teams.errors import TeamErrors
+from modules.teams.infrastructure.repository.player_repository import PlayerRepository
 
 
 class RegisterCardUseCase:
@@ -16,26 +17,29 @@ class RegisterCardUseCase:
         self,
         match_repository: MatchRepository,
         card_repository: CardRepository,
+        player_repository: PlayerRepository,
     ):
         self.match_repository = match_repository
         self.card_repository = card_repository
+        self.player_repository = player_repository
 
     @transaction.atomic
     def execute(
         self,
         *,
         match_id: UUID,
-        team_side: TeamSide,
-        player_name: str,
+        player_id: UUID,
         card_type: CardType,
         minute: int,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
         if match is None:
             raise MatchErrors.NotFound
+        player = self.player_repository.get(player_id)
+        if player is None:
+            raise TeamErrors.PlayerNotFound
         card = match.register_card(
-            team_side=team_side,
-            player_name=player_name,
+            player=player,
             card_type=card_type,
             minute=minute,
         )

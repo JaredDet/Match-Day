@@ -9,16 +9,35 @@ from rest_framework.test import APIClient
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.domain.match_event import TeamSide
+from modules.teams.domain.player import Player
+from modules.teams.domain.team import Team
 
 pytestmark = pytest.mark.django_db
 
 
+def _schedule_match(*, home_team_name, away_team_name, scheduled_at):
+    home_team = Team.objects.create(name=home_team_name.strip())
+    away_team = Team.objects.create(name=away_team_name.strip())
+    return Match.schedule(
+        home_team=home_team,
+        away_team=away_team,
+        scheduled_at=scheduled_at,
+    )
+
+
+def _create_player(match, team_side, name):
+    team = match.home_team if team_side == TeamSide.HOME else match.away_team
+    return Player.objects.create(team=team, name=name)
+
+
 def test_creates_match_through_injected_use_case():
+    home_team = Team.objects.create(name="Colo-Colo")
+    away_team = Team.objects.create(name="Universidad de Chile")
     response = APIClient().post(
         reverse("matches-list"),
         {
-            "home_team_name": "  Colo-Colo ",
-            "away_team_name": " Universidad de Chile ",
+            "home_team_id": str(home_team.id),
+            "away_team_id": str(away_team.id),
             "scheduled_at": (timezone.now() + timedelta(days=1)).isoformat(),
         },
         format="json",
@@ -27,17 +46,18 @@ def test_creates_match_through_injected_use_case():
     assert response.status_code == 201
     match_id = UUID(response.data["id"])
     match = Match.objects.get(id=match_id)
-    assert match.home_team_name == "Colo-Colo"
-    assert match.away_team_name == "Universidad de Chile"
+    assert match.home_team == home_team
+    assert match.away_team == away_team
     assert match.status == MatchStatus.SCHEDULED
 
 
 def test_returns_domain_error_when_teams_are_equal():
+    team = Team.objects.create(name="Colo-Colo")
     response = APIClient().post(
         reverse("matches-list"),
         {
-            "home_team_name": "Colo-Colo",
-            "away_team_name": "colo-colo",
+            "home_team_id": str(team.id),
+            "away_team_id": str(team.id),
             "scheduled_at": (timezone.now() + timedelta(days=1)).isoformat(),
         },
         format="json",
@@ -46,23 +66,25 @@ def test_returns_domain_error_when_teams_are_equal():
     assert response.status_code == 400
     assert response.data == {
         "code": "invalid_match_teams",
-        "message": "Los equipos deben tener nombres válidos y ser diferentes",
+        "message": "Los equipos deben ser diferentes",
     }
 
 
 def test_rejects_duplicate_match_with_reversed_teams():
     scheduled_at = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+    home_team = Team.objects.create(name="Colo-Colo")
+    away_team = Team.objects.create(name="Universidad de Chile")
     Match.schedule(
-        home_team_name="Colo-Colo",
-        away_team_name="Universidad de Chile",
+        home_team=home_team,
+        away_team=away_team,
         scheduled_at=scheduled_at,
     ).save()
 
     response = APIClient().post(
         reverse("matches-list"),
         {
-            "home_team_name": "universidad de chile",
-            "away_team_name": "COLO-COLO",
+            "home_team_id": str(away_team.id),
+            "away_team_id": str(home_team.id),
             "scheduled_at": scheduled_at.isoformat(),
         },
         format="json",
@@ -73,11 +95,13 @@ def test_rejects_duplicate_match_with_reversed_teams():
 
 
 def test_formats_invalid_request_with_common_error_contract():
+    home_team = Team.objects.create(name="Colo-Colo")
+    away_team = Team.objects.create(name="Universidad de Chile")
     response = APIClient().post(
         reverse("matches-list"),
         {
-            "home_team_name": "Colo-Colo",
-            "away_team_name": "Universidad de Chile",
+            "home_team_id": str(home_team.id),
+            "away_team_id": str(away_team.id),
             "scheduled_at": "not-a-date",
         },
         format="json",
@@ -89,7 +113,7 @@ def test_formats_invalid_request_with_common_error_contract():
 
 
 def test_starts_scheduled_match_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now() + timedelta(hours=1),
@@ -106,7 +130,7 @@ def test_starts_scheduled_match_through_injected_use_case():
 
 
 def test_rejects_starting_match_twice():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
@@ -128,7 +152,7 @@ def test_returns_not_found_when_starting_unknown_match():
 
 
 def test_finishes_live_match_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
@@ -146,7 +170,7 @@ def test_finishes_live_match_through_injected_use_case():
 
 
 def test_rejects_finishing_match_that_is_not_live():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
@@ -167,19 +191,19 @@ def test_returns_not_found_when_finishing_unknown_match():
 
 
 def test_registers_goal_and_updates_score_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
     match.save()
+    player = _create_player(match, TeamSide.HOME, "Goleador Local")
 
     response = APIClient().post(
         reverse("matches-register-goal", args=[match.id]),
         {
-            "team_side": TeamSide.HOME,
-            "player_name": "Goleador Local",
+            "player_id": str(player.id),
             "minute": 34,
         },
         format="json",
@@ -194,16 +218,17 @@ def test_registers_goal_and_updates_score_through_injected_use_case():
 
 
 def test_rejects_goal_when_match_is_not_live():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.save()
+    player = _create_player(match, TeamSide.HOME, "Jugador")
 
     response = APIClient().post(
         reverse("matches-register-goal", args=[match.id]),
-        {"team_side": TeamSide.HOME, "player_name": "Jugador", "minute": 1},
+        {"player_id": str(player.id), "minute": 1},
         format="json",
     )
 
@@ -213,19 +238,19 @@ def test_rejects_goal_when_match_is_not_live():
 
 
 def test_registers_card_and_updates_counter_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
     match.save()
+    player = _create_player(match, TeamSide.AWAY, "Defensor visitante")
 
     response = APIClient().post(
         reverse("matches-register-card", args=[match.id]),
         {
-            "team_side": TeamSide.AWAY,
-            "player_name": "Defensor visitante",
+            "player_id": str(player.id),
             "card_type": CardType.RED,
             "minute": 80,
         },
@@ -241,18 +266,18 @@ def test_registers_card_and_updates_counter_through_injected_use_case():
 
 
 def test_rejects_card_when_match_is_not_live():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.save()
+    player = _create_player(match, TeamSide.HOME, "Jugador")
 
     response = APIClient().post(
         reverse("matches-register-card", args=[match.id]),
         {
-            "team_side": TeamSide.HOME,
-            "player_name": "Jugador",
+            "player_id": str(player.id),
             "card_type": CardType.YELLOW,
             "minute": 1,
         },
@@ -265,15 +290,15 @@ def test_rejects_card_when_match_is_not_live():
 
 
 def test_disallows_goal_and_decrements_score_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
+    player = _create_player(match, TeamSide.HOME, "Goleador Local")
     goal = match.register_goal(
-        team_side=TeamSide.HOME,
-        player_name="Goleador Local",
+        player=player,
         minute=34,
     )
     match.save()
@@ -289,15 +314,15 @@ def test_disallows_goal_and_decrements_score_through_injected_use_case():
 
 
 def test_rejects_disallowing_goal_twice():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
+    player = _create_player(match, TeamSide.AWAY, "Goleador Visitante")
     goal = match.register_goal(
-        team_side=TeamSide.AWAY,
-        player_name="Goleador Visitante",
+        player=player,
         minute=50,
     )
     match.save()
@@ -314,15 +339,15 @@ def test_rejects_disallowing_goal_twice():
 
 
 def test_rescinds_card_and_decrements_counter_through_injected_use_case():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
+    player = _create_player(match, TeamSide.AWAY, "Defensor Visitante")
     card = match.register_card(
-        team_side=TeamSide.AWAY,
-        player_name="Defensor Visitante",
+        player=player,
         card_type=CardType.YELLOW,
         minute=51,
     )
@@ -339,15 +364,15 @@ def test_rescinds_card_and_decrements_counter_through_injected_use_case():
 
 
 def test_rejects_rescinding_card_twice():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
+    player = _create_player(match, TeamSide.HOME, "Defensor Local")
     card = match.register_card(
-        team_side=TeamSide.HOME,
-        player_name="Defensor Local",
+        player=player,
         card_type=CardType.RED,
         minute=80,
     )
@@ -365,20 +390,20 @@ def test_rejects_rescinding_card_twice():
 
 
 def test_gets_match_detail_with_unified_event_timeline():
-    match = Match.schedule(
+    match = _schedule_match(
         home_team_name="Colo-Colo",
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now(),
     )
     match.start()
+    goal_player = _create_player(match, TeamSide.HOME, "Goleador Local")
+    card_player = _create_player(match, TeamSide.AWAY, "Defensor Visitante")
     goal = match.register_goal(
-        team_side=TeamSide.HOME,
-        player_name="Goleador Local",
+        player=goal_player,
         minute=30,
     )
     card = match.register_card(
-        team_side=TeamSide.AWAY,
-        player_name="Defensor Visitante",
+        player=card_player,
         card_type=CardType.RED,
         minute=70,
     )
@@ -390,8 +415,13 @@ def test_gets_match_detail_with_unified_event_timeline():
 
     assert response.status_code == 200
     assert response.data["status"] == MatchStatus.LIVE
-    assert response.data["home_team"] == {"name": "Colo-Colo", "goals": 1}
+    assert response.data["home_team"] == {
+        "id": str(match.home_team_id),
+        "name": "Colo-Colo",
+        "goals": 1,
+    }
     assert response.data["away_team"] == {
+        "id": str(match.away_team_id),
         "name": "Universidad de Chile",
         "goals": 0,
     }
@@ -400,6 +430,7 @@ def test_gets_match_detail_with_unified_event_timeline():
         "red_card",
     ]
     assert response.data["events"][0]["id"] == str(goal.id)
+    assert response.data["events"][0]["player_id"] == str(goal_player.id)
 
 
 def test_returns_not_found_when_getting_unknown_match():
@@ -410,13 +441,13 @@ def test_returns_not_found_when_getting_unknown_match():
 
 
 def test_lists_matches_filtered_by_status_and_date():
-    included = Match.schedule(
+    included = _schedule_match(
         home_team_name="Equipo Local",
         away_team_name="Equipo Visitante",
         scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
     )
     included.start()
-    excluded = Match.schedule(
+    excluded = _schedule_match(
         home_team_name="Otro Local",
         away_team_name="Otro Visitante",
         scheduled_at=datetime(2026, 8, 31, 20, tzinfo=UTC),
@@ -436,8 +467,16 @@ def test_lists_matches_filtered_by_status_and_date():
             "id": str(included.id),
             "status": "live",
             "scheduled_at": "2026-08-30T20:00:00Z",
-            "home_team": {"name": "Equipo Local", "goals": 0},
-            "away_team": {"name": "Equipo Visitante", "goals": 0},
+            "home_team": {
+                "id": str(included.home_team_id),
+                "name": "Equipo Local",
+                "goals": 0,
+            },
+            "away_team": {
+                "id": str(included.away_team_id),
+                "name": "Equipo Visitante",
+                "goals": 0,
+            },
         }
     ]
 

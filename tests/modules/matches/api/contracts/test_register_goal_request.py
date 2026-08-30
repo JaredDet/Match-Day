@@ -1,20 +1,18 @@
+from uuid import uuid4
+
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
-from modules.matches.domain.match_event import TeamSide
 
 
-def test_parses_team_side_string_as_enum():
-    request = RegisterGoalRequest(
-        data={"team_side": "home", "player_name": "Jugador", "minute": 10}
-    )
+def test_parses_player_id():
+    player_id = uuid4()
+    request = RegisterGoalRequest(data={"player_id": str(player_id), "minute": 10})
 
     assert request.is_valid(), request.errors
-    assert request.validated_data["team_side"] is TeamSide.HOME
+    assert request.validated_data["player_id"] == player_id
 
 
-def test_rejects_unknown_team_side():
-    request = RegisterGoalRequest(
-        data={"team_side": "neutral", "player_name": "Jugador", "minute": 10}
-    )
+def test_rejects_invalid_player_id():
+    request = RegisterGoalRequest(data={"player_id": "invalid", "minute": 10})
 
     assert not request.is_valid()
-    assert "team_side" in request.errors
+    assert "player_id" in request.errors

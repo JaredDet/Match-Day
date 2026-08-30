@@ -6,6 +6,7 @@ from modules.matches.domain.match_event import TeamSide
 
 
 class TeamDetailResponse(serializers.Serializer):
+    id = serializers.UUIDField()
     name = serializers.CharField()
     goals = serializers.IntegerField()
 
@@ -14,6 +15,7 @@ class MatchEventResponse(serializers.Serializer):
     id = serializers.UUIDField()
     type = serializers.ChoiceField(choices=[(event.value, event.value) for event in MatchEventType])
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
+    player_id = serializers.UUIDField()
     player_name = serializers.CharField()
     minute = serializers.IntegerField()
 

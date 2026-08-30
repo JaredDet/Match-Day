@@ -5,31 +5,31 @@ import pytest
 
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
 )
+from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
 
 pytestmark = pytest.mark.django_db
 
 
 def test_builds_chronological_match_detail_without_disallowed_events():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(status=MatchStatus.LIVE, persist_teams=True)
+    home_player = Player.objects.create(team=match.home_team, name="Goleador")
+    away_player = Player.objects.create(team=match.away_team, name="Defensor")
+    cancelled_player = Player.objects.create(team=match.away_team, name="Gol anulado")
     late_goal = match.register_goal(
-        team_side=TeamSide.HOME,
-        player_name="Goleador",
+        player=home_player,
         minute=60,
     )
     early_card = match.register_card(
-        team_side=TeamSide.AWAY,
-        player_name="Defensor",
+        player=away_player,
         card_type=CardType.YELLOW,
         minute=20,
     )
     disallowed_goal = match.register_goal(
-        team_side=TeamSide.AWAY,
-        player_name="Gol anulado",
+        player=cancelled_player,
         minute=10,
     )
     match.disallow_goal(disallowed_goal)
@@ -40,15 +40,28 @@ def test_builds_chronological_match_detail_without_disallowed_events():
 
     result = MatchQueryRepository().get(match.id)
 
-    assert result.home_team.name == match.home_team_name
+    assert result.home_team.name == match.home_team.name
+    assert result.home_team.id == match.home_team_id
     assert result.home_team.goals == 1
     assert result.away_team.goals == 0
     assert [event.type for event in result.events] == ["yellow_card", "goal"]
     assert [event.minute for event in result.events] == [20, 60]
+    assert [event.player_id for event in result.events] == [away_player.id, home_player.id]
 
 
 def test_returns_none_when_match_does_not_exist():
     assert MatchQueryRepository().get(uuid4()) is None
+
+
+def test_match_detail_keeps_team_name_snapshot_after_team_is_renamed():
+    match = MatchMother.create(persist_teams=True)
+    match.save()
+    match.home_team.rename("Nombre nuevo")
+    match.home_team.save()
+
+    result = MatchQueryRepository().get(match.id)
+
+    assert result.home_team.name == "Colo-Colo"
 
 
 def test_lists_matches_filtered_by_status_and_date_in_scheduled_order():
@@ -57,23 +70,27 @@ def test_lists_matches_filtered_by_status_and_date_in_scheduled_order():
         away_team_name="Equipo D",
         scheduled_at=datetime(2026, 8, 30, 22, tzinfo=UTC),
         status=MatchStatus.LIVE,
+        persist_teams=True,
     )
     earlier = MatchMother.create(
         home_team_name="Equipo A",
         away_team_name="Equipo B",
         scheduled_at=datetime(2026, 8, 30, 18, tzinfo=UTC),
         status=MatchStatus.LIVE,
+        persist_teams=True,
     )
     different_status = MatchMother.create(
         home_team_name="Equipo E",
         away_team_name="Equipo F",
         scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
+        persist_teams=True,
     )
     different_date = MatchMother.create(
         home_team_name="Equipo G",
         away_team_name="Equipo H",
         scheduled_at=datetime(2026, 8, 31, 18, tzinfo=UTC),
         status=MatchStatus.LIVE,
+        persist_teams=True,
     )
     for match in (later, earlier, different_status, different_date):
         match.save()

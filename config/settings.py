@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "modules.teams.apps.TeamsConfig",
     "modules.matches.apps.MatchesConfig",
 ]
 

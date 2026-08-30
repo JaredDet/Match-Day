@@ -6,8 +6,8 @@ import pytest
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
+from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
 
 pytestmark = pytest.mark.django_db
@@ -15,12 +15,8 @@ pytestmark = pytest.mark.django_db
 
 def test_rescinds_card_and_decrements_counter():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    card = match.register_card(
-        team_side=TeamSide.AWAY,
-        player_name="Defensor",
-        card_type=CardType.YELLOW,
-        minute=51,
-    )
+    player = Player.create(team=match.away_team, name="Defensor")
+    card = match.register_card(player=player, card_type=CardType.YELLOW, minute=51)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
     card_repository = Mock()
@@ -37,12 +33,8 @@ def test_rescinds_card_and_decrements_counter():
 
 def test_rejects_rescinding_card_twice():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    card = match.register_card(
-        team_side=TeamSide.HOME,
-        player_name="Defensor",
-        card_type=CardType.RED,
-        minute=75,
-    )
+    player = Player.create(team=match.home_team, name="Defensor")
+    card = match.register_card(player=player, card_type=CardType.RED, minute=75)
     match.rescind_card(card)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match

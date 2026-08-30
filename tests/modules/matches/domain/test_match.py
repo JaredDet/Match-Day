@@ -6,33 +6,40 @@ from django.utils import timezone
 
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.errors import MatchErrors
+from modules.teams.domain.team import Team
 from tests.mothers.matches.match_mother import MatchMother
 
 
-def test_schedules_match_with_normalized_team_names():
+def test_schedules_match_with_teams():
     scheduled_at = timezone.now() + timedelta(days=1)
+    home_team = Team.create(name="Colo-Colo")
+    away_team = Team.create(name="Universidad de Chile")
 
     match = Match.schedule(
-        home_team_name="  Colo-Colo ",
-        away_team_name=" Universidad de Chile  ",
+        home_team=home_team,
+        away_team=away_team,
         scheduled_at=scheduled_at,
     )
 
-    assert match.home_team_name == "Colo-Colo"
-    assert match.away_team_name == "Universidad de Chile"
+    assert match.home_team == home_team
+    assert match.away_team == away_team
+    assert match.home_team_name == home_team.name
+    assert match.away_team_name == away_team.name
     assert match.scheduled_at == scheduled_at
     assert match.status == MatchStatus.SCHEDULED
 
 
-def test_fixture_key_ignores_team_order_case_and_timezone_offset():
+def test_fixture_key_ignores_team_order_and_timezone_offset():
+    home_team = Team.create(name="Colo-Colo")
+    away_team = Team.create(name="Universidad de Chile")
     first = Match.schedule(
-        home_team_name="Colo-Colo",
-        away_team_name="Universidad de Chile",
+        home_team=home_team,
+        away_team=away_team,
         scheduled_at=datetime(2026, 9, 1, 20, tzinfo=UTC),
     )
     second = Match.schedule(
-        home_team_name="universidad de chile",
-        away_team_name="COLO-COLO",
+        home_team=away_team,
+        away_team=home_team,
         scheduled_at=datetime(
             2026,
             9,
@@ -45,19 +52,12 @@ def test_fixture_key_ignores_team_order_case_and_timezone_offset():
     assert first.fixture_key == second.fixture_key
 
 
-@pytest.mark.parametrize(
-    ("home", "away"),
-    [
-        ("", "Visitante"),
-        ("Local", ""),
-        ("Colo-Colo", "colo-colo"),
-    ],
-)
-def test_rejects_invalid_teams(home, away):
+def test_rejects_using_same_team_on_both_sides():
+    team = Team.create(name="Colo-Colo")
     with pytest.raises(type(MatchErrors.InvalidTeams)) as exc_info:
         Match.schedule(
-            home_team_name=home,
-            away_team_name=away,
+            home_team=team,
+            away_team=team,
             scheduled_at=timezone.now(),
         )
 

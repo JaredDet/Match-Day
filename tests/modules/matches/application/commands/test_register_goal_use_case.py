@@ -5,8 +5,8 @@ import pytest
 
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
+from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
 
 pytestmark = pytest.mark.django_db
@@ -17,12 +17,14 @@ def test_registers_goal_and_updates_match_score():
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
-    use_case = RegisterGoalUseCase(match_repository, goal_repository)
+    player_repository = Mock()
+    player = Player.create(team=match.away_team, name="Goleador visitante")
+    player_repository.get.return_value = player
+    use_case = RegisterGoalUseCase(match_repository, goal_repository, player_repository)
 
     goal_id = use_case.execute(
         match_id=match.id,
-        team_side=TeamSide.AWAY,
-        player_name=" Goleador visitante ",
+        player_id=player.id,
         minute=72,
     )
 
@@ -38,13 +40,13 @@ def test_raises_not_found_without_persisting():
     match_repository = Mock()
     match_repository.get_for_update.return_value = None
     goal_repository = Mock()
-    use_case = RegisterGoalUseCase(match_repository, goal_repository)
+    player_repository = Mock()
+    use_case = RegisterGoalUseCase(match_repository, goal_repository, player_repository)
 
     with pytest.raises(type(MatchErrors.NotFound)):
         use_case.execute(
             match_id=uuid.uuid4(),
-            team_side=TeamSide.HOME,
-            player_name="Jugador",
+            player_id=uuid.uuid4(),
             minute=1,
         )
 
@@ -57,13 +59,15 @@ def test_does_not_persist_goal_when_match_is_not_live():
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
-    use_case = RegisterGoalUseCase(match_repository, goal_repository)
+    player_repository = Mock()
+    player = Player.create(team=match.home_team, name="Jugador")
+    player_repository.get.return_value = player
+    use_case = RegisterGoalUseCase(match_repository, goal_repository, player_repository)
 
     with pytest.raises(type(MatchErrors.InvalidState)):
         use_case.execute(
             match_id=match.id,
-            team_side=TeamSide.HOME,
-            player_name="Jugador",
+            player_id=player.id,
             minute=1,
         )
 

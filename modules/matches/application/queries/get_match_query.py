@@ -25,6 +25,7 @@ class MatchEventDetail:
     id: UUID
     type: MatchEventType
     team_side: TeamSide
+    player_id: UUID
     player_name: str
     minute: int
 

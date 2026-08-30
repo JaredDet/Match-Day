@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+import uuid
+
+from django.db import models
+from django.db.models.functions import Lower
+
+from modules.teams.errors import TeamErrors
+
+
+class Team(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def create(cls, *, name: str) -> Team:
+        return cls(name=cls._normalize_name(name))
+
+    def rename(self, name: str) -> None:
+        self.name = self._normalize_name(name)
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        normalized_name = " ".join(name.split()) if name else ""
+        if not normalized_name:
+            raise TeamErrors.InvalidName
+        return normalized_name
+
+    class Meta:
+        db_table = "teams"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="unique_team_name_case_insensitive",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(name=""),
+                name="team_name_not_empty",
+            ),
+        ]

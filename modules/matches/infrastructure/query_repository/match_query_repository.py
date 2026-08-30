@@ -34,6 +34,8 @@ class MatchQueryRepository:
             "id",
             "status",
             "scheduled_at",
+            "home_team_id",
+            "away_team_id",
             "home_team_name",
             "away_team_name",
             "home_goal_count",
@@ -45,10 +47,12 @@ class MatchQueryRepository:
                 status=MatchStatus(row["status"]),
                 scheduled_at=row["scheduled_at"],
                 home_team=TeamDetail(
+                    id=row["home_team_id"],
                     name=row["home_team_name"],
                     goals=row["home_goal_count"],
                 ),
                 away_team=TeamDetail(
+                    id=row["away_team_id"],
                     name=row["away_team_name"],
                     goals=row["away_goal_count"],
                 ),
@@ -67,6 +71,8 @@ class MatchQueryRepository:
                 "scheduled_at",
                 "started_at",
                 "finished_at",
+                "home_team_id",
+                "away_team_id",
                 "home_team_name",
                 "away_team_name",
                 "home_goal_count",
@@ -85,10 +91,12 @@ class MatchQueryRepository:
             started_at=match["started_at"],
             finished_at=match["finished_at"],
             home_team=TeamDetail(
+                id=match["home_team_id"],
                 name=match["home_team_name"],
                 goals=match["home_goal_count"],
             ),
             away_team=TeamDetail(
+                id=match["away_team_id"],
                 name=match["away_team_name"],
                 goals=match["away_goal_count"],
             ),
@@ -103,7 +111,7 @@ class MatchQueryRepository:
 
         events_with_order = []
         for goal in Goal.objects.filter(match_id=match_id, disallowed_at__isnull=True).values(
-            "id", "team_side", "player_name", "minute", "created_at"
+            "id", "team_side", "player_id", "player_name", "minute", "created_at"
         ):
             events_with_order.append(
                 (
@@ -113,13 +121,20 @@ class MatchQueryRepository:
                         id=goal["id"],
                         type=MatchEventType.GOAL,
                         team_side=TeamSide(goal["team_side"]),
+                        player_id=goal["player_id"],
                         player_name=goal["player_name"],
                         minute=goal["minute"],
                     ),
                 )
             )
         for card in Card.objects.filter(match_id=match_id, rescinded_at__isnull=True).values(
-            "id", "team_side", "player_name", "card_type", "minute", "created_at"
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "card_type",
+            "minute",
+            "created_at",
         ):
             event_type = (
                 MatchEventType.YELLOW_CARD
@@ -134,6 +149,7 @@ class MatchQueryRepository:
                         id=card["id"],
                         type=event_type,
                         team_side=TeamSide(card["team_side"]),
+                        player_id=card["player_id"],
                         player_name=card["player_name"],
                         minute=card["minute"],
                     ),
