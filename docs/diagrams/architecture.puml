@@ -1,5 +1,5 @@
 @startuml Matchday Architecture
-title Matchday V2 - Arquitectura modular
+title Matchday V3 - Arquitectura modular
 
 skinparam componentStyle rectangle
 skinparam linetype ortho
@@ -12,10 +12,12 @@ package "core" {
 }
 
 package "teams" {
-  component "Team API\nViewSet + Contracts" as TeamApi
+  component "Team and Player API\nViewSets + Contracts" as TeamApi
   component "Team Commands" as TeamCommands
+  component "Team and Player Queries" as TeamQueries
   component "Team Domain\nTeam + Player" as TeamDomain
   component "Team Repositories" as TeamRepositories
+  component "Team Query Repositories" as TeamQueryRepositories
 }
 
 package "matches" {
@@ -32,6 +34,7 @@ database "Django ORM\nSQLite / PostgreSQL" as Database
 TeamApi --> Injector
 MatchApi --> Injector
 Injector --> TeamCommands
+Injector --> TeamQueries
 Injector --> MatchCommands
 Injector --> MatchQueries
 
@@ -42,6 +45,7 @@ MatchApi --> ApiFields
 
 TeamCommands --> TeamDomain
 TeamCommands --> TeamRepositories
+TeamQueries --> TeamQueryRepositories
 MatchCommands --> MatchDomain
 MatchCommands --> MatchRepositories
 MatchCommands --> TeamRepositories : jugadores / equipos
@@ -49,11 +53,17 @@ MatchQueries --> MatchQueryRepository
 
 TeamDomain --> TextUtils
 TeamRepositories --> Database
+TeamQueryRepositories --> Database
 MatchRepositories --> Database
 MatchQueryRepository --> Database
 
 note bottom of MatchQueryRepository
   Construye DTOs de lectura optimizados:
   ListMatches y GetMatch.
+end note
+
+note bottom of TeamQueryRepositories
+  Construye DTOs para List/Get de
+  equipos y jugadores, con estadísticas.
 end note
 @enduml

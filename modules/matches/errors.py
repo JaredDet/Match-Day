@@ -9,7 +9,7 @@ class MatchErrors:
     )
     InvalidLineupCaptain = AppException(
         "invalid_lineup_captain",
-        "La alineación debe tener exactamente un capitán",
+        "El capitán seleccionado debe formar parte de la alineación",
         ErrorType.VALIDATION,
     )
     DuplicateLineupPlayer = AppException(

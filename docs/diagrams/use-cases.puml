@@ -1,5 +1,5 @@
 @startuml Matchday Use Cases
-title Matchday V2 - Casos de uso
+title Matchday V3 - Casos de uso
 
 left to right direction
 skinparam packageStyle rectangle
@@ -12,6 +12,12 @@ rectangle "Teams" {
   usecase "Actualizar equipo" as UpdateTeam
   usecase "Registrar jugador" as RegisterPlayer
   usecase "Cargar nómina" as RegisterSquad
+  usecase "Asignar capitán habitual" as SetCaptain
+  usecase "Actualizar jugador" as UpdatePlayer
+  usecase "Listar equipos" as ListTeams
+  usecase "Ver detalle del equipo" as GetTeam
+  usecase "Listar jugadores" as ListPlayers
+  usecase "Ver detalle del jugador" as GetPlayer
 }
 
 rectangle "Matches" {
@@ -32,6 +38,12 @@ Admin --> CreateTeam
 Admin --> UpdateTeam
 Admin --> RegisterPlayer
 Admin --> RegisterSquad
+Admin --> SetCaptain
+Admin --> UpdatePlayer
+Admin --> ListTeams
+Admin --> GetTeam
+Admin --> ListPlayers
+Admin --> GetPlayer
 Admin --> CreateMatch
 Admin --> SetLineup
 Admin --> StartMatch
@@ -45,6 +57,10 @@ Admin --> ListMatches
 Admin --> GetMatch
 Viewer --> ListMatches
 Viewer --> GetMatch
+Viewer --> ListTeams
+Viewer --> GetTeam
+Viewer --> ListPlayers
+Viewer --> GetPlayer
 
 RegisterSquad ..> CreateTeam : equipo existente
 SetLineup ..> RegisterSquad : jugadores existentes

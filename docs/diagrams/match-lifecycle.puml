@@ -1,5 +1,5 @@
 @startuml Match Lifecycle
-title Matchday V2 - Ciclo de vida del partido
+title Matchday V3 - Ciclo de vida del partido
 
 [*] --> Scheduled : CreateMatch
 Scheduled --> Scheduled : UpdateMatchDetails
@@ -16,8 +16,16 @@ state Scheduled {
   [*] --> Configurable
   Configurable : estadio y árbitro opcionales
   Configurable : formación local y visitante
-  Configurable : 11 jugadores y un capitán por equipo
+  Configurable : 11 jugadores y cero o un capitán por equipo
 }
+
+note right of Configurable
+  captain_id es opcional.
+  Si falta, se usa el capitán habitual
+  solo cuando forma parte de los once.
+  En caso contrario se registra el problema
+  sin inventar un reemplazo.
+end note
 
 note right of Live
   El marcador y los contadores

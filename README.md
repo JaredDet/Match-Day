@@ -54,7 +54,8 @@ http://127.0.0.1:8000/api/docs/
 
 Crea cuatro equipos ficticios, sus 44 jugadores y diez partidos: seis
 finalizados y cuatro programados. El partido demostrativo principal incluye
-estadio, árbitro, formaciones, alineaciones, goles y tarjetas:
+estadio, árbitro, formaciones, alineaciones, capitanes habituales, goles y
+tarjetas:
 
 ```bash
 uv run python manage.py seed_demo_match
@@ -63,8 +64,8 @@ uv run python manage.py seed_demo_match
 El comando es idempotente: reutiliza los equipos, jugadores y partidos que ya
 existan. La salida indica cuántos partidos nuevos se crearon.
 
-Para ejecutar las consultas de listado y detalle y mostrar sus respuestas como
-JSON:
+Para ejecutar los listados y detalles de partidos, equipos y jugadores y
+mostrar sus respuestas como JSON:
 
 ```bash
 uv run python manage.py show_demo_match
@@ -72,9 +73,23 @@ uv run python manage.py show_demo_match
 
 `show_demo_match` requiere haber ejecutado primero `seed_demo_match`.
 
+## Recursos principales
+
+- `/api/matches`: partidos, alineaciones, marcador y eventos.
+- `/api/teams`: equipos, plantilla y capitán habitual.
+- `/api/players`: jugadores, apariciones, goles e historial reciente.
+
+Al configurar una alineación, `captain_id` es opcional. Si se omite, se intenta
+usar el capitán habitual. Si no forma parte de los once jugadores, la alineación
+queda sin capitán y se registra una advertencia para que el operador la revise;
+nunca se elige otro jugador automáticamente.
+
+La especificación completa de requests, filtros y responses está disponible en
+la documentación OpenAPI del proyecto.
+
 ## Diagramas
 
-Los diagramas PlantUML de la V2 se encuentran en `docs/diagrams`:
+Los diagramas PlantUML de la V3 se encuentran en `docs/diagrams`:
 
 - `domain-model.puml`: entidades, relaciones y reglas principales.
 - `architecture.puml`: módulos y dependencias entre capas.

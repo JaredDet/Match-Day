@@ -1,5 +1,5 @@
 @startuml Matchday Domain Model
-title Matchday V2 - Modelo de dominio
+title Matchday V3 - Modelo de dominio
 
 hide empty members
 skinparam classAttributeIconSize 0
@@ -9,11 +9,13 @@ package "teams" {
   class Team {
     +UUID id
     +string name
+    +UUID captain_id
     +datetime created_at
     +datetime updated_at
     --
     +create(name): Team
     +rename(name): void
+    +assign_captain(player): void
   }
 
   class Player {
@@ -120,6 +122,7 @@ package "matches" {
 }
 
 Team "1" -- "0..*" Player : plantilla
+Team "0..1" --> "0..1" Player : capitán habitual
 Team "1" <-- "0..*" Match : local
 Team "1" <-- "0..*" Match : visitante
 Match "1" *-- "0..22" MatchLineupPlayer : alineación
@@ -145,6 +148,9 @@ note bottom of MatchLineupPlayer
   Por equipo y partido:
   - 11 jugadores
   - dorsales únicos
-  - exactamente un capitán
+  - cero o un capitán
+  Si captain_id se omite, se usa el
+  habitual solo cuando está alineado.
+  Nunca se selecciona otro automáticamente.
 end note
 @enduml
