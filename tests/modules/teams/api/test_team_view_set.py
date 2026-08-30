@@ -1,13 +1,48 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from modules.matches.domain.match import Match
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
 pytestmark = pytest.mark.django_db
+
+
+def test_lists_teams_with_last_result_and_next_match():
+    home_team = Team.objects.create(name="Atlético Bahía")
+    away_team = Team.objects.create(name="Deportivo Cordillera")
+    finished = Match.schedule(
+        home_team=home_team,
+        away_team=away_team,
+        scheduled_at=datetime(2026, 8, 30, 20, tzinfo=UTC),
+    )
+    finished.start(datetime(2026, 8, 30, 20, tzinfo=UTC))
+    finished.home_goal_count = 2
+    finished.away_goal_count = 1
+    finished.finish(datetime(2026, 8, 30, 22, tzinfo=UTC))
+    finished.save()
+
+    response = APIClient().get(reverse("teams-list"), {"search": "atlético"})
+
+    assert response.status_code == 200
+    assert response.data == [
+        {
+            "id": str(home_team.id),
+            "name": "Atlético Bahía",
+            "last_match": {
+                "match_id": str(finished.id),
+                "opponent_name": "Deportivo Cordillera",
+                "goals_for": 2,
+                "goals_against": 1,
+                "result": "win",
+            },
+            "next_match": None,
+        }
+    ]
 
 
 def test_creates_team_through_injected_use_case():

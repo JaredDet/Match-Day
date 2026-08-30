@@ -52,15 +52,16 @@ http://127.0.0.1:8000/api/docs/
 
 ## Datos de demostración
 
-Crea dos equipos ficticios, sus jugadores y un partido finalizado con estadio,
-árbitro, formaciones, alineaciones, goles y tarjetas:
+Crea cuatro equipos ficticios, sus 44 jugadores y diez partidos: seis
+finalizados y cuatro programados. El partido demostrativo principal incluye
+estadio, árbitro, formaciones, alineaciones, goles y tarjetas:
 
 ```bash
 uv run python manage.py seed_demo_match
 ```
 
-El comando es idempotente: si el partido demostrativo ya existe, no vuelve a
-crearlo. La salida muestra el identificador generado para poder consultarlo.
+El comando es idempotente: reutiliza los equipos, jugadores y partidos que ya
+existan. La salida indica cuántos partidos nuevos se crearon.
 
 Para ejecutar las consultas de listado y detalle y mostrar sus respuestas como
 JSON:

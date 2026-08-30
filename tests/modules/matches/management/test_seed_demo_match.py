@@ -5,11 +5,13 @@ from django.core.management import call_command
 
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.management.commands.seed_demo_match import find_demo_match
+from modules.teams.domain.player import Player
+from modules.teams.domain.team import Team
 
 pytestmark = pytest.mark.django_db
 
 
-def test_seeds_complete_finished_match_and_is_idempotent():
+def test_seeds_complete_demo_dataset_and_is_idempotent():
     output = StringIO()
 
     call_command("seed_demo_match", stdout=output)
@@ -17,6 +19,11 @@ def test_seeds_complete_finished_match_and_is_idempotent():
 
     match = find_demo_match()
     assert match is not None
+    assert Team.objects.count() == 4
+    assert Player.objects.count() == 44
+    assert Match.objects.count() == 10
+    assert Match.objects.filter(status=MatchStatus.FINISHED).count() == 6
+    assert Match.objects.filter(status=MatchStatus.SCHEDULED).count() == 4
     assert Match.objects.filter(id=match.id).count() == 1
     assert match.status == MatchStatus.FINISHED
     assert match.home_team_name == "Atlético del Puerto"

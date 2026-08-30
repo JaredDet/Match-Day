@@ -6,17 +6,20 @@ from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
 from modules.teams.api.contracts.requests.create_team_request import CreateTeamRequest
+from modules.teams.api.contracts.requests.list_teams_request import ListTeamsRequest
 from modules.teams.api.contracts.requests.register_player_request import RegisterPlayerRequest
 from modules.teams.api.contracts.requests.register_team_squad_request import (
     RegisterTeamSquadRequest,
 )
 from modules.teams.api.contracts.requests.update_team_request import UpdateTeamRequest
+from modules.teams.api.contracts.responses.list_teams_response import ListTeamsResponse
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
+from modules.teams.application.queries.list_teams_query import ListTeamsQuery
 
 
 class TeamViewSet(ViewSet):
@@ -39,6 +42,19 @@ class TeamViewSet(ViewSet):
         use_case = injector_instance.get(CreateTeamUseCase)
         team_id = use_case.execute(**request_contract.validated_data)
         return Response({"id": str(team_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="teams_list",
+        parameters=[ListTeamsRequest],
+        responses={status.HTTP_200_OK: ListTeamsResponse(many=True)},
+    )
+    def list(self, request):
+        request_contract = ListTeamsRequest(data=request.query_params)
+        request_contract.is_valid(raise_exception=True)
+
+        query = injector_instance.get(ListTeamsQuery)
+        teams = query.execute(**request_contract.validated_data)
+        return Response(ListTeamsResponse(teams, many=True).data)
 
     @extend_schema(
         operation_id="teams_update",
