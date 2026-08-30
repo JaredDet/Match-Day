@@ -2,6 +2,11 @@ from core.exceptions import AppException, ErrorType
 
 
 class TeamErrors:
+    AlreadyExists = AppException(
+        "team_already_exists",
+        "Ya existe un equipo con ese nombre",
+        ErrorType.CONFLICT,
+    )
     InvalidPlayerName = AppException(
         "invalid_player_name",
         "El nombre del jugador es obligatorio",
