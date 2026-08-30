@@ -14,6 +14,7 @@ from modules.teams.api.contracts.requests.register_team_squad_request import (
 from modules.teams.api.contracts.requests.set_team_captain_request import (
     SetTeamCaptainRequest,
 )
+from modules.teams.api.contracts.requests.update_player_request import UpdatePlayerRequest
 from modules.teams.api.contracts.requests.update_team_request import UpdateTeamRequest
 from modules.teams.api.contracts.responses.get_team_response import GetTeamResponse
 from modules.teams.api.contracts.responses.list_teams_response import ListTeamsResponse
@@ -25,6 +26,7 @@ from modules.teams.application.commands.register_team_squad_use_case import (
 from modules.teams.application.commands.set_team_captain_use_case import (
     SetTeamCaptainUseCase,
 )
+from modules.teams.application.commands.update_player_use_case import UpdatePlayerUseCase
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
@@ -104,6 +106,28 @@ class TeamViewSet(ViewSet):
         use_case = injector_instance.get(RegisterPlayerUseCase)
         player_id = use_case.execute(team_id=pk, **request_contract.validated_data)
         return Response({"id": str(player_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="teams_update_player",
+        request=UpdatePlayerRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="players/<uuid:player_id>",
+    )
+    def update_player(self, request, pk=None, player_id=None):
+        request_contract = UpdatePlayerRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(UpdatePlayerUseCase)
+        use_case.execute(
+            team_id=pk,
+            player_id=player_id,
+            **request_contract.validated_data,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         operation_id="teams_register_squad",

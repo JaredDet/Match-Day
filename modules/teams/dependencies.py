@@ -6,6 +6,7 @@ from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
 )
 from modules.teams.application.commands.set_team_captain_use_case import SetTeamCaptainUseCase
+from modules.teams.application.commands.update_player_use_case import UpdatePlayerUseCase
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
@@ -23,6 +24,7 @@ class TeamsModule(injector.Module):
         binder.bind(TeamQueryRepository, to=TeamQueryRepository, scope=injector.singleton)
         binder.bind(CreateTeamUseCase, to=CreateTeamUseCase, scope=injector.singleton)
         binder.bind(UpdateTeamUseCase, to=UpdateTeamUseCase, scope=injector.singleton)
+        binder.bind(UpdatePlayerUseCase, to=UpdatePlayerUseCase, scope=injector.singleton)
         binder.bind(SetTeamCaptainUseCase, to=SetTeamCaptainUseCase, scope=injector.singleton)
         binder.bind(RegisterPlayerUseCase, to=RegisterPlayerUseCase, scope=injector.singleton)
         binder.bind(

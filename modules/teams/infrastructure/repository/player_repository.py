@@ -13,6 +13,14 @@ class PlayerRepository:
     def get(self, player_id: UUID) -> Player | None:
         return Player.objects.select_related("team").filter(id=player_id).first()
 
+    def get_for_update(self, player_id: UUID) -> Player | None:
+        return Player.objects.select_for_update().filter(id=player_id).first()
+
+    def exists_other_by_name(self, *, team_id: UUID, name: str, player_id: UUID) -> bool:
+        return (
+            Player.objects.filter(team_id=team_id, name__iexact=name).exclude(id=player_id).exists()
+        )
+
     def get_many(self, player_ids: list[UUID]) -> dict[UUID, Player]:
         return Player.objects.in_bulk(player_ids)
 

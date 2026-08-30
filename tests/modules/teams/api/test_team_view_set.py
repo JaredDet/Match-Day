@@ -164,6 +164,36 @@ def test_registers_player_for_team():
     assert player.name == "Arturo Vidal"
 
 
+def test_updates_player_from_team():
+    team = Team.objects.create(name="Colo-Colo")
+    player = Player.objects.create(team=team, name="Nombre anterior")
+
+    response = APIClient().patch(
+        reverse("teams-update-player", args=[team.id, player.id]),
+        {"name": "  Nombre   nuevo  "},
+        format="json",
+    )
+
+    assert response.status_code == 204
+    player.refresh_from_db()
+    assert player.name == "Nombre nuevo"
+
+
+def test_does_not_update_player_through_another_team():
+    team = Team.objects.create(name="Colo-Colo")
+    other_team = Team.objects.create(name="Universidad de Chile")
+    player = Player.objects.create(team=other_team, name="Jugador rival")
+
+    response = APIClient().patch(
+        reverse("teams-update-player", args=[team.id, player.id]),
+        {"name": "Nombre nuevo"},
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "player_not_found"
+
+
 def test_registers_complete_team_squad():
     team = Team.objects.create(name="Colo-Colo")
 
