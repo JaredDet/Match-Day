@@ -1,6 +1,7 @@
 import pytest
 from django.utils import timezone
 
+from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import TeamSide
@@ -76,3 +77,71 @@ def test_filters_players_by_team_and_unicode_case_insensitive_search():
     result = PlayerQueryRepository().list(search="ÓSCAR", team_id=team.id)
 
     assert [player.name for player in result] == ["Óscar Méndez"]
+
+
+def test_gets_player_statistics_and_recent_match_from_player_perspective():
+    team = Team.objects.create(name="Atlético Bahía")
+    opponent = Team.objects.create(name="Deportivo Cordillera")
+    player = Player.objects.create(team=team, name="Mateo Rojas")
+    team.captain = player
+    team.save()
+    match = MatchMother.create(
+        home_team=team,
+        away_team=opponent,
+        status=MatchStatus.FINISHED,
+    )
+    match.home_goal_count = 2
+    match.away_goal_count = 1
+    match.save()
+    MatchLineupPlayer.objects.create(
+        match=match,
+        player=player,
+        team_side=TeamSide.HOME,
+        shirt_number=10,
+        is_captain=True,
+    )
+    Goal.objects.create(
+        match=match,
+        player=player,
+        team_side=TeamSide.HOME,
+        player_name=player.name,
+        minute=20,
+    )
+    Card.objects.create(
+        match=match,
+        player=player,
+        team_side=TeamSide.HOME,
+        player_name=player.name,
+        card_type=CardType.YELLOW,
+        minute=35,
+    )
+    Card.objects.create(
+        match=match,
+        player=player,
+        team_side=TeamSide.HOME,
+        player_name=player.name,
+        card_type=CardType.RED,
+        minute=70,
+        rescinded_at=timezone.now(),
+    )
+
+    result = PlayerQueryRepository().get(player.id)
+
+    assert result.name == "Mateo Rojas"
+    assert result.is_captain is True
+    assert result.statistics.appearances == 1
+    assert result.statistics.goals == 1
+    assert result.statistics.yellow_cards == 1
+    assert result.statistics.red_cards == 0
+    assert len(result.recent_matches) == 1
+    recent = result.recent_matches[0]
+    assert recent.opponent.id == opponent.id
+    assert recent.opponent.name == "Deportivo Cordillera"
+    assert recent.result == "win"
+    assert recent.goals == 1
+    assert recent.yellow_cards == 1
+    assert recent.red_cards == 0
+
+
+def test_returns_none_when_getting_unknown_player():
+    assert PlayerQueryRepository().get(Player().id) is None

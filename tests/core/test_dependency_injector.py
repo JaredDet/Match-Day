@@ -19,6 +19,7 @@ from modules.teams.application.commands.register_team_squad_use_case import (
 from modules.teams.application.commands.set_team_captain_use_case import SetTeamCaptainUseCase
 from modules.teams.application.commands.update_player_use_case import UpdatePlayerUseCase
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
+from modules.teams.application.queries.get_player_query import GetPlayerQuery
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_players_query import ListPlayersQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
@@ -53,6 +54,7 @@ def test_rejects_unregistered_dependencies():
         ListTeamsQuery,
         GetTeamQuery,
         ListPlayersQuery,
+        GetPlayerQuery,
     ],
 )
 def test_resolves_demo_dependencies(dependency):
