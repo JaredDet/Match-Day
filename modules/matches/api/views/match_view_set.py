@@ -9,6 +9,7 @@ from modules.matches.api.contracts.requests.create_match_request import CreateMa
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
 from modules.matches.api.contracts.requests.update_match_details_request import (
     UpdateMatchDetailsRequest,
 )
@@ -20,12 +21,18 @@ from modules.matches.application.commands.finish_match_use_case import FinishMat
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
+from modules.matches.application.commands.set_match_lineup_use_case import (
+    LineupPlayerInput,
+    SetMatchLineupUseCase,
+)
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.commands.update_match_details_use_case import (
     UpdateMatchDetailsUseCase,
 )
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
+from modules.matches.domain.match_event import TeamSide
+from modules.matches.errors import MatchErrors
 
 
 class MatchViewSet(ViewSet):
@@ -84,6 +91,36 @@ class MatchViewSet(ViewSet):
 
         use_case = injector_instance.get(UpdateMatchDetailsUseCase)
         use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_set_lineup",
+        request=SetMatchLineupRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(
+        detail=True,
+        methods=["put"],
+        url_path="lineups/<str:team_side>",
+    )
+    def set_lineup(self, request, pk=None, team_side=None):
+        request_contract = SetMatchLineupRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        try:
+            resolved_team_side = TeamSide(team_side)
+        except ValueError:
+            raise MatchErrors.InvalidTeamSide from None
+
+        use_case = injector_instance.get(SetMatchLineupUseCase)
+        use_case.execute(
+            match_id=pk,
+            team_side=resolved_team_side,
+            formation=request_contract.validated_data["formation"],
+            players=[
+                LineupPlayerInput(**player) for player in request_contract.validated_data["players"]
+            ],
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(

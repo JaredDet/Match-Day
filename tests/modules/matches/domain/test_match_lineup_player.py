@@ -8,7 +8,7 @@ from tests.mothers.matches.match_mother import MatchMother
 
 def test_adds_player_to_match_lineup():
     match = MatchMother.create()
-    player = Player.create(team=match.home_team, name="CapitÃ¡n local")
+    player = Player.create(team_id=match.home_team_id, name="CapitÃ¡n local")
 
     lineup_player = match.add_lineup_player(
         player=player,
@@ -26,7 +26,7 @@ def test_adds_player_to_match_lineup():
 @pytest.mark.parametrize("shirt_number", [None, True, 0, 100])
 def test_rejects_invalid_shirt_number(shirt_number):
     match = MatchMother.create()
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidShirtNumber)):
         match.add_lineup_player(player=player, shirt_number=shirt_number)
@@ -38,7 +38,7 @@ def test_rejects_player_from_another_team():
         home_team_name="Otro equipo",
         away_team_name="Otro rival",
     )
-    player = Player.create(team=other_match.home_team, name="Jugador externo")
+    player = Player.create(team_id=other_match.home_team_id, name="Jugador externo")
 
     with pytest.raises(type(MatchErrors.InvalidPlayerTeam)):
         match.add_lineup_player(player=player, shirt_number=8)

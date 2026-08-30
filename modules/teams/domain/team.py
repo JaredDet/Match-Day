@@ -5,6 +5,7 @@ import uuid
 from django.db import models
 from django.db.models.functions import Lower
 
+from core.text import normalize_whitespace
 from modules.teams.errors import TeamErrors
 
 
@@ -23,7 +24,7 @@ class Team(models.Model):
 
     @staticmethod
     def _normalize_name(name: str) -> str:
-        normalized_name = " ".join(name.split()) if name else ""
+        normalized_name = normalize_whitespace(name)
         if not normalized_name:
             raise TeamErrors.InvalidName
         return normalized_name

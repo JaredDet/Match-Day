@@ -24,7 +24,7 @@ def test_registers_player_for_team():
     player = player_repository.save.call_args.args[0]
     assert isinstance(player, Player)
     assert player.id == player_id
-    assert player.team == team
+    assert player.team_id == team.id
     assert player.name == "Arturo Vidal"
 
 

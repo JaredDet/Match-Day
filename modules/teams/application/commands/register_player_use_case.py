@@ -24,7 +24,7 @@ class RegisterPlayerUseCase:
         team = self.team_repository.get_for_update(team_id)
         if team is None:
             raise TeamErrors.NotFound
-        player = Player.create(team=team, name=name)
+        player = Player.create(team_id=team.id, name=name)
         if self.player_repository.exists_by_name(team.id, player.name):
             raise TeamErrors.PlayerAlreadyExists
         self.player_repository.save(player)

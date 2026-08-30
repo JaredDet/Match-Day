@@ -18,7 +18,7 @@ def test_registers_goal_and_updates_match_score():
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
     player_repository = Mock()
-    player = Player.create(team=match.away_team, name="Goleador visitante")
+    player = Player.create(team_id=match.away_team_id, name="Goleador visitante")
     player_repository.get.return_value = player
     use_case = RegisterGoalUseCase(match_repository, goal_repository, player_repository)
 
@@ -60,7 +60,7 @@ def test_does_not_persist_goal_when_match_is_not_live():
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
     player_repository = Mock()
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
     player_repository.get.return_value = player
     use_case = RegisterGoalUseCase(match_repository, goal_repository, player_repository)
 

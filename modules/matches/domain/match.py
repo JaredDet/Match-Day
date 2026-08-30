@@ -120,6 +120,8 @@ class Match(models.Model):
         team_side: TeamSide,
         formation: MatchFormation,
     ) -> None:
+        if self.status != MatchStatus.SCHEDULED:
+            raise MatchErrors.InvalidState
         if not isinstance(team_side, TeamSide):
             raise MatchErrors.InvalidTeamSide
         if not isinstance(formation, MatchFormation):

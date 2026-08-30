@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_builds_chronological_match_detail_without_disallowed_events():
-    match = MatchMother.create(status=MatchStatus.LIVE, persist_teams=True)
+    match = MatchMother.create(persist_teams=True)
     match.set_formation(
         team_side=TeamSide.HOME,
         formation=MatchFormation.FOUR_THREE_THREE,
@@ -25,6 +25,7 @@ def test_builds_chronological_match_detail_without_disallowed_events():
         team_side=TeamSide.AWAY,
         formation=MatchFormation.FOUR_FOUR_TWO,
     )
+    match.start()
     home_player = Player.objects.create(team=match.home_team, name="Goleador")
     away_player = Player.objects.create(team=match.away_team, name="Defensor")
     cancelled_player = Player.objects.create(team=match.away_team, name="Gol anulado")

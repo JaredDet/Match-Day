@@ -13,6 +13,9 @@ class PlayerRepository:
     def get(self, player_id: UUID) -> Player | None:
         return Player.objects.select_related("team").filter(id=player_id).first()
 
+    def get_many(self, player_ids: list[UUID]) -> dict[UUID, Player]:
+        return Player.objects.in_bulk(player_ids)
+
     def save(self, player: Player) -> None:
         try:
             player.save()

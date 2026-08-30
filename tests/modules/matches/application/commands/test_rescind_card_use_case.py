@@ -15,7 +15,7 @@ pytestmark = pytest.mark.django_db
 
 def test_rescinds_card_and_decrements_counter():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.away_team, name="Defensor")
+    player = Player.create(team_id=match.away_team_id, name="Defensor")
     card = match.register_card(player=player, card_type=CardType.YELLOW, minute=51)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
@@ -33,7 +33,7 @@ def test_rescinds_card_and_decrements_counter():
 
 def test_rejects_rescinding_card_twice():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.home_team, name="Defensor")
+    player = Player.create(team_id=match.home_team_id, name="Defensor")
     card = match.register_card(player=player, card_type=CardType.RED, minute=75)
     match.rescind_card(card)
     match_repository = Mock()

@@ -7,8 +7,9 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from modules.matches.domain.card import CardType
-from modules.matches.domain.match import Match, MatchStatus
+from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_lineup_player import MatchLineupPlayer
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -511,3 +512,66 @@ def test_rejects_invalid_match_list_filters():
     assert response.status_code == 400
     assert response.data["code"] == "validation_error"
     assert "status" in response.data["details"]
+
+
+def test_sets_and_replaces_match_lineup_with_formation():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+    players = [
+        Player.objects.create(team=match.home_team, name=f"Jugador {index}")
+        for index in range(1, 12)
+    ]
+
+    response = APIClient().put(
+        reverse("matches-set-lineup", args=[match.id, TeamSide.HOME]),
+        {
+            "formation": MatchFormation.FOUR_THREE_THREE,
+            "players": [
+                {
+                    "player_id": str(player.id),
+                    "shirt_number": index,
+                    "is_captain": index == 1,
+                }
+                for index, player in enumerate(players, start=1)
+            ],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+    match.refresh_from_db()
+    assert match.home_formation == MatchFormation.FOUR_THREE_THREE
+    assert (
+        MatchLineupPlayer.objects.filter(
+            match=match,
+            team_side=TeamSide.HOME,
+        ).count()
+        == 11
+    )
+
+    response = APIClient().put(
+        reverse("matches-set-lineup", args=[match.id, TeamSide.HOME]),
+        {
+            "formation": MatchFormation.FOUR_FOUR_TWO,
+            "players": [
+                {
+                    "player_id": str(player.id),
+                    "shirt_number": index + 20,
+                    "is_captain": index == 2,
+                }
+                for index, player in enumerate(players, start=1)
+            ],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+    match.refresh_from_db()
+    assert match.home_formation == MatchFormation.FOUR_FOUR_TWO
+    lineup = MatchLineupPlayer.objects.filter(match=match, team_side=TeamSide.HOME)
+    assert lineup.count() == 11
+    assert lineup.get(is_captain=True).player == players[1]

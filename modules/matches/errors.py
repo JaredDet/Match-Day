@@ -2,6 +2,26 @@ from core.exceptions import AppException, ErrorType
 
 
 class MatchErrors:
+    InvalidLineupSize = AppException(
+        "invalid_lineup_size",
+        "La alineaciÃ³n debe contener exactamente once jugadores",
+        ErrorType.VALIDATION,
+    )
+    InvalidLineupCaptain = AppException(
+        "invalid_lineup_captain",
+        "La alineaciÃ³n debe tener exactamente un capitÃ¡n",
+        ErrorType.VALIDATION,
+    )
+    DuplicateLineupPlayer = AppException(
+        "duplicate_lineup_player",
+        "Un jugador no puede repetirse en la alineaciÃ³n",
+        ErrorType.VALIDATION,
+    )
+    DuplicateLineupShirt = AppException(
+        "duplicate_lineup_shirt",
+        "Un nÃºmero de camiseta no puede repetirse en la alineaciÃ³n",
+        ErrorType.VALIDATION,
+    )
     InvalidShirtNumber = AppException(
         "invalid_shirt_number",
         "El nÃºmero de camiseta debe estar entre 1 y 99",

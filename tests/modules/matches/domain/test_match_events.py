@@ -14,7 +14,7 @@ from tests.mothers.matches.match_mother import MatchMother
 
 def test_registers_goal_with_player_snapshot_during_live_match():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.home_team, name="Goleador Local")
+    player = Player.create(team_id=match.home_team_id, name="Goleador Local")
     event_id = uuid.uuid4()
 
     goal = match.register_goal(event_id=event_id, player=player, minute=34)
@@ -30,7 +30,7 @@ def test_registers_goal_with_player_snapshot_during_live_match():
 
 def test_registers_card_and_derives_away_side():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.away_team, name="Defensor Visitante")
+    player = Player.create(team_id=match.away_team_id, name="Defensor Visitante")
 
     card = match.register_card(player=player, card_type=CardType.YELLOW, minute=51)
 
@@ -44,7 +44,7 @@ def test_registers_card_and_derives_away_side():
 @pytest.mark.parametrize("status", [MatchStatus.SCHEDULED, MatchStatus.FINISHED])
 def test_rejects_event_when_match_is_not_live(status):
     match = MatchMother.create(status=status)
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidState)):
         match.register_goal(player=player, minute=1)
@@ -52,7 +52,7 @@ def test_rejects_event_when_match_is_not_live(status):
 
 def test_rejects_player_from_team_outside_match():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=Team.create(name="Otro equipo"), name="Jugador")
+    player = Player.create(team_id=Team.create(name="Otro equipo").id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidPlayerTeam)) as exc_info:
         match.register_goal(player=player, minute=10)
@@ -63,7 +63,7 @@ def test_rejects_player_from_team_outside_match():
 @pytest.mark.parametrize("minute", [-1, 131, True])
 def test_rejects_invalid_event_minute(minute):
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidMinute)):
         match.register_goal(player=player, minute=minute)
@@ -71,7 +71,7 @@ def test_rejects_invalid_event_minute(minute):
 
 def test_rejects_invalid_card_type():
     match = MatchMother.create(status=MatchStatus.LIVE)
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidCardType)):
         match.register_card(player=player, card_type="blue", minute=15)

@@ -19,7 +19,7 @@ def test_registers_card_and_updates_match_counter():
     match_repository.get_for_update.return_value = match
     card_repository = Mock()
     player_repository = Mock()
-    player = Player.create(team=match.home_team, name="Defensor local")
+    player = Player.create(team_id=match.home_team_id, name="Defensor local")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(match_repository, card_repository, player_repository)
 
@@ -64,7 +64,7 @@ def test_does_not_persist_card_when_match_is_not_live():
     match_repository.get_for_update.return_value = match
     card_repository = Mock()
     player_repository = Mock()
-    player = Player.create(team=match.home_team, name="Jugador")
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(match_repository, card_repository, player_repository)
 
