@@ -1,5 +1,5 @@
 @startuml Match Lifecycle
-title Matchday V3 - Ciclo de vida del partido
+title Matchday V4 - Ciclo de vida del partido
 
 [*] --> Scheduled : CreateMatch
 Scheduled --> Scheduled : UpdateMatchDetails
@@ -8,6 +8,7 @@ Scheduled --> Live : StartMatch
 Live --> Live : RegisterGoal
 Live --> Live : DisallowGoal
 Live --> Live : RegisterCard
+Live --> Live : RegisterSubstitution
 Live --> Live : RescindCard
 Live --> Finished : FinishMatch
 Finished --> [*]
@@ -16,7 +17,7 @@ state Scheduled {
   [*] --> Configurable
   Configurable : estadio y árbitro opcionales
   Configurable : formación local y visitante
-  Configurable : 11 jugadores y cero o un capitán por equipo
+  Configurable : 11 titulares, suplentes y cero o un capitán por equipo
 }
 
 note right of Configurable
@@ -30,6 +31,8 @@ end note
 note right of Live
   El marcador y los contadores
   se actualizan con cada evento.
+  Las sustituciones actualizan quién
+  se encuentra actualmente en cancha.
 end note
 
 note right of Finished

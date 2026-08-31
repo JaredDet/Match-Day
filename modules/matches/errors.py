@@ -7,14 +7,29 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidOutgoingPlayer = AppException(
+        "invalid_outgoing_player",
+        "El jugador que sale debe estar actualmente en cancha",
+        ErrorType.VALIDATION,
+    )
+    InvalidSubstitutePlayer = AppException(
+        "invalid_substitute_player",
+        "El jugador que entra debe ser un suplente que no esté en cancha",
+        ErrorType.VALIDATION,
+    )
+    InvalidSubstitutionPlayers = AppException(
+        "invalid_substitution_players",
+        "Los jugadores de la sustitución deben pertenecer al mismo equipo y partido",
+        ErrorType.VALIDATION,
+    )
     InvalidSquadRole = AppException(
         "invalid_match_squad_role",
         "El rol del jugador en la convocatoria no es válido",
         ErrorType.VALIDATION,
     )
-    PlayerNotStarter = AppException(
-        "player_not_starter",
-        "Solo un jugador titular puede recibir eventos del partido",
+    PlayerNotOnField = AppException(
+        "player_not_on_field",
+        "Solo un jugador que está en cancha puede recibir eventos del partido",
         ErrorType.VALIDATION,
     )
     InvalidLineupSize = AppException(

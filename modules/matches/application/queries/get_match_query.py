@@ -18,6 +18,7 @@ class MatchEventType(StrEnum):
     GOAL = "goal"
     YELLOW_CARD = "yellow_card"
     RED_CARD = "red_card"
+    SUBSTITUTION = "substitution"
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,9 +26,13 @@ class MatchEventDetail:
     id: UUID
     type: MatchEventType
     team_side: TeamSide
-    player_id: UUID
-    player_name: str
     minute: int
+    player_id: UUID | None = None
+    player_name: str | None = None
+    player_out_id: UUID | None = None
+    player_out_name: str | None = None
+    player_in_id: UUID | None = None
+    player_in_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +42,7 @@ class MatchSquadPlayerDetail:
     team_side: TeamSide
     shirt_number: int
     role: MatchSquadRole
+    is_on_field: bool
     is_captain: bool
 
 

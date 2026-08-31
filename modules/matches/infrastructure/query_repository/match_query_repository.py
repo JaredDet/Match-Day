@@ -15,6 +15,7 @@ from modules.matches.domain.match_squad_player import (
     MatchSquadPlayer,
     MatchSquadRole,
 )
+from modules.matches.domain.match_substitution import MatchSubstitution
 
 if TYPE_CHECKING:
     from modules.matches.application.queries.get_match_query import (
@@ -170,6 +171,7 @@ class MatchQueryRepository:
                 "team_side",
                 "shirt_number",
                 "role",
+                "is_on_field",
                 "is_captain",
             )
         )
@@ -180,6 +182,7 @@ class MatchQueryRepository:
                 team_side=TeamSide(row["team_side"]),
                 shirt_number=row["shirt_number"],
                 role=MatchSquadRole(row["role"]),
+                is_on_field=row["is_on_field"],
                 is_captain=row["is_captain"],
             )
             for row in rows
@@ -234,6 +237,32 @@ class MatchQueryRepository:
                         player_id=card["player_id"],
                         player_name=card["player_name"],
                         minute=card["minute"],
+                    ),
+                )
+            )
+        for substitution in MatchSubstitution.objects.filter(match_id=match_id).values(
+            "id",
+            "team_side",
+            "player_out__player_id",
+            "player_out__player__name",
+            "player_in__player_id",
+            "player_in__player__name",
+            "minute",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    substitution["minute"],
+                    substitution["created_at"],
+                    MatchEventDetail(
+                        id=substitution["id"],
+                        type=MatchEventType.SUBSTITUTION,
+                        team_side=TeamSide(substitution["team_side"]),
+                        minute=substitution["minute"],
+                        player_out_id=substitution["player_out__player_id"],
+                        player_out_name=substitution["player_out__player__name"],
+                        player_in_id=substitution["player_in__player_id"],
+                        player_in_name=substitution["player_in__player__name"],
                     ),
                 )
             )

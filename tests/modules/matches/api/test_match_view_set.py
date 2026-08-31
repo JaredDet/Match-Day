@@ -9,7 +9,11 @@ from rest_framework.test import APIClient
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
-from modules.matches.domain.match_squad_player import MatchSquadPlayer
+from modules.matches.domain.match_squad_player import (
+    MatchSquadPlayer,
+    MatchSquadRole,
+)
+from modules.matches.domain.match_substitution import MatchSubstitution
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -37,6 +41,7 @@ def _create_player(match, team_side, name):
             MatchSquadPlayer.objects.filter(match=match, team_side=team_side).count()
             + 1
         ),
+        is_on_field=True,
     )
     return player
 
@@ -297,6 +302,76 @@ def test_rejects_card_when_match_is_not_live():
 
     assert response.status_code == 409
     assert response.data["code"] == "invalid_match_state"
+
+
+def test_registers_substitution_and_updates_players_on_field():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+    player_out = Player.objects.create(team=match.home_team, name="Titular")
+    player_in = Player.objects.create(team=match.home_team, name="Suplente")
+    match.add_squad_player(player=player_out, shirt_number=7).save()
+    match.add_squad_player(
+        player=player_in,
+        shirt_number=18,
+        role=MatchSquadRole.SUBSTITUTE,
+    ).save()
+    match.start()
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-substitution", args=[match.id]),
+        {
+            "player_out_id": str(player_out.id),
+            "player_in_id": str(player_in.id),
+            "minute": 60,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    substitution = MatchSubstitution.objects.get(id=response.data["id"])
+    assert substitution.player_out.player == player_out
+    assert substitution.player_in.player == player_in
+    substitution.player_out.refresh_from_db()
+    substitution.player_in.refresh_from_db()
+    assert substitution.player_out.is_on_field is False
+    assert substitution.player_in.is_on_field is True
+
+    detail = APIClient().get(reverse("matches-detail", args=[match.id]))
+    substitution_event = detail.data["events"][0]
+    assert substitution_event == {
+        "id": str(substitution.id),
+        "type": "substitution",
+        "team_side": TeamSide.HOME,
+        "minute": 60,
+        "player_out_id": str(player_out.id),
+        "player_out_name": "Titular",
+        "player_in_id": str(player_in.id),
+        "player_in_name": "Suplente",
+    }
+    assert [player["is_on_field"] for player in detail.data["home_team"]["lineup"]] == [
+        False,
+        True,
+    ]
+
+    incoming_goal = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {"player_id": str(player_in.id), "minute": 61},
+        format="json",
+    )
+    outgoing_goal = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {"player_id": str(player_out.id), "minute": 62},
+        format="json",
+    )
+
+    assert incoming_goal.status_code == 201
+    assert outgoing_goal.status_code == 400
+    assert outgoing_goal.data["code"] == "player_not_on_field"
     assert match.cards.count() == 0
 
 
@@ -438,6 +513,7 @@ def test_gets_match_detail_with_unified_event_timeline():
                 "team_side": TeamSide.HOME,
                 "shirt_number": 1,
                 "role": "starter",
+                "is_on_field": True,
                 "is_captain": False,
             }
         ],
@@ -454,6 +530,7 @@ def test_gets_match_detail_with_unified_event_timeline():
                 "team_side": TeamSide.AWAY,
                 "shirt_number": 1,
                 "role": "starter",
+                "is_on_field": True,
                 "is_captain": False,
             }
         ],

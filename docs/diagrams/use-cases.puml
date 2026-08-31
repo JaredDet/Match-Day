@@ -1,5 +1,5 @@
 @startuml Matchday Use Cases
-title Matchday V3 - Casos de uso
+title Matchday V4 - Casos de uso
 
 left to right direction
 skinparam packageStyle rectangle
@@ -28,6 +28,7 @@ rectangle "Matches" {
   usecase "Registrar gol" as RegisterGoal
   usecase "Anular gol" as DisallowGoal
   usecase "Registrar tarjeta" as RegisterCard
+  usecase "Registrar sustitución" as RegisterSubstitution
   usecase "Retirar tarjeta" as RescindCard
   usecase "Actualizar estadio y árbitro" as UpdateDetails
   usecase "Listar partidos" as ListMatches
@@ -51,6 +52,7 @@ Admin --> FinishMatch
 Admin --> RegisterGoal
 Admin --> DisallowGoal
 Admin --> RegisterCard
+Admin --> RegisterSubstitution
 Admin --> RescindCard
 Admin --> UpdateDetails
 Admin --> ListMatches

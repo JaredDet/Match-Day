@@ -20,7 +20,7 @@ def test_registers_card_and_updates_match_counter():
     card_repository = Mock()
     player_repository = Mock()
     lineup_repository = Mock()
-    lineup_repository.is_starter.return_value = True
+    lineup_repository.is_on_field.return_value = True
     player = Player.create(team_id=match.home_team_id, name="Defensor local")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(
@@ -106,7 +106,7 @@ def test_rejects_card_for_substitute():
     card_repository = Mock()
     player_repository = Mock()
     lineup_repository = Mock()
-    lineup_repository.is_starter.return_value = False
+    lineup_repository.is_on_field.return_value = False
     player = Player.create(team_id=match.home_team_id, name="Suplente")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(
@@ -116,7 +116,7 @@ def test_rejects_card_for_substitute():
         lineup_repository,
     )
 
-    with pytest.raises(type(MatchErrors.PlayerNotStarter)):
+    with pytest.raises(type(MatchErrors.PlayerNotOnField)):
         use_case.execute(
             match_id=match.id,
             player_id=player.id,

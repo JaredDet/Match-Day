@@ -10,9 +10,17 @@ class MatchEventResponse(serializers.Serializer):
     id = serializers.UUIDField()
     type = serializers.ChoiceField(choices=[(event.value, event.value) for event in MatchEventType])
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
-    player_id = serializers.UUIDField()
-    player_name = serializers.CharField()
     minute = serializers.IntegerField()
+    player_id = serializers.UUIDField(allow_null=True)
+    player_name = serializers.CharField(allow_null=True)
+    player_out_id = serializers.UUIDField(allow_null=True)
+    player_out_name = serializers.CharField(allow_null=True)
+    player_in_id = serializers.UUIDField(allow_null=True)
+    player_in_name = serializers.CharField(allow_null=True)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {key: value for key, value in representation.items() if value is not None}
 
 
 class MatchSquadPlayerResponse(serializers.Serializer):
@@ -21,6 +29,7 @@ class MatchSquadPlayerResponse(serializers.Serializer):
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
     shirt_number = serializers.IntegerField()
     role = serializers.ChoiceField(choices=MatchSquadRole.choices)
+    is_on_field = serializers.BooleanField()
     is_captain = serializers.BooleanField()
 
 

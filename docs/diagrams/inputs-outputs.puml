@@ -56,7 +56,7 @@ package "Match Commands" {
   artifact "stadium_name? + referee_name?" as UpdateDetailsInput
   component "PUT /matches/{id}/lineups/{side}" as SetLineupApi
   component "SetMatchLineupUseCase" as SetLineup
-  artifact "formation + captain_id?\nplayers[11]: player_id + shirt_number" as SetLineupInput
+  artifact "formation + captain_id?\nplayers[11] + substitutes[]:\nplayer_id + shirt_number" as SetLineupInput
   component "POST /matches/{id}/start" as StartApi
   component "StartMatchUseCase" as StartMatch
   component "POST /matches/{id}/finish" as FinishApi
@@ -68,6 +68,9 @@ package "Match Commands" {
   component "POST /matches/{id}/cards" as CardApi
   component "RegisterCardUseCase" as RegisterCard
   artifact "player_id + card_type + minute" as CardInput
+  component "POST /matches/{id}/substitutions" as SubstitutionApi
+  component "RegisterSubstitutionUseCase" as RegisterSubstitution
+  artifact "player_out_id + player_in_id + minute" as SubstitutionInput
   component "POST /goals/{goal_id}/disallow" as DisallowApi
   component "DisallowGoalUseCase" as DisallowGoal
   component "POST /cards/{card_id}/rescind" as RescindApi
@@ -132,6 +135,9 @@ RegisterGoal --> EventOutput
 CardInput --> CardApi
 CardApi --> RegisterCard
 RegisterCard --> EventOutput
+SubstitutionInput --> SubstitutionApi
+SubstitutionApi --> RegisterSubstitution
+RegisterSubstitution --> EventOutput
 DisallowApi --> DisallowGoal
 DisallowGoal --> EmptyMatchOutput
 RescindApi --> RescindCard

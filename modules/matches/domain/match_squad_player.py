@@ -31,6 +31,7 @@ class MatchSquadPlayer(models.Model):
         choices=MatchSquadRole.choices,
         default=MatchSquadRole.STARTER,
     )
+    is_on_field = models.BooleanField(default=False)
     is_captain = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -62,8 +63,19 @@ class MatchSquadPlayer(models.Model):
             team_side=team_side,
             shirt_number=shirt_number,
             role=role,
+            is_on_field=role == MatchSquadRole.STARTER,
             is_captain=is_captain,
         )
+
+    def enter_field(self) -> None:
+        if self.role != MatchSquadRole.SUBSTITUTE or self.is_on_field:
+            raise MatchErrors.InvalidSubstitutePlayer
+        self.is_on_field = True
+
+    def leave_field(self) -> None:
+        if not self.is_on_field:
+            raise MatchErrors.InvalidOutgoingPlayer
+        self.is_on_field = False
 
     class Meta:
         db_table = "match_squad_players"

@@ -98,7 +98,17 @@ package "matches" {
     +TeamSide team_side
     +int shirt_number
     +MatchSquadRole role
+    +bool is_on_field
     +bool is_captain
+  }
+
+  class MatchSubstitution {
+    +UUID id
+    +UUID match_id
+    +UUID player_out_id
+    +UUID player_in_id
+    +TeamSide team_side
+    +int minute
   }
 
   class Goal {
@@ -132,7 +142,10 @@ Team "0..1" --> "0..1" Player : capitán habitual
 Team "1" <-- "0..*" Match : local
 Team "1" <-- "0..*" Match : visitante
 Match "1" *-- "11..*" MatchSquadPlayer : convocatoria
+Match "1" *-- "0..*" MatchSubstitution : sustituciones
 Player "1" <-- "0..*" MatchSquadPlayer
+MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : sale
+MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : entra
 Match "1" *-- "0..*" Goal
 Match "1" *-- "0..*" Card
 Player "1" <-- "0..*" Goal
@@ -141,6 +154,7 @@ Match --> MatchStatus
 Match --> MatchFormation
 MatchSquadPlayer --> TeamSide
 MatchSquadPlayer --> MatchSquadRole
+MatchSubstitution --> TeamSide
 Goal --> TeamSide
 Card --> TeamSide
 Card --> CardType

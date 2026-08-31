@@ -9,6 +9,9 @@ from modules.matches.api.contracts.requests.create_match_request import CreateMa
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.requests.register_substitution_request import (
+    RegisterSubstitutionRequest,
+)
 from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
 from modules.matches.api.contracts.requests.update_match_details_request import (
     UpdateMatchDetailsRequest,
@@ -20,6 +23,9 @@ from modules.matches.application.commands.disallow_goal_use_case import Disallow
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_substitution_use_case import (
+    RegisterSubstitutionUseCase,
+)
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import (
     LineupPlayerInput,
@@ -189,6 +195,31 @@ class MatchViewSet(ViewSet):
         card_id = use_case.execute(match_id=pk, **request_contract.validated_data)
 
         return Response({"id": str(card_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_substitution",
+        request=RegisterSubstitutionRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterSubstitutionResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="substitutions")
+    def register_substitution(self, request, pk=None):
+        request_contract = RegisterSubstitutionRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterSubstitutionUseCase)
+        substitution_id = use_case.execute(
+            match_id=pk,
+            **request_contract.validated_data,
+        )
+        return Response(
+            {"id": str(substitution_id)},
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(
         operation_id="matches_disallow_goal",

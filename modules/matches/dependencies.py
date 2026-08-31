@@ -5,6 +5,9 @@ from modules.matches.application.commands.disallow_goal_use_case import Disallow
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_substitution_use_case import (
+    RegisterSubstitutionUseCase,
+)
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
@@ -22,12 +25,20 @@ from modules.matches.infrastructure.repository.match_repository import MatchRepo
 from modules.matches.infrastructure.repository.match_squad_repository import (
     MatchSquadRepository,
 )
+from modules.matches.infrastructure.repository.match_substitution_repository import (
+    MatchSubstitutionRepository,
+)
 
 
 class MatchesModule(injector.Module):
     def configure(self, binder: injector.Binder) -> None:
         binder.bind(MatchRepository, to=MatchRepository, scope=injector.singleton)
         binder.bind(MatchSquadRepository, to=MatchSquadRepository, scope=injector.singleton)
+        binder.bind(
+            MatchSubstitutionRepository,
+            to=MatchSubstitutionRepository,
+            scope=injector.singleton,
+        )
         binder.bind(CardRepository, to=CardRepository, scope=injector.singleton)
         binder.bind(GoalRepository, to=GoalRepository, scope=injector.singleton)
         binder.bind(MatchQueryRepository, to=MatchQueryRepository, scope=injector.singleton)
@@ -35,6 +46,11 @@ class MatchesModule(injector.Module):
         binder.bind(FinishMatchUseCase, to=FinishMatchUseCase, scope=injector.singleton)
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
+        binder.bind(
+            RegisterSubstitutionUseCase,
+            to=RegisterSubstitutionUseCase,
+            scope=injector.singleton,
+        )
         binder.bind(StartMatchUseCase, to=StartMatchUseCase, scope=injector.singleton)
         binder.bind(SetMatchLineupUseCase, to=SetMatchLineupUseCase, scope=injector.singleton)
         binder.bind(

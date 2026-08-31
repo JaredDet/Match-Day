@@ -46,11 +46,11 @@ class RegisterCardUseCase:
         player = self.player_repository.get(player_id)
         if player is None:
             raise TeamErrors.PlayerNotFound
-        if not self.lineup_repository.is_starter(
+        if not self.lineup_repository.is_on_field(
             match_id=match.id,
             player_id=player.id,
         ):
-            raise MatchErrors.PlayerNotStarter
+            raise MatchErrors.PlayerNotOnField
         card = match.register_card(
             player=player,
             card_type=card_type,
