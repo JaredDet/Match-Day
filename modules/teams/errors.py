@@ -2,6 +2,21 @@ from core.exceptions import AppException, ErrorType
 
 
 class TeamErrors:
+    InvalidPlayerPosition = AppException(
+        "invalid_player_position",
+        "La posición preferida del jugador no es válida",
+        ErrorType.VALIDATION,
+    )
+    InvalidPlayerShirtNumber = AppException(
+        "invalid_player_shirt_number",
+        "El dorsal preferido debe estar entre 1 y 99",
+        ErrorType.VALIDATION,
+    )
+    PlayerShirtNumberAlreadyExists = AppException(
+        "player_shirt_number_already_exists",
+        "Ya existe un jugador con ese dorsal preferido en el equipo",
+        ErrorType.CONFLICT,
+    )
     InvalidCaptain = AppException(
         "invalid_team_captain",
         "El capitán debe pertenecer al equipo",

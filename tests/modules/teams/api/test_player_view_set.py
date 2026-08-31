@@ -26,6 +26,8 @@ def test_lists_players_with_filters():
         {
             "id": str(captain.id),
             "name": "Mateo Rojas",
+            "preferred_position": None,
+            "preferred_shirt_number": None,
             "team": {"id": str(team.id), "name": "Atlético Bahía"},
             "is_captain": True,
             "appearances": 0,
@@ -44,6 +46,8 @@ def test_gets_player_detail():
     assert response.data == {
         "id": str(player.id),
         "name": "Mateo Rojas",
+        "preferred_position": None,
+        "preferred_shirt_number": None,
         "team": {"id": str(team.id), "name": "Atlético Bahía"},
         "is_captain": False,
         "statistics": {

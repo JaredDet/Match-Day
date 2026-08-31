@@ -73,7 +73,13 @@ def test_gets_team_detail_with_statistics_and_current_players():
         "goals_against": 1,
     }
     assert response.data["players"] == [
-        {"id": str(player.id), "name": "Mateo Rojas", "is_captain": False}
+        {
+            "id": str(player.id),
+            "name": "Mateo Rojas",
+            "preferred_position": None,
+            "preferred_shirt_number": None,
+            "is_captain": False,
+        }
     ]
     assert response.data["recent_matches"][0]["result"] == "win"
 

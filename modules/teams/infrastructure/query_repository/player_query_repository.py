@@ -145,6 +145,8 @@ class PlayerQueryRepository:
         return PlayerDetail(
             id=player.id,
             name=player.name,
+            preferred_position=player.preferred_position,
+            preferred_shirt_number=player.preferred_shirt_number,
             team=PlayerTeamDetail(id=player.team_id, name=player.team.name),
             is_captain=player.team.captain_id == player.id,
             statistics=PlayerStatistics(
@@ -202,6 +204,8 @@ class PlayerQueryRepository:
             PlayerSummary(
                 id=player.id,
                 name=player.name,
+                preferred_position=player.preferred_position,
+                preferred_shirt_number=player.preferred_shirt_number,
                 team=PlayerTeamSummary(id=player.team_id, name=player.team.name),
                 is_captain=player.team.captain_id == player.id,
                 appearances=player.appearances_count,

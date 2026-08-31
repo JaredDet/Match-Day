@@ -79,11 +79,13 @@ class TeamQueryRepository:
             TeamPlayerDetail(
                 id=player["id"],
                 name=player["name"],
+                preferred_position=player["preferred_position"],
+                preferred_shirt_number=player["preferred_shirt_number"],
                 is_captain=player["id"] == captain_id,
             )
             for player in Team.objects.get(id=team_id)
             .players.order_by("name", "id")
-            .values("id", "name")
+            .values("id", "name", "preferred_position", "preferred_shirt_number")
         )
 
         return TeamDetail(

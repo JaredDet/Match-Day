@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from modules.teams.application.queries.list_teams_query import TeamMatchResult
+from modules.teams.domain.player import PlayerPosition
 
 
 class PlayerTeamDetailResponse(serializers.Serializer):
@@ -30,6 +31,11 @@ class PlayerRecentMatchResponse(serializers.Serializer):
 class GetPlayerResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    preferred_position = serializers.ChoiceField(
+        choices=PlayerPosition.choices,
+        allow_null=True,
+    )
+    preferred_shirt_number = serializers.IntegerField(allow_null=True)
     team = PlayerTeamDetailResponse()
     is_captain = serializers.BooleanField()
     statistics = PlayerStatisticsResponse()

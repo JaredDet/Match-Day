@@ -5,6 +5,7 @@ from uuid import UUID
 from injector import inject
 
 from modules.teams.application.queries.list_teams_query import TeamMatchResult
+from modules.teams.domain.player import PlayerPosition
 from modules.teams.errors import TeamErrors
 from modules.teams.infrastructure.query_repository.team_query_repository import (
     TeamQueryRepository,
@@ -25,6 +26,8 @@ class TeamStatistics:
 class TeamPlayerDetail:
     id: UUID
     name: str
+    preferred_position: PlayerPosition | None
+    preferred_shirt_number: int | None
     is_captain: bool
 
 

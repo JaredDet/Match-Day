@@ -147,7 +147,7 @@ class TeamViewSet(ViewSet):
         use_case = injector_instance.get(RegisterTeamSquadUseCase)
         player_ids = use_case.execute(
             team_id=pk,
-            player_names=[player["name"] for player in request_contract.validated_data["players"]],
+            players_data=request_contract.validated_data["players"],
         )
         return Response(
             {"ids": [str(player_id) for player_id in player_ids]},

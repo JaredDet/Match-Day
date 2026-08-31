@@ -3,6 +3,7 @@ from uuid import UUID
 
 from injector import inject
 
+from modules.teams.domain.player import PlayerPosition
 from modules.teams.infrastructure.query_repository.player_query_repository import (
     PlayerQueryRepository,
 )
@@ -18,6 +19,8 @@ class PlayerTeamSummary:
 class PlayerSummary:
     id: UUID
     name: str
+    preferred_position: PlayerPosition | None
+    preferred_shirt_number: int | None
     team: PlayerTeamSummary
     is_captain: bool
     appearances: int
