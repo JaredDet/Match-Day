@@ -17,6 +17,7 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     SetMatchLineupUseCase,
 )
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.constants import MATCH_LINEUP_SIZE
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchFormation
 from modules.matches.domain.match_event import TeamSide
@@ -285,13 +286,13 @@ class Command(BaseCommand):
         for index in range(fixture.score[0]):
             self.register_goal.execute(
                 match_id=match_id,
-                player_id=home_players[(index + 8) % 11],
+                player_id=home_players[(index + 8) % MATCH_LINEUP_SIZE],
                 minute=18 + index * 22,
             )
         for index in range(fixture.score[1]):
             self.register_goal.execute(
                 match_id=match_id,
-                player_id=away_players[(index + 9) % 11],
+                player_id=away_players[(index + 9) % MATCH_LINEUP_SIZE],
                 minute=31 + index * 24,
             )
         if fixture.scheduled_at == SCHEDULED_AT:

@@ -4,6 +4,8 @@ from datetime import datetime
 from django.db import models
 from django.utils import timezone
 
+from core.constants import NAME_MAX_LENGTH
+from modules.matches.constants import MAX_MATCH_MINUTE, MIN_MATCH_MINUTE
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 
@@ -21,7 +23,7 @@ class Goal(models.Model):
         related_name="goals",
     )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
-    player_name = models.CharField(max_length=200)
+    player_name = models.CharField(max_length=NAME_MAX_LENGTH)
     minute = models.PositiveSmallIntegerField()
     disallowed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -40,7 +42,10 @@ class Goal(models.Model):
                 name="valid_goal_team_side",
             ),
             models.CheckConstraint(
-                condition=models.Q(minute__gte=0, minute__lte=130),
+                condition=models.Q(
+                    minute__gte=MIN_MATCH_MINUTE,
+                    minute__lte=MAX_MATCH_MINUTE,
+                ),
                 name="valid_goal_minute",
             ),
             models.CheckConstraint(

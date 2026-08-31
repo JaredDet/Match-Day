@@ -4,6 +4,8 @@ from datetime import datetime
 from django.db import models
 from django.utils import timezone
 
+from core.constants import NAME_MAX_LENGTH
+from modules.matches.constants import MAX_MATCH_MINUTE, MIN_MATCH_MINUTE
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 
@@ -26,7 +28,7 @@ class Card(models.Model):
         related_name="cards",
     )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
-    player_name = models.CharField(max_length=200)
+    player_name = models.CharField(max_length=NAME_MAX_LENGTH)
     card_type = models.CharField(max_length=10, choices=CardType.choices)
     minute = models.PositiveSmallIntegerField()
     rescinded_at = models.DateTimeField(null=True, blank=True)
@@ -50,7 +52,10 @@ class Card(models.Model):
                 name="valid_card_type",
             ),
             models.CheckConstraint(
-                condition=models.Q(minute__gte=0, minute__lte=130),
+                condition=models.Q(
+                    minute__gte=MIN_MATCH_MINUTE,
+                    minute__lte=MAX_MATCH_MINUTE,
+                ),
                 name="valid_card_minute",
             ),
             models.CheckConstraint(

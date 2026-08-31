@@ -5,6 +5,7 @@ from uuid import UUID
 from django.db import transaction
 from injector import inject
 
+from modules.matches.constants import MATCH_LINEUP_SIZE
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
@@ -51,7 +52,7 @@ class SetMatchLineupUseCase:
             raise MatchErrors.NotFound
         if match.status != MatchStatus.SCHEDULED:
             raise MatchErrors.InvalidState
-        if len(players) != 11:
+        if len(players) != MATCH_LINEUP_SIZE:
             raise MatchErrors.InvalidLineupSize
         player_ids = [player.player_id for player in players]
         if len(player_ids) != len(set(player_ids)):

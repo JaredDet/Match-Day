@@ -6,6 +6,7 @@ from uuid import UUID
 from django.db.models import Count, Q
 
 from modules.matches.domain.match import MatchStatus
+from modules.teams.constants import RECENT_MATCH_LIMIT
 from modules.teams.domain.player import Player
 
 if TYPE_CHECKING:
@@ -78,7 +79,7 @@ class PlayerQueryRepository:
                 "match__away_team_name",
                 "match__home_goal_count",
                 "match__away_goal_count",
-            )[:5]
+            )[:RECENT_MATCH_LIMIT]
         )
         match_ids = [lineup["match_id"] for lineup in lineups]
         goals_by_match = dict(

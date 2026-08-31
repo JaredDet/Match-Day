@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from django.db.models import Q
 
 from modules.matches.domain.match import Match, MatchStatus
+from modules.teams.constants import RECENT_MATCH_LIMIT
 from modules.teams.domain.team import Team
 
 if TYPE_CHECKING:
@@ -62,7 +63,7 @@ class TeamQueryRepository:
             else:
                 result = TeamMatchResult.DRAW
                 draws += 1
-            if len(recent_matches) < 5:
+            if len(recent_matches) < RECENT_MATCH_LIMIT:
                 recent_matches.append(
                     TeamRecentMatch(
                         match_id=match["id"],

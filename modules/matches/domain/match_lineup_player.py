@@ -2,6 +2,7 @@ import uuid
 
 from django.db import models
 
+from core.constants import MAX_SHIRT_NUMBER, MIN_SHIRT_NUMBER
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 
@@ -38,7 +39,7 @@ class MatchLineupPlayer(models.Model):
             raise MatchErrors.InvalidTeamSide
         if not isinstance(shirt_number, int) or isinstance(shirt_number, bool):
             raise MatchErrors.InvalidShirtNumber
-        if not 1 <= shirt_number <= 99:
+        if not MIN_SHIRT_NUMBER <= shirt_number <= MAX_SHIRT_NUMBER:
             raise MatchErrors.InvalidShirtNumber
         return cls(
             match=match,
@@ -70,7 +71,10 @@ class MatchLineupPlayer(models.Model):
                 name="valid_lineup_player_team_side",
             ),
             models.CheckConstraint(
-                condition=models.Q(shirt_number__gte=1, shirt_number__lte=99),
+                condition=models.Q(
+                    shirt_number__gte=MIN_SHIRT_NUMBER,
+                    shirt_number__lte=MAX_SHIRT_NUMBER,
+                ),
                 name="valid_lineup_shirt_number",
             ),
         ]

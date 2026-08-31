@@ -6,8 +6,11 @@ from uuid import UUID
 from django.db import models
 from django.db.models.functions import Lower
 
+from core.constants import MAX_SHIRT_NUMBER, MIN_SHIRT_NUMBER, NAME_MAX_LENGTH
 from core.text import normalize_whitespace
 from modules.teams.errors import TeamErrors
+
+PLAYER_POSITION_MAX_LENGTH = 25
 
 
 class PlayerPosition(models.TextChoices):
@@ -36,9 +39,9 @@ class Player(models.Model):
         on_delete=models.PROTECT,
         related_name="players",
     )
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=NAME_MAX_LENGTH)
     preferred_position = models.CharField(
-        max_length=25,
+        max_length=PLAYER_POSITION_MAX_LENGTH,
         choices=PlayerPosition.choices,
         null=True,
         blank=True,
@@ -79,7 +82,7 @@ class Player(models.Model):
         if preferred_shirt_number is not None and (
             not isinstance(preferred_shirt_number, int)
             or isinstance(preferred_shirt_number, bool)
-            or not 1 <= preferred_shirt_number <= 99
+            or not MIN_SHIRT_NUMBER <= preferred_shirt_number <= MAX_SHIRT_NUMBER
         ):
             raise TeamErrors.InvalidPlayerShirtNumber
         self.preferred_position = preferred_position
@@ -113,8 +116,8 @@ class Player(models.Model):
             models.CheckConstraint(
                 condition=models.Q(preferred_shirt_number__isnull=True)
                 | models.Q(
-                    preferred_shirt_number__gte=1,
-                    preferred_shirt_number__lte=99,
+                    preferred_shirt_number__gte=MIN_SHIRT_NUMBER,
+                    preferred_shirt_number__lte=MAX_SHIRT_NUMBER,
                 ),
                 name="valid_player_preferred_shirt_number",
             ),

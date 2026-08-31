@@ -5,13 +5,14 @@ import uuid
 from django.db import models
 from django.db.models.functions import Lower
 
+from core.constants import NAME_MAX_LENGTH
 from core.text import normalize_whitespace
 from modules.teams.errors import TeamErrors
 
 
 class Team(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=NAME_MAX_LENGTH)
     captain = models.ForeignKey(
         "teams.Player",
         on_delete=models.SET_NULL,

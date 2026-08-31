@@ -1,3 +1,4 @@
+from core.constants import MAX_SHIRT_NUMBER, MIN_SHIRT_NUMBER
 from core.exceptions import AppException, ErrorType
 
 
@@ -9,7 +10,7 @@ class TeamErrors:
     )
     InvalidPlayerShirtNumber = AppException(
         "invalid_player_shirt_number",
-        "El dorsal preferido debe estar entre 1 y 99",
+        f"El dorsal preferido debe estar entre {MIN_SHIRT_NUMBER} y {MAX_SHIRT_NUMBER}",
         ErrorType.VALIDATION,
     )
     PlayerShirtNumberAlreadyExists = AppException(

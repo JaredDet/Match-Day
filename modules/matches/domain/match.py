@@ -8,8 +8,11 @@ from typing import TYPE_CHECKING
 from django.db import models
 from django.utils import timezone
 
+from core.constants import NAME_MAX_LENGTH
 from modules.matches.domain.match_event import TeamSide, validate_match_event
 from modules.matches.errors import MatchErrors
+
+FIXTURE_KEY_LENGTH = 64
 
 _UNSET = object()
 
@@ -48,10 +51,10 @@ class Match(models.Model):
         on_delete=models.PROTECT,
         related_name="away_matches",
     )
-    home_team_name = models.CharField(max_length=200)
-    away_team_name = models.CharField(max_length=200)
-    stadium_name = models.CharField(max_length=200, null=True, blank=True)
-    referee_name = models.CharField(max_length=200, null=True, blank=True)
+    home_team_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    away_team_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    stadium_name = models.CharField(max_length=NAME_MAX_LENGTH, null=True, blank=True)
+    referee_name = models.CharField(max_length=NAME_MAX_LENGTH, null=True, blank=True)
     home_formation = models.CharField(
         max_length=20,
         choices=MatchFormation.choices,
@@ -64,7 +67,11 @@ class Match(models.Model):
         null=True,
         blank=True,
     )
-    fixture_key = models.CharField(max_length=64, unique=True, editable=False)
+    fixture_key = models.CharField(
+        max_length=FIXTURE_KEY_LENGTH,
+        unique=True,
+        editable=False,
+    )
     home_goal_count = models.PositiveSmallIntegerField(default=0)
     away_goal_count = models.PositiveSmallIntegerField(default=0)
     home_card_count = models.PositiveSmallIntegerField(default=0)

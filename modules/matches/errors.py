@@ -1,4 +1,9 @@
+from core.constants import MAX_SHIRT_NUMBER, MIN_SHIRT_NUMBER
 from core.exceptions import AppException, ErrorType
+from modules.matches.constants import (
+    MAX_MATCH_MINUTE,
+    MIN_MATCH_MINUTE,
+)
 
 
 class MatchErrors:
@@ -24,7 +29,7 @@ class MatchErrors:
     )
     InvalidShirtNumber = AppException(
         "invalid_shirt_number",
-        "El número de camiseta debe estar entre 1 y 99",
+        f"El número de camiseta debe estar entre {MIN_SHIRT_NUMBER} y {MAX_SHIRT_NUMBER}",
         ErrorType.VALIDATION,
     )
     InvalidFormation = AppException(
@@ -84,7 +89,7 @@ class MatchErrors:
     )
     InvalidMinute = AppException(
         "invalid_match_minute",
-        "El minuto debe estar entre 0 y 130",
+        f"El minuto debe estar entre {MIN_MATCH_MINUTE} y {MAX_MATCH_MINUTE}",
         ErrorType.VALIDATION,
     )
     InvalidTeamSide = AppException(
