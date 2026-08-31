@@ -18,7 +18,7 @@ class PlayerQueryRepository:
     def get(self, player_id: UUID) -> PlayerDetail | None:
         from modules.matches.domain.card import Card, CardType
         from modules.matches.domain.goal import Goal
-        from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+        from modules.matches.domain.match_squad_player import MatchSquadPlayer
         from modules.teams.application.queries.get_player_query import (
             PlayerDetail,
             PlayerRecentMatch,
@@ -31,8 +31,8 @@ class PlayerQueryRepository:
             Player.objects.select_related("team")
             .annotate(
                 appearances_count=Count(
-                    "match_lineups__match_id",
-                    filter=Q(match_lineups__match__status=MatchStatus.FINISHED),
+                    "match_squads__match_id",
+                    filter=Q(match_squads__match__status=MatchStatus.FINISHED),
                     distinct=True,
                 ),
                 goals_count=Count(
@@ -64,7 +64,7 @@ class PlayerQueryRepository:
             return None
 
         lineups = tuple(
-            MatchLineupPlayer.objects.filter(
+            MatchSquadPlayer.objects.filter(
                 player_id=player_id,
                 match__status=MatchStatus.FINISHED,
             )
@@ -172,8 +172,8 @@ class PlayerQueryRepository:
 
         players = Player.objects.select_related("team").annotate(
             appearances_count=Count(
-                "match_lineups__match_id",
-                filter=Q(match_lineups__match__status=MatchStatus.FINISHED),
+                "match_squads__match_id",
+                filter=Q(match_squads__match__status=MatchStatus.FINISHED),
                 distinct=True,
             ),
             goals_count=Count(

@@ -11,13 +11,16 @@ from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
-from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+from modules.matches.domain.match_squad_player import (
+    MatchSquadPlayer,
+    MatchSquadRole,
+)
 
 if TYPE_CHECKING:
     from modules.matches.application.queries.get_match_query import (
         MatchDetail,
         MatchEventDetail,
-        MatchLineupPlayerDetail,
+        MatchSquadPlayerDetail,
     )
     from modules.matches.application.queries.list_matches_query import MatchSummary
 
@@ -146,13 +149,13 @@ class MatchQueryRepository:
             events=events,
         )
 
-    def _get_lineup(self, match_id: UUID) -> tuple[MatchLineupPlayerDetail, ...]:
+    def _get_lineup(self, match_id: UUID) -> tuple[MatchSquadPlayerDetail, ...]:
         from modules.matches.application.queries.get_match_query import (
-            MatchLineupPlayerDetail,
+            MatchSquadPlayerDetail,
         )
 
         rows = (
-            MatchLineupPlayer.objects.filter(match_id=match_id)
+            MatchSquadPlayer.objects.filter(match_id=match_id)
             .annotate(
                 team_order=Case(
                     When(team_side=TeamSide.HOME, then=Value(0)),
@@ -166,15 +169,17 @@ class MatchQueryRepository:
                 "player__name",
                 "team_side",
                 "shirt_number",
+                "role",
                 "is_captain",
             )
         )
         return tuple(
-            MatchLineupPlayerDetail(
+            MatchSquadPlayerDetail(
                 player_id=row["player_id"],
                 player_name=row["player__name"],
                 team_side=TeamSide(row["team_side"]),
                 shirt_number=row["shirt_number"],
+                role=MatchSquadRole(row["role"]),
                 is_captain=row["is_captain"],
             )
             for row in rows

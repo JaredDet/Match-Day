@@ -25,12 +25,14 @@ def test_parses_formation_enum_and_players():
             "formation": "4-3-3",
             "captain_id": str(captain_id),
             "players": _players(),
+            "substitutes": _players(3),
         }
     )
 
     assert request.is_valid(), request.errors
     assert request.validated_data["formation"] == MatchFormation.FOUR_THREE_THREE
     assert len(request.validated_data["players"]) == 11
+    assert len(request.validated_data["substitutes"]) == 3
     assert request.validated_data["captain_id"] == captain_id
 
 

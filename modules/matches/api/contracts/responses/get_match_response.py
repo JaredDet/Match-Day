@@ -3,6 +3,7 @@ from rest_framework import serializers
 from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_squad_player import MatchSquadRole
 
 
 class MatchEventResponse(serializers.Serializer):
@@ -14,11 +15,12 @@ class MatchEventResponse(serializers.Serializer):
     minute = serializers.IntegerField()
 
 
-class MatchLineupPlayerResponse(serializers.Serializer):
+class MatchSquadPlayerResponse(serializers.Serializer):
     player_id = serializers.UUIDField()
     player_name = serializers.CharField()
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
     shirt_number = serializers.IntegerField()
+    role = serializers.ChoiceField(choices=MatchSquadRole.choices)
     is_captain = serializers.BooleanField()
 
 
@@ -33,7 +35,7 @@ class TeamDetailResponse(serializers.Serializer):
 
 
 class MatchTeamDetailResponse(TeamDetailResponse):
-    lineup = MatchLineupPlayerResponse(many=True)
+    lineup = MatchSquadPlayerResponse(many=True)
 
 
 class GetMatchResponse(serializers.Serializer):

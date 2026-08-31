@@ -1,5 +1,5 @@
 @startuml Matchday Domain Model
-title Matchday V3 - Modelo de dominio
+title Matchday V4 - Modelo de dominio
 
 hide empty members
 skinparam classAttributeIconSize 0
@@ -56,6 +56,11 @@ package "matches" {
     red
   }
 
+  enum MatchSquadRole {
+    starter
+    substitute
+  }
+
   class Match {
     +UUID id
     +UUID home_team_id
@@ -77,7 +82,7 @@ package "matches" {
     --
     +schedule(...): Match
     +set_formation(...): void
-    +add_lineup_player(...): MatchLineupPlayer
+    +add_squad_player(...): MatchSquadPlayer
     +start(...): void
     +finish(...): void
     +register_goal(...): Goal
@@ -86,12 +91,13 @@ package "matches" {
     +rescind_card(...): void
   }
 
-  class MatchLineupPlayer {
+  class MatchSquadPlayer {
     +UUID id
     +UUID match_id
     +UUID player_id
     +TeamSide team_side
     +int shirt_number
+    +MatchSquadRole role
     +bool is_captain
   }
 
@@ -125,15 +131,16 @@ Team "1" -- "0..*" Player : plantilla
 Team "0..1" --> "0..1" Player : capitán habitual
 Team "1" <-- "0..*" Match : local
 Team "1" <-- "0..*" Match : visitante
-Match "1" *-- "0..22" MatchLineupPlayer : alineación
-Player "1" <-- "0..*" MatchLineupPlayer
+Match "1" *-- "11..*" MatchSquadPlayer : convocatoria
+Player "1" <-- "0..*" MatchSquadPlayer
 Match "1" *-- "0..*" Goal
 Match "1" *-- "0..*" Card
 Player "1" <-- "0..*" Goal
 Player "1" <-- "0..*" Card
 Match --> MatchStatus
 Match --> MatchFormation
-MatchLineupPlayer --> TeamSide
+MatchSquadPlayer --> TeamSide
+MatchSquadPlayer --> MatchSquadRole
 Goal --> TeamSide
 Card --> TeamSide
 Card --> CardType
@@ -144,11 +151,12 @@ note right of Match
   mientras el partido está programado.
 end note
 
-note bottom of MatchLineupPlayer
+note bottom of MatchSquadPlayer
   Por equipo y partido:
-  - 11 jugadores
+  - exactamente 11 titulares
+  - cero o más suplentes
   - dorsales únicos
-  - cero o un capitán
+  - cero o un capitán titular
   Si captain_id se omite, se usa el
   habitual solo cuando está alineado.
   Nunca se selecciona otro automáticamente.

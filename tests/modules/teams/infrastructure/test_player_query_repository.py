@@ -5,7 +5,7 @@ from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import TeamSide
-from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+from modules.matches.domain.match_squad_player import MatchSquadPlayer
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 from modules.teams.infrastructure.query_repository.player_query_repository import (
@@ -30,7 +30,7 @@ def test_lists_players_with_team_and_permanent_captain_status():
         status=MatchStatus.FINISHED,
     )
     match.save()
-    MatchLineupPlayer.objects.create(
+    MatchSquadPlayer.objects.create(
         match=match,
         player=captain,
         team_side=TeamSide.HOME,
@@ -93,7 +93,7 @@ def test_gets_player_statistics_and_recent_match_from_player_perspective():
     match.home_goal_count = 2
     match.away_goal_count = 1
     match.save()
-    MatchLineupPlayer.objects.create(
+    MatchSquadPlayer.objects.create(
         match=match,
         player=player,
         team_side=TeamSide.HOME,

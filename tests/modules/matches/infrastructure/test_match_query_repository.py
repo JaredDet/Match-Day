@@ -43,7 +43,7 @@ def test_builds_chronological_match_detail_without_disallowed_events():
         minute=10,
     )
     match.disallow_goal(disallowed_goal)
-    lineup_player = match.add_lineup_player(
+    lineup_player = match.add_squad_player(
         player=home_player,
         shirt_number=9,
         is_captain=True,

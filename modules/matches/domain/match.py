@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from core.constants import NAME_MAX_LENGTH
 from modules.matches.domain.match_event import TeamSide, validate_match_event
+from modules.matches.domain.match_squad_player import MatchSquadPlayer, MatchSquadRole
 from modules.matches.errors import MatchErrors
 
 FIXTURE_KEY_LENGTH = 64
@@ -19,7 +20,6 @@ _UNSET = object()
 if TYPE_CHECKING:
     from modules.matches.domain.card import Card, CardType
     from modules.matches.domain.goal import Goal
-    from modules.matches.domain.match_lineup_player import MatchLineupPlayer
     from modules.teams.domain.player import Player
     from modules.teams.domain.team import Team
 
@@ -138,21 +138,21 @@ class Match(models.Model):
         else:
             self.away_formation = formation
 
-    def add_lineup_player(
+    def add_squad_player(
         self,
         *,
         player: Player,
         shirt_number: int,
+        role: MatchSquadRole = MatchSquadRole.STARTER,
         is_captain: bool = False,
-    ) -> MatchLineupPlayer:
-        from modules.matches.domain.match_lineup_player import MatchLineupPlayer
-
+    ) -> MatchSquadPlayer:
         team_side = self._resolve_team_side(player.team_id)
-        return MatchLineupPlayer.create(
+        return MatchSquadPlayer.create(
             match=self,
             player=player,
             team_side=team_side,
             shirt_number=shirt_number,
+            role=role,
             is_captain=is_captain,
         )
 

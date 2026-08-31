@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import TeamSide
-from modules.matches.domain.match_lineup_player import MatchLineupPlayer
+from modules.matches.domain.match_squad_player import MatchSquadPlayer
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -28,7 +28,17 @@ def _schedule_match(*, home_team_name, away_team_name, scheduled_at):
 
 def _create_player(match, team_side, name):
     team = match.home_team if team_side == TeamSide.HOME else match.away_team
-    return Player.objects.create(team=team, name=name)
+    player = Player.objects.create(team=team, name=name)
+    MatchSquadPlayer.objects.create(
+        match=match,
+        player=player,
+        team_side=team_side,
+        shirt_number=(
+            MatchSquadPlayer.objects.filter(match=match, team_side=team_side).count()
+            + 1
+        ),
+    )
+    return player
 
 
 def test_creates_match_through_injected_use_case():
@@ -421,14 +431,32 @@ def test_gets_match_detail_with_unified_event_timeline():
         "name": "Colo-Colo",
         "goals": 1,
         "formation": None,
-        "lineup": [],
+        "lineup": [
+            {
+                "player_id": str(goal_player.id),
+                "player_name": "Goleador Local",
+                "team_side": TeamSide.HOME,
+                "shirt_number": 1,
+                "role": "starter",
+                "is_captain": False,
+            }
+        ],
     }
     assert response.data["away_team"] == {
         "id": str(match.away_team_id),
         "name": "Universidad de Chile",
         "goals": 0,
         "formation": None,
-        "lineup": [],
+        "lineup": [
+            {
+                "player_id": str(card_player.id),
+                "player_name": "Defensor Visitante",
+                "team_side": TeamSide.AWAY,
+                "shirt_number": 1,
+                "role": "starter",
+                "is_captain": False,
+            }
+        ],
     }
     assert [event["type"] for event in response.data["events"]] == [
         "goal",
@@ -527,6 +555,10 @@ def test_sets_and_replaces_match_lineup_with_formation():
         Player.objects.create(team=match.home_team, name=f"Jugador {index}")
         for index in range(1, 12)
     ]
+    substitutes = [
+        Player.objects.create(team=match.home_team, name=f"Suplente {index}")
+        for index in range(1, 3)
+    ]
     match.home_team.captain = players[0]
     match.home_team.save()
 
@@ -541,6 +573,13 @@ def test_sets_and_replaces_match_lineup_with_formation():
                 }
                 for index, player in enumerate(players, start=1)
             ],
+            "substitutes": [
+                {
+                    "player_id": str(player.id),
+                    "shirt_number": index + 11,
+                }
+                for index, player in enumerate(substitutes, start=1)
+            ],
         },
         format="json",
     )
@@ -549,14 +588,14 @@ def test_sets_and_replaces_match_lineup_with_formation():
     match.refresh_from_db()
     assert match.home_formation == MatchFormation.FOUR_THREE_THREE
     assert (
-        MatchLineupPlayer.objects.filter(
+        MatchSquadPlayer.objects.filter(
             match=match,
             team_side=TeamSide.HOME,
         ).count()
-        == 11
+        == 13
     )
     assert (
-        MatchLineupPlayer.objects.get(
+        MatchSquadPlayer.objects.get(
             match=match,
             team_side=TeamSide.HOME,
             is_captain=True,
@@ -583,6 +622,39 @@ def test_sets_and_replaces_match_lineup_with_formation():
     assert response.status_code == 204
     match.refresh_from_db()
     assert match.home_formation == MatchFormation.FOUR_FOUR_TWO
-    lineup = MatchLineupPlayer.objects.filter(match=match, team_side=TeamSide.HOME)
+    lineup = MatchSquadPlayer.objects.filter(match=match, team_side=TeamSide.HOME)
     assert lineup.count() == 11
     assert lineup.get(is_captain=True).player == players[1]
+
+
+def test_rejects_substitute_as_match_captain():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+    starters = [
+        Player.objects.create(team=match.home_team, name=f"Titular {index}")
+        for index in range(1, 12)
+    ]
+    substitute = Player.objects.create(team=match.home_team, name="Suplente")
+
+    response = APIClient().put(
+        reverse("matches-set-lineup", args=[match.id, TeamSide.HOME]),
+        {
+            "formation": MatchFormation.FOUR_THREE_THREE,
+            "captain_id": str(substitute.id),
+            "players": [
+                {"player_id": str(player.id), "shirt_number": index}
+                for index, player in enumerate(starters, start=1)
+            ],
+            "substitutes": [
+                {"player_id": str(substitute.id), "shirt_number": 18}
+            ],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data["code"] == "invalid_lineup_captain"

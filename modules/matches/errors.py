@@ -7,6 +7,16 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidSquadRole = AppException(
+        "invalid_match_squad_role",
+        "El rol del jugador en la convocatoria no es válido",
+        ErrorType.VALIDATION,
+    )
+    PlayerNotStarter = AppException(
+        "player_not_starter",
+        "Solo un jugador titular puede recibir eventos del partido",
+        ErrorType.VALIDATION,
+    )
     InvalidLineupSize = AppException(
         "invalid_lineup_size",
         "La alineación debe contener exactamente once jugadores",

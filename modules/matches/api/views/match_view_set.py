@@ -121,6 +121,10 @@ class MatchViewSet(ViewSet):
             players=[
                 LineupPlayerInput(**player) for player in request_contract.validated_data["players"]
             ],
+            substitutes=[
+                LineupPlayerInput(**player)
+                for player in request_contract.validated_data.get("substitutes", [])
+            ],
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 

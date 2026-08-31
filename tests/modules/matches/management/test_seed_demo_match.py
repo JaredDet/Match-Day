@@ -32,10 +32,10 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert match.referee_name == "Alex Rivera"
     assert match.home_goal_count == 2
     assert match.away_goal_count == 1
-    assert match.lineup_players.count() == 22
-    assert match.lineup_players.filter(player__name="Mateo Rojas").exists()
-    assert match.lineup_players.filter(player__name="Franco Bustos").exists()
-    assert not match.lineup_players.filter(player__name__startswith="Jugador ").exists()
+    assert match.squad_players.count() == 22
+    assert match.squad_players.filter(player__name="Mateo Rojas").exists()
+    assert match.squad_players.filter(player__name="Franco Bustos").exists()
+    assert not match.squad_players.filter(player__name__startswith="Jugador ").exists()
     assert match.goals.filter(disallowed_at__isnull=True).count() == 3
     assert match.goals.filter(disallowed_at__isnull=False).count() == 1
     assert match.cards.filter(rescinded_at__isnull=True).count() == 2

@@ -22,3 +22,4 @@ class SetMatchLineupRequest(serializers.Serializer):
         min_length=MATCH_LINEUP_SIZE,
         max_length=MATCH_LINEUP_SIZE,
     )
+    substitutes = LineupPlayerRequest(many=True, required=False, allow_empty=True)
