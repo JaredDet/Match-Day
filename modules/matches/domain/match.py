@@ -9,7 +9,12 @@ from django.db import models
 from django.utils import timezone
 
 from core.constants import NAME_MAX_LENGTH
-from modules.matches.domain.match_event import TeamSide, validate_match_event
+from modules.matches.domain.match_event import (
+    MatchPeriod,
+    TeamSide,
+    validate_match_clock,
+    validate_match_event,
+)
 from modules.matches.domain.match_squad_player import MatchSquadPlayer, MatchSquadRole
 from modules.matches.errors import MatchErrors
 
@@ -81,6 +86,14 @@ class Match(models.Model):
         choices=MatchStatus.choices,
         default=MatchStatus.SCHEDULED,
     )
+    current_period = models.CharField(
+        max_length=20,
+        choices=MatchPeriod.choices,
+        null=True,
+        blank=True,
+    )
+    current_minute = models.PositiveSmallIntegerField(null=True, blank=True)
+    current_added_minute = models.PositiveSmallIntegerField(default=0)
     scheduled_at = models.DateTimeField()
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -177,15 +190,66 @@ class Match(models.Model):
         if self.status != MatchStatus.SCHEDULED:
             raise MatchErrors.InvalidState
         self.status = MatchStatus.LIVE
+        self.current_period = MatchPeriod.FIRST_HALF
+        self.current_minute = 1
+        self.current_added_minute = 0
         self.started_at = started_at or timezone.now()
+
+    def end_first_half(self) -> None:
+        self._ensure_period(MatchPeriod.FIRST_HALF)
+        if self.current_minute < 45:
+            self.current_minute = 45
+            self.current_added_minute = 0
+        self.current_period = MatchPeriod.HALFTIME
+
+    def start_second_half(self) -> None:
+        self._ensure_period(MatchPeriod.HALFTIME)
+        self.current_period = MatchPeriod.SECOND_HALF
+        self.current_minute = 46
+        self.current_added_minute = 0
+
+    def update_clock(
+        self,
+        *,
+        expected_period: MatchPeriod,
+        minute: int,
+        added_minute: int = 0,
+    ) -> None:
+        self._ensure_live()
+        if self.current_period != expected_period:
+            raise MatchErrors.PeriodMismatch
+        validate_match_clock(expected_period, minute, added_minute)
+        if (minute, added_minute) < (
+            self.current_minute,
+            self.current_added_minute,
+        ):
+            raise MatchErrors.ClockCannotGoBackwards
+        self.current_minute = minute
+        self.current_added_minute = added_minute
+
+    def advance_period(self, expected_period: MatchPeriod) -> None:
+        self._ensure_live()
+        if self.current_period != expected_period:
+            raise MatchErrors.PeriodMismatch
+        if expected_period == MatchPeriod.FIRST_HALF:
+            self.end_first_half()
+            return
+        if expected_period == MatchPeriod.HALFTIME:
+            self.start_second_half()
+            return
+        raise MatchErrors.InvalidPeriod
 
     def finish(self, finished_at: datetime | None = None) -> None:
         if self.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
+        self._ensure_period(MatchPeriod.SECOND_HALF)
         resolved_finished_at = finished_at or timezone.now()
         if self.started_at is None or resolved_finished_at < self.started_at:
             raise MatchErrors.InvalidFinishTime
         self.status = MatchStatus.FINISHED
+        if self.current_minute < 90:
+            self.current_minute = 90
+            self.current_added_minute = 0
         self.finished_at = resolved_finished_at
 
     def register_goal(
@@ -193,13 +257,16 @@ class Match(models.Model):
         *,
         player: Player,
         minute: int,
+        added_minute: int = 0,
         event_id: uuid.UUID | None = None,
     ):
         from modules.matches.domain.goal import Goal
 
         self._ensure_live()
+        period = self._current_event_period()
         team_side = self._resolve_team_side(player.team_id)
-        validate_match_event(team_side, minute)
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
         if team_side == TeamSide.HOME:
             self.home_goal_count += 1
         else:
@@ -210,7 +277,9 @@ class Match(models.Model):
             player=player,
             team_side=team_side,
             player_name=player.name,
+            period=period,
             minute=minute,
+            added_minute=added_minute,
         )
 
     def register_card(
@@ -219,13 +288,16 @@ class Match(models.Model):
         player: Player,
         card_type: CardType,
         minute: int,
+        added_minute: int = 0,
         event_id: uuid.UUID | None = None,
     ):
         from modules.matches.domain.card import Card, CardType
 
         self._ensure_live()
+        period = self._current_event_period()
         team_side = self._resolve_team_side(player.team_id)
-        validate_match_event(team_side, minute)
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
         if not isinstance(card_type, CardType):
             raise MatchErrors.InvalidCardType
         if team_side == TeamSide.HOME:
@@ -239,7 +311,9 @@ class Match(models.Model):
             team_side=team_side,
             player_name=player.name,
             card_type=card_type,
+            period=period,
             minute=minute,
+            added_minute=added_minute,
         )
 
     def disallow_goal(self, goal: Goal) -> None:
@@ -262,6 +336,32 @@ class Match(models.Model):
         if self.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
 
+    def _ensure_period(self, expected_period: MatchPeriod) -> None:
+        self._ensure_live()
+        if self.current_period != expected_period:
+            raise MatchErrors.InvalidPeriod
+
+    def _current_event_period(self) -> MatchPeriod:
+        try:
+            period = MatchPeriod(self.current_period)
+        except (TypeError, ValueError):
+            raise MatchErrors.InvalidPeriod from None
+        if period == MatchPeriod.HALFTIME:
+            raise MatchErrors.InvalidPeriod
+        return period
+
+    def ensure_event_time_reached(
+        self,
+        period: MatchPeriod,
+        minute: int,
+        added_minute: int,
+    ) -> None:
+        if period != self.current_period or (minute, added_minute) > (
+            self.current_minute,
+            self.current_added_minute,
+        ):
+            raise MatchErrors.EventAheadOfClock
+
     def _resolve_team_side(self, team_id: uuid.UUID) -> TeamSide:
         if team_id == self.home_team_id:
             return TeamSide.HOME
@@ -276,6 +376,36 @@ class Match(models.Model):
             models.CheckConstraint(
                 condition=models.Q(status__in=MatchStatus.values),
                 name="valid_match_status",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(current_period__isnull=True)
+                | models.Q(current_period__in=MatchPeriod.values),
+                name="valid_match_period",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(current_period__isnull=True, current_minute__isnull=True)
+                    | models.Q(
+                        current_period=MatchPeriod.FIRST_HALF,
+                        current_minute__gte=1,
+                        current_minute__lte=45,
+                    )
+                    | models.Q(
+                        current_period=MatchPeriod.HALFTIME,
+                        current_minute=45,
+                    )
+                    | models.Q(
+                        current_period=MatchPeriod.SECOND_HALF,
+                        current_minute__gte=46,
+                        current_minute__lte=90,
+                    )
+                ),
+                name="valid_match_clock_period",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(current_added_minute=0)
+                | models.Q(current_minute__in=[45, 90]),
+                name="valid_match_clock_added_minute",
             ),
             models.CheckConstraint(
                 condition=(
@@ -299,16 +429,23 @@ class Match(models.Model):
                 condition=(
                     models.Q(
                         status=MatchStatus.SCHEDULED,
+                        current_period__isnull=True,
+                        current_minute__isnull=True,
+                        current_added_minute=0,
                         started_at__isnull=True,
                         finished_at__isnull=True,
                     )
                     | models.Q(
                         status=MatchStatus.LIVE,
+                        current_period__in=MatchPeriod.values,
+                        current_minute__isnull=False,
                         started_at__isnull=False,
                         finished_at__isnull=True,
                     )
                     | models.Q(
                         status=MatchStatus.FINISHED,
+                        current_period=MatchPeriod.SECOND_HALF,
+                        current_minute=90,
                         started_at__isnull=False,
                         finished_at__isnull=False,
                     )

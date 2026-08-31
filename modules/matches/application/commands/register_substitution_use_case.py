@@ -35,6 +35,7 @@ class RegisterSubstitutionUseCase:
         player_out_id: UUID,
         player_in_id: UUID,
         minute: int,
+        added_minute: int = 0,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
         if match is None:
@@ -60,6 +61,7 @@ class RegisterSubstitutionUseCase:
             player_out=player_out,
             player_in=player_in,
             minute=minute,
+            added_minute=added_minute,
         )
         self.squad_repository.save_all([player_out, player_in])
         self.substitution_repository.save(substitution)

@@ -5,7 +5,7 @@ import pytest
 from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -13,7 +13,10 @@ from tests.mothers.matches.match_mother import MatchMother
 
 
 def test_registers_goal_with_player_snapshot_during_live_match():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+    )
     player = Player.create(team_id=match.home_team_id, name="Goleador Local")
     event_id = uuid.uuid4()
 
@@ -41,6 +44,48 @@ def test_registers_card_and_derives_away_side():
     assert match.away_card_count == 1
 
 
+def test_registers_first_half_added_time_without_changing_official_minute():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+    )
+    player = Player.create(team_id=match.home_team_id, name="Goleador")
+    match.update_clock(
+        expected_period=MatchPeriod.FIRST_HALF,
+        minute=45,
+        added_minute=3,
+    )
+
+    goal = match.register_goal(player=player, minute=45, added_minute=3)
+
+    assert goal.period == MatchPeriod.FIRST_HALF
+    assert goal.minute == 45
+    assert goal.added_minute == 3
+
+
+def test_rejects_added_time_outside_end_of_period():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
+    player = Player.create(team_id=match.home_team_id, name="Goleador")
+
+    with pytest.raises(type(MatchErrors.InvalidAddedMinute)):
+        match.register_goal(player=player, minute=80, added_minute=2)
+
+
+def test_rejects_event_ahead_of_match_clock():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+        current_minute=20,
+    )
+    player = Player.create(team_id=match.home_team_id, name="Goleador")
+
+    with pytest.raises(type(MatchErrors.EventAheadOfClock)):
+        match.register_goal(player=player, minute=21)
+
+
 @pytest.mark.parametrize("status", [MatchStatus.SCHEDULED, MatchStatus.FINISHED])
 def test_rejects_event_when_match_is_not_live(status):
     match = MatchMother.create(status=status)
@@ -51,7 +96,10 @@ def test_rejects_event_when_match_is_not_live(status):
 
 
 def test_rejects_player_from_team_outside_match():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+    )
     player = Player.create(team_id=Team.create(name="Otro equipo").id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidPlayerTeam)) as exc_info:
@@ -70,7 +118,10 @@ def test_rejects_invalid_event_minute(minute):
 
 
 def test_rejects_invalid_card_type():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+    )
     player = Player.create(team_id=match.home_team_id, name="Jugador")
 
     with pytest.raises(type(MatchErrors.InvalidCardType)):

@@ -4,7 +4,7 @@ from django.utils import timezone
 from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadPlayer
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -42,6 +42,7 @@ def test_lists_players_with_team_and_permanent_captain_status():
         player=captain,
         team_side=TeamSide.HOME,
         player_name=captain.name,
+        period=MatchPeriod.FIRST_HALF,
         minute=20,
     )
     Goal.objects.create(
@@ -49,6 +50,7 @@ def test_lists_players_with_team_and_permanent_captain_status():
         player=captain,
         team_side=TeamSide.HOME,
         player_name=captain.name,
+        period=MatchPeriod.FIRST_HALF,
         minute=30,
         disallowed_at=timezone.now(),
     )
@@ -105,6 +107,7 @@ def test_gets_player_statistics_and_recent_match_from_player_perspective():
         player=player,
         team_side=TeamSide.HOME,
         player_name=player.name,
+        period=MatchPeriod.FIRST_HALF,
         minute=20,
     )
     Card.objects.create(
@@ -113,6 +116,7 @@ def test_gets_player_statistics_and_recent_match_from_player_perspective():
         team_side=TeamSide.HOME,
         player_name=player.name,
         card_type=CardType.YELLOW,
+        period=MatchPeriod.FIRST_HALF,
         minute=35,
     )
     Card.objects.create(
@@ -121,6 +125,7 @@ def test_gets_player_statistics_and_recent_match_from_player_perspective():
         team_side=TeamSide.HOME,
         player_name=player.name,
         card_type=CardType.RED,
+        period=MatchPeriod.SECOND_HALF,
         minute=70,
         rescinded_at=timezone.now(),
     )

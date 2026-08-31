@@ -6,7 +6,7 @@ from uuid import UUID
 from injector import inject
 
 from modules.matches.domain.match import MatchFormation, MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
@@ -27,6 +27,8 @@ class MatchEventDetail:
     type: MatchEventType
     team_side: TeamSide
     minute: int
+    period: MatchPeriod
+    added_minute: int
     player_id: UUID | None = None
     player_name: str | None = None
     player_out_id: UUID | None = None
@@ -50,6 +52,7 @@ class MatchSquadPlayerDetail:
 class MatchTeamDetail:
     id: UUID
     name: str
+    team_side: TeamSide
     goals: int
     formation: MatchFormation | None
     lineup: tuple[MatchSquadPlayerDetail, ...]
@@ -59,6 +62,9 @@ class MatchTeamDetail:
 class MatchDetail:
     id: UUID
     status: MatchStatus
+    current_period: MatchPeriod | None
+    current_minute: int | None
+    current_added_minute: int
     scheduled_at: datetime
     started_at: datetime | None
     finished_at: datetime | None

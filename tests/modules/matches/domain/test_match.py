@@ -5,6 +5,7 @@ import pytest
 from django.utils import timezone
 
 from modules.matches.domain.match import Match, MatchStatus
+from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.team import Team
 from tests.mothers.matches.match_mother import MatchMother
@@ -71,6 +72,7 @@ def test_starts_scheduled_match():
     match.start(started_at)
 
     assert match.status == MatchStatus.LIVE
+    assert match.current_period == MatchPeriod.FIRST_HALF
     assert match.started_at == started_at
     assert match.finished_at is None
 
@@ -104,8 +106,42 @@ def test_cannot_start_match_twice():
         match.start()
 
 
+def test_moves_from_first_half_through_halftime_to_second_half():
+    match = MatchMother.create()
+    match.start()
+
+    match.end_first_half()
+    assert match.current_period == MatchPeriod.HALFTIME
+
+    match.start_second_half()
+    assert match.current_period == MatchPeriod.SECOND_HALF
+
+
+def test_cannot_finish_during_first_half_or_halftime():
+    match = MatchMother.create()
+    match.start()
+
+    with pytest.raises(type(MatchErrors.InvalidPeriod)):
+        match.finish()
+
+    match.end_first_half()
+    with pytest.raises(type(MatchErrors.InvalidPeriod)):
+        match.finish()
+
+
+def test_rejects_moving_clock_backwards():
+    match = MatchMother.create()
+    match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=30)
+
+    with pytest.raises(type(MatchErrors.ClockCannotGoBackwards)):
+        match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=29)
+
 def test_finishes_live_match():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     finished_at = match.started_at + timedelta(hours=2)
 
     match.finish(finished_at)
@@ -122,7 +158,10 @@ def test_cannot_finish_scheduled_match():
 
 
 def test_cannot_finish_before_start():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
 
     with pytest.raises(type(MatchErrors.InvalidFinishTime)):
         match.finish(match.started_at - timedelta(seconds=1))

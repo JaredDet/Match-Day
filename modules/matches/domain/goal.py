@@ -5,8 +5,13 @@ from django.db import models
 from django.utils import timezone
 
 from core.constants import NAME_MAX_LENGTH
-from modules.matches.constants import MAX_MATCH_MINUTE, MIN_MATCH_MINUTE
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.constants import (
+    FIRST_HALF_END_MINUTE,
+    MAX_MATCH_MINUTE,
+    MIN_MATCH_MINUTE,
+    SECOND_HALF_START_MINUTE,
+)
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.errors import MatchErrors
 
 
@@ -24,7 +29,9 @@ class Goal(models.Model):
     )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
     player_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    period = models.CharField(max_length=20, choices=MatchPeriod.choices)
     minute = models.PositiveSmallIntegerField()
+    added_minute = models.PositiveSmallIntegerField(default=0)
     disallowed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -47,6 +54,33 @@ class Goal(models.Model):
                     minute__lte=MAX_MATCH_MINUTE,
                 ),
                 name="valid_goal_minute",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        period=MatchPeriod.FIRST_HALF,
+                        minute__gte=MIN_MATCH_MINUTE,
+                        minute__lte=FIRST_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        period=MatchPeriod.SECOND_HALF,
+                        minute__gte=SECOND_HALF_START_MINUTE,
+                        minute__lte=MAX_MATCH_MINUTE,
+                    )
+                ),
+                name="valid_goal_period_minute",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(added_minute=0)
+                | models.Q(
+                    period=MatchPeriod.FIRST_HALF,
+                    minute=FIRST_HALF_END_MINUTE,
+                )
+                | models.Q(
+                    period=MatchPeriod.SECOND_HALF,
+                    minute=MAX_MATCH_MINUTE,
+                ),
+                name="valid_goal_added_minute",
             ),
             models.CheckConstraint(
                 condition=~models.Q(player_name=""),

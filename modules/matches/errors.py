@@ -7,6 +7,31 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    ClockCannotGoBackwards = AppException(
+        "match_clock_cannot_go_backwards",
+        "El reloj del partido no puede retroceder dentro del mismo periodo",
+        ErrorType.CONFLICT,
+    )
+    EventAheadOfClock = AppException(
+        "event_ahead_of_match_clock",
+        "El evento no puede ocurrir después del minuto actual del partido",
+        ErrorType.VALIDATION,
+    )
+    PeriodMismatch = AppException(
+        "match_period_mismatch",
+        "El partido no se encuentra en el periodo indicado",
+        ErrorType.CONFLICT,
+    )
+    InvalidPeriod = AppException(
+        "invalid_match_period",
+        "El partido no se encuentra en un periodo válido para registrar eventos",
+        ErrorType.CONFLICT,
+    )
+    InvalidAddedMinute = AppException(
+        "invalid_added_minute",
+        "El tiempo añadido solo puede aplicarse al final de cada tiempo",
+        ErrorType.VALIDATION,
+    )
     InvalidOutgoingPlayer = AppException(
         "invalid_outgoing_player",
         "El jugador que sale debe estar actualmente en cancha",

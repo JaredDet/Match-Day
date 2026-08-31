@@ -5,7 +5,7 @@ import pytest
 
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import MatchFormation, MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
 )
@@ -26,13 +26,10 @@ def test_builds_chronological_match_detail_without_disallowed_events():
         formation=MatchFormation.FOUR_FOUR_TWO,
     )
     match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=20)
     home_player = Player.objects.create(team=match.home_team, name="Goleador")
     away_player = Player.objects.create(team=match.away_team, name="Defensor")
     cancelled_player = Player.objects.create(team=match.away_team, name="Gol anulado")
-    late_goal = match.register_goal(
-        player=home_player,
-        minute=60,
-    )
     early_card = match.register_card(
         player=away_player,
         card_type=CardType.YELLOW,
@@ -43,6 +40,13 @@ def test_builds_chronological_match_detail_without_disallowed_events():
         minute=10,
     )
     match.disallow_goal(disallowed_goal)
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=60)
+    late_goal = match.register_goal(
+        player=home_player,
+        minute=60,
+    )
     lineup_player = match.add_squad_player(
         player=home_player,
         shirt_number=9,
@@ -60,6 +64,8 @@ def test_builds_chronological_match_detail_without_disallowed_events():
     assert result.home_team.id == match.home_team_id
     assert result.home_team.goals == 1
     assert result.away_team.goals == 0
+    assert result.home_team.team_side == TeamSide.HOME
+    assert result.away_team.team_side == TeamSide.AWAY
     assert result.home_team.formation == MatchFormation.FOUR_THREE_THREE
     assert result.away_team.formation == MatchFormation.FOUR_FOUR_TWO
     assert len(result.home_team.lineup) == 1

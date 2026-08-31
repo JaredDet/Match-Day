@@ -5,6 +5,7 @@ import pytest
 
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.errors import MatchErrors
 from tests.mothers.matches.match_mother import MatchMother
 
@@ -12,7 +13,10 @@ pytestmark = pytest.mark.django_db
 
 
 def test_finishes_and_persists_live_match():
-    match = MatchMother.create(status=MatchStatus.LIVE)
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     repository = Mock()
     repository.get_for_update.return_value = match
     use_case = FinishMatchUseCase(repository)

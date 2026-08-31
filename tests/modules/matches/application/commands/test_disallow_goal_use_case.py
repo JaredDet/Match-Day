@@ -15,7 +15,7 @@ pytestmark = pytest.mark.django_db
 def test_disallows_goal_and_decrements_score():
     match = MatchMother.create(status=MatchStatus.LIVE)
     player = Player.create(team_id=match.home_team_id, name="Goleador")
-    goal = match.register_goal(player=player, minute=34)
+    goal = match.register_goal(player=player, minute=54)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match
     goal_repository = Mock()
@@ -33,7 +33,7 @@ def test_disallows_goal_and_decrements_score():
 def test_rejects_disallowing_goal_twice():
     match = MatchMother.create(status=MatchStatus.LIVE)
     player = Player.create(team_id=match.away_team_id, name="Goleador")
-    goal = match.register_goal(player=player, minute=20)
+    goal = match.register_goal(player=player, minute=60)
     match.disallow_goal(goal)
     match_repository = Mock()
     match_repository.get_for_update.return_value = match

@@ -37,6 +37,7 @@ class RegisterCardUseCase:
         player_id: UUID,
         card_type: CardType,
         minute: int,
+        added_minute: int = 0,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
         if match is None:
@@ -55,6 +56,7 @@ class RegisterCardUseCase:
             player=player,
             card_type=card_type,
             minute=minute,
+            added_minute=added_minute,
         )
         self.card_repository.save(card)
         self.match_repository.save(match)

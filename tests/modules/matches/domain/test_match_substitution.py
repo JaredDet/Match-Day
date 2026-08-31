@@ -1,5 +1,7 @@
 import pytest
 
+from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.domain.match_squad_player import MatchSquadRole
 from modules.matches.domain.match_substitution import MatchSubstitution
 from modules.matches.errors import MatchErrors
@@ -8,7 +10,10 @@ from tests.mothers.matches.match_mother import MatchMother
 
 
 def test_substitutes_player_and_updates_on_field_state():
-    match = MatchMother.create()
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     player_out = Player.create(team_id=match.home_team_id, name="Titular")
     player_in = Player.create(team_id=match.home_team_id, name="Suplente")
     squad_player_out = match.add_squad_player(player=player_out, shirt_number=7)
@@ -31,7 +36,10 @@ def test_substitutes_player_and_updates_on_field_state():
 
 
 def test_rejects_outgoing_player_who_is_not_on_field():
-    match = MatchMother.create()
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     first_substitute = Player.create(team_id=match.home_team_id, name="Suplente uno")
     second_substitute = Player.create(team_id=match.home_team_id, name="Suplente dos")
     player_out = match.add_squad_player(
@@ -55,7 +63,10 @@ def test_rejects_outgoing_player_who_is_not_on_field():
 
 
 def test_rejects_starter_as_incoming_player():
-    match = MatchMother.create()
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     first = Player.create(team_id=match.home_team_id, name="Titular uno")
     second = Player.create(team_id=match.home_team_id, name="Titular dos")
     player_out = match.add_squad_player(player=first, shirt_number=7)
@@ -71,7 +82,10 @@ def test_rejects_starter_as_incoming_player():
 
 
 def test_rejects_players_from_different_teams():
-    match = MatchMother.create()
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
     home_player = Player.create(team_id=match.home_team_id, name="Titular local")
     away_player = Player.create(team_id=match.away_team_id, name="Suplente visitante")
     player_out = match.add_squad_player(player=home_player, shirt_number=7)

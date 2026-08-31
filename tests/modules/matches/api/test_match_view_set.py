@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import (
     MatchSquadPlayer,
     MatchSquadRole,
@@ -167,6 +167,65 @@ def test_returns_not_found_when_starting_unknown_match():
     assert response.data["code"] == "match_not_found"
 
 
+def test_advances_match_through_halftime_and_second_half():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    url = reverse("matches-advance-period", args=[match.id])
+    halftime_response = APIClient().post(
+        url,
+        {"expected_period": "first_half"},
+        format="json",
+    )
+    repeated_response = APIClient().post(
+        url,
+        {"expected_period": "first_half"},
+        format="json",
+    )
+    second_half_response = APIClient().post(
+        url,
+        {"expected_period": "halftime"},
+        format="json",
+    )
+
+    assert halftime_response.status_code == 204
+    assert repeated_response.status_code == 409
+    assert repeated_response.data["code"] == "match_period_mismatch"
+    assert second_half_response.status_code == 204
+    match.refresh_from_db()
+    assert match.current_period == "second_half"
+
+
+def test_updates_match_clock_with_expected_period():
+    match = _schedule_match(
+        home_team_name="Colo-Colo",
+        away_team_name="Universidad de Chile",
+        scheduled_at=timezone.now(),
+    )
+    match.start()
+    match.save()
+
+    response = APIClient().patch(
+        reverse("matches-update-clock", args=[match.id]),
+        {
+            "expected_period": "first_half",
+            "minute": 45,
+            "added_minute": 2,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+    match.refresh_from_db()
+    assert match.current_minute == 45
+    assert match.current_added_minute == 2
+
+
 def test_finishes_live_match_through_injected_use_case():
     match = _schedule_match(
         home_team_name="Colo-Colo",
@@ -174,6 +233,8 @@ def test_finishes_live_match_through_injected_use_case():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.end_first_half()
+    match.start_second_half()
     match.save()
 
     response = APIClient().post(reverse("matches-finish", args=[match.id]))
@@ -213,6 +274,7 @@ def test_registers_goal_and_updates_score_through_injected_use_case():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=34)
     match.save()
     player = _create_player(match, TeamSide.HOME, "Goleador Local")
 
@@ -260,6 +322,9 @@ def test_registers_card_and_updates_counter_through_injected_use_case():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=80)
     match.save()
     player = _create_player(match, TeamSide.AWAY, "Defensor visitante")
 
@@ -320,6 +385,9 @@ def test_registers_substitution_and_updates_players_on_field():
         role=MatchSquadRole.SUBSTITUTE,
     ).save()
     match.start()
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=62)
     match.save()
 
     response = APIClient().post(
@@ -347,7 +415,9 @@ def test_registers_substitution_and_updates_players_on_field():
         "id": str(substitution.id),
         "type": "substitution",
         "team_side": TeamSide.HOME,
+        "period": "second_half",
         "minute": 60,
+        "added_minute": 0,
         "player_out_id": str(player_out.id),
         "player_out_name": "Titular",
         "player_in_id": str(player_in.id),
@@ -382,6 +452,7 @@ def test_disallows_goal_and_decrements_score_through_injected_use_case():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=34)
     player = _create_player(match, TeamSide.HOME, "Goleador Local")
     goal = match.register_goal(
         player=player,
@@ -406,10 +477,11 @@ def test_rejects_disallowing_goal_twice():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=40)
     player = _create_player(match, TeamSide.AWAY, "Goleador Visitante")
     goal = match.register_goal(
         player=player,
-        minute=50,
+        minute=40,
     )
     match.save()
     goal.save()
@@ -431,6 +503,9 @@ def test_rescinds_card_and_decrements_counter_through_injected_use_case():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=51)
     player = _create_player(match, TeamSide.AWAY, "Defensor Visitante")
     card = match.register_card(
         player=player,
@@ -456,6 +531,9 @@ def test_rejects_rescinding_card_twice():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=80)
     player = _create_player(match, TeamSide.HOME, "Defensor Local")
     card = match.register_card(
         player=player,
@@ -482,12 +560,16 @@ def test_gets_match_detail_with_unified_event_timeline():
         scheduled_at=timezone.now(),
     )
     match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=30)
     goal_player = _create_player(match, TeamSide.HOME, "Goleador Local")
     card_player = _create_player(match, TeamSide.AWAY, "Defensor Visitante")
     goal = match.register_goal(
         player=goal_player,
         minute=30,
     )
+    match.end_first_half()
+    match.start_second_half()
+    match.update_clock(expected_period=MatchPeriod.SECOND_HALF, minute=70)
     card = match.register_card(
         player=card_player,
         card_type=CardType.RED,
@@ -504,13 +586,13 @@ def test_gets_match_detail_with_unified_event_timeline():
     assert response.data["home_team"] == {
         "id": str(match.home_team_id),
         "name": "Colo-Colo",
+        "team_side": TeamSide.HOME,
         "goals": 1,
         "formation": None,
         "lineup": [
             {
                 "player_id": str(goal_player.id),
                 "player_name": "Goleador Local",
-                "team_side": TeamSide.HOME,
                 "shirt_number": 1,
                 "role": "starter",
                 "is_on_field": True,
@@ -521,13 +603,13 @@ def test_gets_match_detail_with_unified_event_timeline():
     assert response.data["away_team"] == {
         "id": str(match.away_team_id),
         "name": "Universidad de Chile",
+        "team_side": TeamSide.AWAY,
         "goals": 0,
         "formation": None,
         "lineup": [
             {
                 "player_id": str(card_player.id),
                 "player_name": "Defensor Visitante",
-                "team_side": TeamSide.AWAY,
                 "shirt_number": 1,
                 "role": "starter",
                 "is_on_field": True,
@@ -596,16 +678,21 @@ def test_lists_matches_filtered_by_status_and_date():
         {
             "id": str(included.id),
             "status": "live",
+            "current_period": "first_half",
+            "current_minute": 1,
+            "current_added_minute": 0,
             "scheduled_at": "2026-08-30T20:00:00Z",
             "home_team": {
                 "id": str(included.home_team_id),
                 "name": "Equipo Local",
+                "team_side": TeamSide.HOME,
                 "goals": 0,
                 "formation": None,
             },
             "away_team": {
                 "id": str(included.away_team_id),
                 "name": "Equipo Visitante",
+                "team_side": TeamSide.AWAY,
                 "goals": 0,
                 "formation": None,
             },

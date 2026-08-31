@@ -24,6 +24,8 @@ rectangle "Matches" {
   usecase "Crear partido" as CreateMatch
   usecase "Configurar o reemplazar\nformación y alineación" as SetLineup
   usecase "Iniciar partido" as StartMatch
+  usecase "Avanzar periodo esperado" as AdvancePeriod
+  usecase "Actualizar reloj oficial" as UpdateClock
   usecase "Finalizar partido" as FinishMatch
   usecase "Registrar gol" as RegisterGoal
   usecase "Anular gol" as DisallowGoal
@@ -48,6 +50,8 @@ Admin --> GetPlayer
 Admin --> CreateMatch
 Admin --> SetLineup
 Admin --> StartMatch
+Admin --> AdvancePeriod
+Admin --> UpdateClock
 Admin --> FinishMatch
 Admin --> RegisterGoal
 Admin --> DisallowGoal

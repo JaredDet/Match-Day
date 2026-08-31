@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
+from modules.matches.api.contracts.requests.advance_match_period_request import (
+    AdvanceMatchPeriodRequest,
+)
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
@@ -13,11 +16,17 @@ from modules.matches.api.contracts.requests.register_substitution_request import
     RegisterSubstitutionRequest,
 )
 from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
+from modules.matches.api.contracts.requests.update_match_clock_request import (
+    UpdateMatchClockRequest,
+)
 from modules.matches.api.contracts.requests.update_match_details_request import (
     UpdateMatchDetailsRequest,
 )
 from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.api.contracts.responses.list_matches_response import ListMatchesResponse
+from modules.matches.application.commands.advance_match_period_use_case import (
+    AdvanceMatchPeriodUseCase,
+)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
@@ -32,6 +41,9 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     SetMatchLineupUseCase,
 )
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.update_match_clock_use_case import (
+    UpdateMatchClockUseCase,
+)
 from modules.matches.application.commands.update_match_details_use_case import (
     UpdateMatchDetailsUseCase,
 )
@@ -143,6 +155,34 @@ class MatchViewSet(ViewSet):
     def start(self, request, pk=None):
         use_case = injector_instance.get(StartMatchUseCase)
         use_case.execute(pk)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_advance_period",
+        request=AdvanceMatchPeriodRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["post"], url_path="advance-period")
+    def advance_period(self, request, pk=None):
+        request_contract = AdvanceMatchPeriodRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(AdvanceMatchPeriodUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_update_clock",
+        request=UpdateMatchClockRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["patch"], url_path="clock")
+    def update_clock(self, request, pk=None):
+        request_contract = UpdateMatchClockRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(UpdateMatchClockUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(

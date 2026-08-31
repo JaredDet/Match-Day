@@ -6,6 +6,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from modules.matches.domain.match import Match
+from modules.matches.domain.match_event import MatchPeriod
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -23,6 +24,7 @@ def test_lists_teams_with_last_result_and_next_match():
     finished.start(datetime(2026, 8, 30, 20, tzinfo=UTC))
     finished.home_goal_count = 2
     finished.away_goal_count = 1
+    finished.current_period = MatchPeriod.SECOND_HALF
     finished.finish(datetime(2026, 8, 30, 22, tzinfo=UTC))
     finished.save()
 
@@ -57,6 +59,7 @@ def test_gets_team_detail_with_statistics_and_current_players():
     finished.start(datetime(2026, 8, 30, 20, tzinfo=UTC))
     finished.home_goal_count = 2
     finished.away_goal_count = 1
+    finished.current_period = MatchPeriod.SECOND_HALF
     finished.finish(datetime(2026, 8, 30, 22, tzinfo=UTC))
     finished.save()
 

@@ -37,6 +37,12 @@ package "matches" {
     finished
   }
 
+  enum MatchPeriod {
+    first_half
+    halftime
+    second_half
+  }
+
   enum MatchFormation {
     4-3-3
     4-4-2
@@ -76,6 +82,9 @@ package "matches" {
     +int home_card_count
     +int away_card_count
     +MatchStatus status
+    +MatchPeriod current_period
+    +int current_minute
+    +int current_added_minute
     +datetime scheduled_at
     +datetime started_at
     +datetime finished_at
@@ -84,6 +93,9 @@ package "matches" {
     +set_formation(...): void
     +add_squad_player(...): MatchSquadPlayer
     +start(...): void
+    +end_first_half(): void
+    +start_second_half(): void
+    +update_clock(...): void
     +finish(...): void
     +register_goal(...): Goal
     +register_card(...): Card
@@ -108,7 +120,9 @@ package "matches" {
     +UUID player_out_id
     +UUID player_in_id
     +TeamSide team_side
+    +MatchPeriod period
     +int minute
+    +int added_minute
   }
 
   class Goal {
@@ -117,7 +131,9 @@ package "matches" {
     +UUID player_id
     +TeamSide team_side
     +string player_name
+    +MatchPeriod period
     +int minute
+    +int added_minute
     +datetime disallowed_at
     --
     +disallow(...): void
@@ -130,7 +146,9 @@ package "matches" {
     +TeamSide team_side
     +string player_name
     +CardType card_type
+    +MatchPeriod period
     +int minute
+    +int added_minute
     +datetime rescinded_at
     --
     +rescind(...): void
@@ -151,6 +169,7 @@ Match "1" *-- "0..*" Card
 Player "1" <-- "0..*" Goal
 Player "1" <-- "0..*" Card
 Match --> MatchStatus
+Match --> MatchPeriod
 Match --> MatchFormation
 MatchSquadPlayer --> TeamSide
 MatchSquadPlayer --> MatchSquadRole

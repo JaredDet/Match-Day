@@ -12,3 +12,4 @@ class RegisterCardRequest(serializers.Serializer):
         min_value=MIN_MATCH_MINUTE,
         max_value=MAX_MATCH_MINUTE,
     )
+    added_minute = serializers.IntegerField(min_value=0, required=False, default=0)

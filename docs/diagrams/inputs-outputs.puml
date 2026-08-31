@@ -59,18 +59,24 @@ package "Match Commands" {
   artifact "formation + captain_id?\nplayers[11] + substitutes[]:\nplayer_id + shirt_number" as SetLineupInput
   component "POST /matches/{id}/start" as StartApi
   component "StartMatchUseCase" as StartMatch
+  component "POST /matches/{id}/advance-period" as AdvancePeriodApi
+  component "AdvanceMatchPeriodUseCase" as AdvancePeriod
+  artifact "expected_period" as AdvancePeriodInput
+  component "PATCH /matches/{id}/clock" as UpdateClockApi
+  component "UpdateMatchClockUseCase" as UpdateClock
+  artifact "expected_period + minute + added_minute?" as UpdateClockInput
   component "POST /matches/{id}/finish" as FinishApi
   component "FinishMatchUseCase" as FinishMatch
   component "POST /matches/{id}/goals" as GoalApi
   component "RegisterGoalUseCase" as RegisterGoal
-  artifact "player_id + minute" as GoalInput
+  artifact "player_id + minute + added_minute?" as GoalInput
   artifact "201: event id" as EventOutput
   component "POST /matches/{id}/cards" as CardApi
   component "RegisterCardUseCase" as RegisterCard
-  artifact "player_id + card_type + minute" as CardInput
+  artifact "player_id + card_type + minute + added_minute?" as CardInput
   component "POST /matches/{id}/substitutions" as SubstitutionApi
   component "RegisterSubstitutionUseCase" as RegisterSubstitution
-  artifact "player_out_id + player_in_id + minute" as SubstitutionInput
+  artifact "player_out_id + player_in_id + minute + added_minute?" as SubstitutionInput
   component "POST /goals/{goal_id}/disallow" as DisallowApi
   component "DisallowGoalUseCase" as DisallowGoal
   component "POST /cards/{card_id}/rescind" as RescindApi
@@ -127,6 +133,12 @@ SetLineupApi --> SetLineup
 SetLineup --> EmptyMatchOutput
 StartApi --> StartMatch
 StartMatch --> EmptyMatchOutput
+AdvancePeriodInput --> AdvancePeriodApi
+AdvancePeriodApi --> AdvancePeriod
+AdvancePeriod --> EmptyMatchOutput
+UpdateClockInput --> UpdateClockApi
+UpdateClockApi --> UpdateClock
+UpdateClock --> EmptyMatchOutput
 FinishApi --> FinishMatch
 FinishMatch --> EmptyMatchOutput
 GoalInput --> GoalApi

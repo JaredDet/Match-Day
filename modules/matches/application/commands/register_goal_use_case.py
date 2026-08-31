@@ -35,6 +35,7 @@ class RegisterGoalUseCase:
         match_id: UUID,
         player_id: UUID,
         minute: int,
+        added_minute: int = 0,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
         if match is None:
@@ -52,6 +53,7 @@ class RegisterGoalUseCase:
         goal = match.register_goal(
             player=player,
             minute=minute,
+            added_minute=added_minute,
         )
         self.goal_repository.save(goal)
         self.match_repository.save(match)

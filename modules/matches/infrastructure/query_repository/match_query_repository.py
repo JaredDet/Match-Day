@@ -10,7 +10,7 @@ from modules.matches.application.queries.team_detail import TeamDetail
 from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
-from modules.matches.domain.match_event import TeamSide
+from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import (
     MatchSquadPlayer,
     MatchSquadRole,
@@ -44,6 +44,9 @@ class MatchQueryRepository:
         rows = matches.order_by("scheduled_at", "id").values(
             "id",
             "status",
+            "current_period",
+            "current_minute",
+            "current_added_minute",
             "scheduled_at",
             "home_team_id",
             "away_team_id",
@@ -58,10 +61,18 @@ class MatchQueryRepository:
             MatchSummary(
                 id=row["id"],
                 status=MatchStatus(row["status"]),
+                current_period=(
+                    MatchPeriod(row["current_period"])
+                    if row["current_period"] is not None
+                    else None
+                ),
+                current_minute=row["current_minute"],
+                current_added_minute=row["current_added_minute"],
                 scheduled_at=row["scheduled_at"],
                 home_team=TeamDetail(
                     id=row["home_team_id"],
                     name=row["home_team_name"],
+                    team_side=TeamSide.HOME,
                     goals=row["home_goal_count"],
                     formation=(
                         MatchFormation(row["home_formation"])
@@ -72,6 +83,7 @@ class MatchQueryRepository:
                 away_team=TeamDetail(
                     id=row["away_team_id"],
                     name=row["away_team_name"],
+                    team_side=TeamSide.AWAY,
                     goals=row["away_goal_count"],
                     formation=(
                         MatchFormation(row["away_formation"])
@@ -94,6 +106,9 @@ class MatchQueryRepository:
             .values(
                 "id",
                 "status",
+                "current_period",
+                "current_minute",
+                "current_added_minute",
                 "scheduled_at",
                 "started_at",
                 "finished_at",
@@ -120,6 +135,13 @@ class MatchQueryRepository:
         return MatchDetail(
             id=match["id"],
             status=MatchStatus(match["status"]),
+            current_period=(
+                MatchPeriod(match["current_period"])
+                if match["current_period"] is not None
+                else None
+            ),
+            current_minute=match["current_minute"],
+            current_added_minute=match["current_added_minute"],
             scheduled_at=match["scheduled_at"],
             started_at=match["started_at"],
             finished_at=match["finished_at"],
@@ -128,6 +150,7 @@ class MatchQueryRepository:
             home_team=MatchTeamDetail(
                 id=match["home_team_id"],
                 name=match["home_team_name"],
+                team_side=TeamSide.HOME,
                 goals=match["home_goal_count"],
                 formation=(
                     MatchFormation(match["home_formation"])
@@ -139,6 +162,7 @@ class MatchQueryRepository:
             away_team=MatchTeamDetail(
                 id=match["away_team_id"],
                 name=match["away_team_name"],
+                team_side=TeamSide.AWAY,
                 goals=match["away_goal_count"],
                 formation=(
                     MatchFormation(match["away_formation"])
@@ -196,11 +220,20 @@ class MatchQueryRepository:
 
         events_with_order = []
         for goal in Goal.objects.filter(match_id=match_id, disallowed_at__isnull=True).values(
-            "id", "team_side", "player_id", "player_name", "minute", "created_at"
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "period",
+            "minute",
+            "added_minute",
+            "created_at",
         ):
             events_with_order.append(
                 (
+                    self._period_order(goal["period"]),
                     goal["minute"],
+                    goal["added_minute"],
                     goal["created_at"],
                     MatchEventDetail(
                         id=goal["id"],
@@ -208,7 +241,9 @@ class MatchQueryRepository:
                         team_side=TeamSide(goal["team_side"]),
                         player_id=goal["player_id"],
                         player_name=goal["player_name"],
+                        period=MatchPeriod(goal["period"]),
                         minute=goal["minute"],
+                        added_minute=goal["added_minute"],
                     ),
                 )
             )
@@ -218,7 +253,9 @@ class MatchQueryRepository:
             "player_id",
             "player_name",
             "card_type",
+            "period",
             "minute",
+            "added_minute",
             "created_at",
         ):
             event_type = (
@@ -228,7 +265,9 @@ class MatchQueryRepository:
             )
             events_with_order.append(
                 (
+                    self._period_order(card["period"]),
                     card["minute"],
+                    card["added_minute"],
                     card["created_at"],
                     MatchEventDetail(
                         id=card["id"],
@@ -236,7 +275,9 @@ class MatchQueryRepository:
                         team_side=TeamSide(card["team_side"]),
                         player_id=card["player_id"],
                         player_name=card["player_name"],
+                        period=MatchPeriod(card["period"]),
                         minute=card["minute"],
+                        added_minute=card["added_minute"],
                     ),
                 )
             )
@@ -247,18 +288,24 @@ class MatchQueryRepository:
             "player_out__player__name",
             "player_in__player_id",
             "player_in__player__name",
+            "period",
             "minute",
+            "added_minute",
             "created_at",
         ):
             events_with_order.append(
                 (
+                    self._period_order(substitution["period"]),
                     substitution["minute"],
+                    substitution["added_minute"],
                     substitution["created_at"],
                     MatchEventDetail(
                         id=substitution["id"],
                         type=MatchEventType.SUBSTITUTION,
                         team_side=TeamSide(substitution["team_side"]),
+                        period=MatchPeriod(substitution["period"]),
                         minute=substitution["minute"],
+                        added_minute=substitution["added_minute"],
                         player_out_id=substitution["player_out__player_id"],
                         player_out_name=substitution["player_out__player__name"],
                         player_in_id=substitution["player_in__player_id"],
@@ -266,5 +313,14 @@ class MatchQueryRepository:
                     ),
                 )
             )
-        events_with_order.sort(key=lambda event: (event[0], event[1], event[2].id))
-        return tuple(event[2] for event in events_with_order)
+        events_with_order.sort(
+            key=lambda event: (event[0], event[1], event[2], event[3], event[4].id)
+        )
+        return tuple(event[4] for event in events_with_order)
+
+    @staticmethod
+    def _period_order(period: str) -> int:
+        return {
+            MatchPeriod.FIRST_HALF: 0,
+            MatchPeriod.SECOND_HALF: 1,
+        }[period]
