@@ -102,3 +102,27 @@ def test_rejects_players_from_different_teams():
             player_in=player_in,
             minute=60,
         )
+
+
+def test_rejects_sent_off_player_in_substitution():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
+    outgoing = Player.create(team_id=match.home_team_id, name="Titular")
+    incoming = Player.create(team_id=match.home_team_id, name="Expulsado")
+    player_out = match.add_squad_player(player=outgoing, shirt_number=7)
+    player_in = match.add_squad_player(
+        player=incoming,
+        shirt_number=18,
+        role=MatchSquadRole.SUBSTITUTE,
+    )
+    player_in.is_sent_off = True
+
+    with pytest.raises(type(MatchErrors.PlayerSentOff)):
+        MatchSubstitution.create(
+            match=match,
+            player_out=player_out,
+            player_in=player_in,
+            minute=60,
+        )

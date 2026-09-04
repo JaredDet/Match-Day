@@ -40,6 +40,7 @@ class RegisterSubstitutionUseCase:
         match = self.match_repository.get_for_update(match_id)
         if match is None:
             raise MatchErrors.NotFound
+
         if match.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
 
@@ -53,6 +54,7 @@ class RegisterSubstitutionUseCase:
         )
         if player_out is None or player_in is None:
             raise MatchErrors.InvalidSubstitutionPlayers
+
         if self.substitution_repository.has_entered(player_in.id):
             raise MatchErrors.InvalidSubstitutePlayer
 
@@ -63,6 +65,8 @@ class RegisterSubstitutionUseCase:
             minute=minute,
             added_minute=added_minute,
         )
+
         self.squad_repository.save_all([player_out, player_in])
         self.substitution_repository.save(substitution)
+
         return substitution.id

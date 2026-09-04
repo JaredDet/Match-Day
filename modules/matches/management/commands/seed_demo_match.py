@@ -344,6 +344,20 @@ class Command(BaseCommand):
         expected_squad_size = len(TEAM_PLAYERS[fixture.home]) + len(TEAM_PLAYERS[fixture.away])
         if match.squad_players.count() != expected_squad_size:
             return False
+        expected_sent_off_ids = set(
+            match.cards.filter(
+                card_type=CardType.RED,
+                rescinded_at__isnull=True,
+            ).values_list("player_id", flat=True)
+        )
+        actual_sent_off_ids = set(
+            match.squad_players.filter(is_sent_off=True).values_list(
+                "player_id",
+                flat=True,
+            )
+        )
+        if actual_sent_off_ids != expected_sent_off_ids:
+            return False
         if fixture.score is None:
             expected_status = MatchStatus.SCHEDULED
             expected_period = None

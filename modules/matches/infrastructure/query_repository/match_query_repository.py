@@ -14,6 +14,7 @@ from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import (
     MatchSquadPlayer,
     MatchSquadRole,
+    SentOffReason,
 )
 from modules.matches.domain.match_substitution import MatchSubstitution
 
@@ -195,8 +196,10 @@ class MatchQueryRepository:
                 "team_side",
                 "shirt_number",
                 "role",
-                "is_on_field",
-                "is_captain",
+            "is_on_field",
+            "is_sent_off",
+            "sent_off_reason",
+            "is_captain",
             )
         )
         return tuple(
@@ -207,6 +210,12 @@ class MatchQueryRepository:
                 shirt_number=row["shirt_number"],
                 role=MatchSquadRole(row["role"]),
                 is_on_field=row["is_on_field"],
+                is_sent_off=row["is_sent_off"],
+                sent_off_reason=(
+                    SentOffReason(row["sent_off_reason"])
+                    if row["sent_off_reason"] is not None
+                    else None
+                ),
                 is_captain=row["is_captain"],
             )
             for row in rows

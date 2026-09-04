@@ -3,7 +3,7 @@ from rest_framework import serializers
 from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
-from modules.matches.domain.match_squad_player import MatchSquadRole
+from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
 
 
 class MatchEventResponse(serializers.Serializer):
@@ -31,6 +31,11 @@ class MatchSquadPlayerResponse(serializers.Serializer):
     shirt_number = serializers.IntegerField()
     role = serializers.ChoiceField(choices=MatchSquadRole.choices)
     is_on_field = serializers.BooleanField()
+    is_sent_off = serializers.BooleanField()
+    sent_off_reason = serializers.ChoiceField(
+        choices=SentOffReason.choices,
+        allow_null=True,
+    )
     is_captain = serializers.BooleanField()
 
 

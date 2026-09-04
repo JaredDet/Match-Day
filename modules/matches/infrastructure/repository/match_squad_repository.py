@@ -25,7 +25,10 @@ class MatchSquadRepository:
         )
 
     def save_all(self, players: list[MatchSquadPlayer]) -> None:
-        MatchSquadPlayer.objects.bulk_update(players, ["is_on_field"])
+        MatchSquadPlayer.objects.bulk_update(
+            players,
+            ["is_on_field", "is_sent_off", "sent_off_reason"],
+        )
 
     def replace(
         self,

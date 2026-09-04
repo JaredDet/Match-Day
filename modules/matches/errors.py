@@ -7,6 +7,16 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidSentOffReason = AppException(
+        "invalid_sent_off_reason",
+        "El motivo de expulsión no es válido",
+        ErrorType.VALIDATION,
+    )
+    PlayerSentOff = AppException(
+        "player_sent_off",
+        "Un jugador expulsado no puede participar nuevamente en el partido",
+        ErrorType.CONFLICT,
+    )
     MissingFormation = AppException(
         "missing_match_formation",
         "Ambos equipos deben tener una formación antes de iniciar el partido",

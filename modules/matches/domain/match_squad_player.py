@@ -12,6 +12,11 @@ class MatchSquadRole(models.TextChoices):
     SUBSTITUTE = "substitute"
 
 
+class SentOffReason(models.TextChoices):
+    DIRECT_RED = "direct_red"
+    SECOND_YELLOW = "second_yellow"
+
+
 class MatchSquadPlayer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     match = models.ForeignKey(
@@ -32,6 +37,13 @@ class MatchSquadPlayer(models.Model):
         default=MatchSquadRole.STARTER,
     )
     is_on_field = models.BooleanField(default=False)
+    is_sent_off = models.BooleanField(default=False)
+    sent_off_reason = models.CharField(
+        max_length=20,
+        choices=SentOffReason.choices,
+        null=True,
+        blank=True,
+    )
     is_captain = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -49,14 +61,19 @@ class MatchSquadPlayer(models.Model):
     ) -> "MatchSquadPlayer":
         if not isinstance(team_side, TeamSide):
             raise MatchErrors.InvalidTeamSide
+
         if not isinstance(shirt_number, int) or isinstance(shirt_number, bool):
             raise MatchErrors.InvalidShirtNumber
+
         if not MIN_SHIRT_NUMBER <= shirt_number <= MAX_SHIRT_NUMBER:
             raise MatchErrors.InvalidShirtNumber
+
         if not isinstance(role, MatchSquadRole):
             raise MatchErrors.InvalidSquadRole
+
         if is_captain and role != MatchSquadRole.STARTER:
             raise MatchErrors.InvalidLineupCaptain
+
         return cls(
             match=match,
             player=player,
@@ -68,14 +85,44 @@ class MatchSquadPlayer(models.Model):
         )
 
     def enter_field(self) -> None:
+        if self.is_sent_off:
+            raise MatchErrors.PlayerSentOff
+
         if self.role != MatchSquadRole.SUBSTITUTE or self.is_on_field:
             raise MatchErrors.InvalidSubstitutePlayer
+
         self.is_on_field = True
 
     def leave_field(self) -> None:
+        if self.is_sent_off:
+            raise MatchErrors.PlayerSentOff
+
         if not self.is_on_field:
             raise MatchErrors.InvalidOutgoingPlayer
+
         self.is_on_field = False
+
+    def send_off(self, reason: SentOffReason) -> None:
+        if not isinstance(reason, SentOffReason):
+            raise MatchErrors.InvalidSentOffReason
+
+        if self.is_sent_off:
+            raise MatchErrors.PlayerSentOff
+
+        if not self.is_on_field:
+            raise MatchErrors.PlayerNotOnField
+
+        self.is_sent_off = True
+        self.sent_off_reason = reason
+        self.is_on_field = False
+
+    def reinstate(self) -> None:
+        if not self.is_sent_off:
+            return
+
+        self.is_sent_off = False
+        self.sent_off_reason = None
+        self.is_on_field = True
 
     class Meta:
         db_table = "match_squad_players"
@@ -113,5 +160,19 @@ class MatchSquadPlayer(models.Model):
                 condition=models.Q(is_captain=False)
                 | models.Q(role=MatchSquadRole.STARTER),
                 name="match_captain_must_be_starter",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(is_sent_off=False) | models.Q(is_on_field=False),
+                name="sent_off_player_must_be_off_field",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(is_sent_off=False, sent_off_reason__isnull=True)
+                    | models.Q(
+                        is_sent_off=True,
+                        sent_off_reason__in=SentOffReason.values,
+                    )
+                ),
+                name="valid_player_sent_off_reason",
             ),
         ]

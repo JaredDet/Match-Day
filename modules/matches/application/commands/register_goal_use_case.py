@@ -38,23 +38,36 @@ class RegisterGoalUseCase:
         added_minute: int = 0,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         if match.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
+
         player = self.player_repository.get(player_id)
+
         if player is None:
             raise TeamErrors.PlayerNotFound
-        if not self.lineup_repository.is_on_field(
+
+        squad_player = self.lineup_repository.get_for_update(
             match_id=match.id,
             player_id=player.id,
-        ):
+        )
+
+        if squad_player is None or not squad_player.is_on_field:
+            if squad_player is not None and squad_player.is_sent_off:
+                raise MatchErrors.PlayerSentOff
+
             raise MatchErrors.PlayerNotOnField
+
         goal = match.register_goal(
             player=player,
             minute=minute,
             added_minute=added_minute,
         )
+
         self.goal_repository.save(goal)
         self.match_repository.save(match)
+
         return goal.id

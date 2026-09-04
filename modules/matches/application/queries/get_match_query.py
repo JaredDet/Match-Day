@@ -7,7 +7,7 @@ from injector import inject
 
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
-from modules.matches.domain.match_squad_player import MatchSquadRole
+from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
@@ -45,6 +45,8 @@ class MatchSquadPlayerDetail:
     shirt_number: int
     role: MatchSquadRole
     is_on_field: bool
+    is_sent_off: bool
+    sent_off_reason: SentOffReason | None
     is_captain: bool
 
 

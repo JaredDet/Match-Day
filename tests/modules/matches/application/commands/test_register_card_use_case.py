@@ -6,6 +6,7 @@ import pytest
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.domain.card import CardType
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_squad_player import SentOffReason
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
@@ -20,7 +21,10 @@ def test_registers_card_and_updates_match_counter():
     card_repository = Mock()
     player_repository = Mock()
     lineup_repository = Mock()
-    lineup_repository.is_on_field.return_value = True
+    lineup_repository.get_for_update.return_value = Mock(
+        is_on_field=True,
+        is_sent_off=False,
+    )
     player = Player.create(team_id=match.home_team_id, name="Defensor local")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(
@@ -44,6 +48,65 @@ def test_registers_card_and_updates_match_counter():
     assert match.home_card_count == 1
     assert match.away_card_count == 0
     match_repository.save.assert_called_once_with(match)
+
+
+def test_red_card_sends_player_off_field():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    card_repository = Mock()
+    player_repository = Mock()
+    squad_player = Mock(is_on_field=True, is_sent_off=False)
+    lineup_repository = Mock()
+    lineup_repository.get_for_update.return_value = squad_player
+    player = Player.create(team_id=match.home_team_id, name="Defensor local")
+    player_repository.get.return_value = player
+    use_case = RegisterCardUseCase(
+        match_repository,
+        card_repository,
+        player_repository,
+        lineup_repository,
+    )
+
+    use_case.execute(
+        match_id=match.id,
+        player_id=player.id,
+        card_type=CardType.RED,
+        minute=70,
+    )
+
+    squad_player.send_off.assert_called_once_with(SentOffReason.DIRECT_RED)
+    lineup_repository.save_all.assert_called_once_with([squad_player])
+
+
+def test_second_yellow_sends_player_off_field():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    card_repository = Mock()
+    card_repository.count_active_yellow_cards.return_value = 1
+    player_repository = Mock()
+    squad_player = Mock(is_on_field=True, is_sent_off=False)
+    lineup_repository = Mock()
+    lineup_repository.get_for_update.return_value = squad_player
+    player = Player.create(team_id=match.home_team_id, name="Defensor local")
+    player_repository.get.return_value = player
+    use_case = RegisterCardUseCase(
+        match_repository,
+        card_repository,
+        player_repository,
+        lineup_repository,
+    )
+
+    use_case.execute(
+        match_id=match.id,
+        player_id=player.id,
+        card_type=CardType.YELLOW,
+        minute=70,
+    )
+
+    squad_player.send_off.assert_called_once_with(SentOffReason.SECOND_YELLOW)
+    lineup_repository.save_all.assert_called_once_with([squad_player])
 
 
 def test_raises_not_found_without_persisting():
@@ -106,7 +169,7 @@ def test_rejects_card_for_substitute():
     card_repository = Mock()
     player_repository = Mock()
     lineup_repository = Mock()
-    lineup_repository.is_on_field.return_value = False
+    lineup_repository.get_for_update.return_value = None
     player = Player.create(team_id=match.home_team_id, name="Suplente")
     player_repository.get.return_value = player
     use_case = RegisterCardUseCase(

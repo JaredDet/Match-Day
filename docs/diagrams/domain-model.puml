@@ -67,6 +67,11 @@ package "matches" {
     substitute
   }
 
+  enum SentOffReason {
+    direct_red
+    second_yellow
+  }
+
   class Match {
     +UUID id
     +UUID home_team_id
@@ -111,7 +116,12 @@ package "matches" {
     +int shirt_number
     +MatchSquadRole role
     +bool is_on_field
+    +bool is_sent_off
+    +SentOffReason sent_off_reason
     +bool is_captain
+    --
+    +send_off(): void
+    +reinstate(): void
   }
 
   class MatchSubstitution {
@@ -173,6 +183,7 @@ Match --> MatchPeriod
 Match --> MatchFormation
 MatchSquadPlayer --> TeamSide
 MatchSquadPlayer --> MatchSquadRole
+MatchSquadPlayer --> SentOffReason
 MatchSubstitution --> TeamSide
 Goal --> TeamSide
 Card --> TeamSide

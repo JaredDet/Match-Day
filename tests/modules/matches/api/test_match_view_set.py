@@ -611,6 +611,8 @@ def test_gets_match_detail_with_unified_event_timeline():
                 "shirt_number": 1,
                 "role": "starter",
                 "is_on_field": True,
+                "is_sent_off": False,
+                "sent_off_reason": None,
                 "is_captain": False,
             }
         ],
@@ -628,6 +630,8 @@ def test_gets_match_detail_with_unified_event_timeline():
                 "shirt_number": 1,
                 "role": "starter",
                 "is_on_field": True,
+                "is_sent_off": False,
+                "sent_off_reason": None,
                 "is_captain": False,
             }
         ],

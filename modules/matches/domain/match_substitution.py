@@ -54,6 +54,8 @@ class MatchSubstitution(models.Model):
             raise MatchErrors.InvalidSubstitutionPlayers
         if player_out.team_side != player_in.team_side:
             raise MatchErrors.InvalidSubstitutionPlayers
+        if player_out.is_sent_off or player_in.is_sent_off:
+            raise MatchErrors.PlayerSentOff
         if not player_out.is_on_field:
             raise MatchErrors.InvalidOutgoingPlayer
         if player_in.role != MatchSquadRole.SUBSTITUTE or player_in.is_on_field:
