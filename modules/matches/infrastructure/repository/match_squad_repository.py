@@ -5,6 +5,11 @@ from modules.matches.domain.match_squad_player import (
 
 
 class MatchSquadRepository:
+    def list_for_update(self, *, match_id) -> list[MatchSquadPlayer]:
+        return list(
+            MatchSquadPlayer.objects.select_for_update().filter(match_id=match_id)
+        )
+
     def is_on_field(self, *, match_id, player_id) -> bool:
         return MatchSquadPlayer.objects.filter(
             match_id=match_id,

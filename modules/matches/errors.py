@@ -7,6 +7,16 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    MissingFormation = AppException(
+        "missing_match_formation",
+        "Ambos equipos deben tener una formación antes de iniciar el partido",
+        ErrorType.CONFLICT,
+    )
+    InvalidStartingSquad = AppException(
+        "invalid_starting_squad",
+        "Cada equipo debe comenzar con exactamente once titulares en cancha",
+        ErrorType.CONFLICT,
+    )
     ClockCannotGoBackwards = AppException(
         "match_clock_cannot_go_backwards",
         "El reloj del partido no puede retroceder dentro del mismo periodo",

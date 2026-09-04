@@ -46,6 +46,21 @@ def _create_player(match, team_side, name):
     return player
 
 
+def _prepare_match_for_start(match):
+    match.set_formation(
+        team_side=TeamSide.HOME,
+        formation=MatchFormation.FOUR_THREE_THREE,
+    )
+    match.set_formation(
+        team_side=TeamSide.AWAY,
+        formation=MatchFormation.FOUR_FOUR_TWO,
+    )
+    match.save()
+    for team_side in TeamSide:
+        for index in range(1, 12):
+            _create_player(match, team_side, f"{team_side} titular {index}")
+
+
 def test_creates_match_through_injected_use_case():
     home_team = Team.objects.create(name="Colo-Colo")
     away_team = Team.objects.create(name="Universidad de Chile")
@@ -134,7 +149,7 @@ def test_starts_scheduled_match_through_injected_use_case():
         away_team_name="Universidad de Chile",
         scheduled_at=timezone.now() + timedelta(hours=1),
     )
-    match.save()
+    _prepare_match_for_start(match)
 
     response = APIClient().post(reverse("matches-start", args=[match.id]))
 

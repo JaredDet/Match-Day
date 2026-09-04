@@ -195,6 +195,33 @@ class Match(models.Model):
         self.current_added_minute = 0
         self.started_at = started_at or timezone.now()
 
+    def ensure_ready_for_start(self, squad_players: list[MatchSquadPlayer]) -> None:
+        if self.status != MatchStatus.SCHEDULED:
+            raise MatchErrors.InvalidState
+        if self.home_formation is None or self.away_formation is None:
+            raise MatchErrors.MissingFormation
+        for team_side in TeamSide:
+            team_players = [
+                player for player in squad_players if player.team_side == team_side
+            ]
+            starters = [
+                player
+                for player in team_players
+                if player.role == MatchSquadRole.STARTER
+            ]
+            substitutes = [
+                player
+                for player in team_players
+                if player.role == MatchSquadRole.SUBSTITUTE
+            ]
+            if (
+                len(starters) != 11
+                or any(not player.is_on_field for player in starters)
+                or any(player.is_on_field for player in substitutes)
+                or any(player.is_captain for player in substitutes)
+            ):
+                raise MatchErrors.InvalidStartingSquad
+
     def end_first_half(self) -> None:
         self._ensure_period(MatchPeriod.FIRST_HALF)
         if self.current_minute < 45:
