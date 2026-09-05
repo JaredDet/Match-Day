@@ -201,18 +201,10 @@ class Match(models.Model):
         if self.home_formation is None or self.away_formation is None:
             raise MatchErrors.MissingFormation
         for team_side in TeamSide:
-            team_players = [
-                player for player in squad_players if player.team_side == team_side
-            ]
-            starters = [
-                player
-                for player in team_players
-                if player.role == MatchSquadRole.STARTER
-            ]
+            team_players = [player for player in squad_players if player.team_side == team_side]
+            starters = [player for player in team_players if player.role == MatchSquadRole.STARTER]
             substitutes = [
-                player
-                for player in team_players
-                if player.role == MatchSquadRole.SUBSTITUTE
+                player for player in team_players if player.role == MatchSquadRole.SUBSTITUTE
             ]
             if (
                 len(starters) != 11
@@ -430,8 +422,7 @@ class Match(models.Model):
                 name="valid_match_clock_period",
             ),
             models.CheckConstraint(
-                condition=models.Q(current_added_minute=0)
-                | models.Q(current_minute__in=[45, 90]),
+                condition=models.Q(current_added_minute=0) | models.Q(current_minute__in=[45, 90]),
                 name="valid_match_clock_added_minute",
             ),
             models.CheckConstraint(

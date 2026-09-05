@@ -137,6 +137,7 @@ def test_rejects_moving_clock_backwards():
     with pytest.raises(type(MatchErrors.ClockCannotGoBackwards)):
         match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=29)
 
+
 def test_finishes_live_match():
     match = MatchMother.create(
         status=MatchStatus.LIVE,

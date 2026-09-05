@@ -1,0 +1,23 @@
+minimum_pre_commit_version: "4.3.0"
+default_stages: [pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: Comprobar formato con Ruff
+        entry: uv run ruff format --check .
+        language: system
+        pass_filenames: false
+
+      - id: ruff-check
+        name: Comprobar calidad y nombres con Ruff
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+
+      - id: pytest
+        name: Ejecutar pruebas
+        entry: uv run pytest -q
+        language: system
+        pass_filenames: false

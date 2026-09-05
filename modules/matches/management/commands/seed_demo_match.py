@@ -319,9 +319,7 @@ class Command(BaseCommand):
         else:
             unexpected_players = set(existing_players) - set(player_names)
             if unexpected_players:
-                raise CommandError(
-                    f"La plantilla demo de {name} contiene jugadores inesperados"
-                )
+                raise CommandError(f"La plantilla demo de {name} contiene jugadores inesperados")
             for player_name in player_names:
                 if player_name not in existing_players:
                     existing_players[player_name] = self.register_player.execute(

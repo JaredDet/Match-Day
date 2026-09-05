@@ -75,9 +75,7 @@ class Player(models.Model):
         preferred_position: PlayerPosition | None,
         preferred_shirt_number: int | None,
     ) -> None:
-        if preferred_position is not None and not isinstance(
-            preferred_position, PlayerPosition
-        ):
+        if preferred_position is not None and not isinstance(preferred_position, PlayerPosition):
             raise TeamErrors.InvalidPlayerPosition
         if preferred_shirt_number is not None and (
             not isinstance(preferred_shirt_number, int)

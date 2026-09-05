@@ -157,8 +157,7 @@ class MatchSquadPlayer(models.Model):
                 name="valid_match_squad_role",
             ),
             models.CheckConstraint(
-                condition=models.Q(is_captain=False)
-                | models.Q(role=MatchSquadRole.STARTER),
+                condition=models.Q(is_captain=False) | models.Q(role=MatchSquadRole.STARTER),
                 name="match_captain_must_be_starter",
             ),
             models.CheckConstraint(

@@ -25,21 +25,30 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert Match.objects.count() == 13
     assert Match.objects.filter(status=MatchStatus.FINISHED).count() == 6
     assert Match.objects.filter(status=MatchStatus.SCHEDULED).count() == 4
-    assert Match.objects.filter(
-        status=MatchStatus.LIVE,
-        current_period=MatchPeriod.FIRST_HALF,
-        current_minute=34,
-    ).count() == 1
-    assert Match.objects.filter(
-        status=MatchStatus.LIVE,
-        current_period=MatchPeriod.HALFTIME,
-        current_minute=45,
-    ).count() == 1
-    assert Match.objects.filter(
-        status=MatchStatus.LIVE,
-        current_period=MatchPeriod.SECOND_HALF,
-        current_minute=72,
-    ).count() == 1
+    assert (
+        Match.objects.filter(
+            status=MatchStatus.LIVE,
+            current_period=MatchPeriod.FIRST_HALF,
+            current_minute=34,
+        ).count()
+        == 1
+    )
+    assert (
+        Match.objects.filter(
+            status=MatchStatus.LIVE,
+            current_period=MatchPeriod.HALFTIME,
+            current_minute=45,
+        ).count()
+        == 1
+    )
+    assert (
+        Match.objects.filter(
+            status=MatchStatus.LIVE,
+            current_period=MatchPeriod.SECOND_HALF,
+            current_minute=72,
+        ).count()
+        == 1
+    )
     assert Match.objects.filter(id=match.id).count() == 1
     assert match.status == MatchStatus.FINISHED
     assert match.home_team_name == "Atlético del Puerto"

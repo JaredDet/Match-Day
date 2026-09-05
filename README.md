@@ -120,3 +120,23 @@ Comprueba la configuración de Django y que no falten migraciones:
 uv run python manage.py check
 uv run python manage.py makemigrations --check --dry-run
 ```
+
+### Verificacion antes de cada push
+
+Instala una sola vez el hook local del repositorio:
+
+```bash
+uv run pre-commit install --hook-type pre-push
+```
+
+Antes de cada `git push`, el hook comprueba el formato, las reglas de calidad,
+las convenciones de nombres de Python y toda la suite de pruebas. Si alguna
+comprobacion falla, el push se cancela.
+
+Para ejecutar manualmente las mismas comprobaciones:
+
+```bash
+uv run pre-commit run --all-files --hook-stage pre-push
+```
+
+GitHub Actions repite las comprobaciones en cada push y pull request.

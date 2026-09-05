@@ -31,12 +31,8 @@ class RegisterTeamSquadUseCase:
         if team is None:
             raise TeamErrors.NotFound
 
-        resolved_players_data = players_data or [
-            {"name": name} for name in (player_names or [])
-        ]
-        players = [
-            Player.create(team_id=team.id, **data) for data in resolved_players_data
-        ]
+        resolved_players_data = players_data or [{"name": name} for name in (player_names or [])]
+        players = [Player.create(team_id=team.id, **data) for data in resolved_players_data]
         normalized_names = [player.name.casefold() for player in players]
         if len(normalized_names) != len(set(normalized_names)):
             raise TeamErrors.PlayerAlreadyExists

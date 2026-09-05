@@ -196,10 +196,10 @@ class MatchQueryRepository:
                 "team_side",
                 "shirt_number",
                 "role",
-            "is_on_field",
-            "is_sent_off",
-            "sent_off_reason",
-            "is_captain",
+                "is_on_field",
+                "is_sent_off",
+                "sent_off_reason",
+                "is_captain",
             )
         )
         return tuple(

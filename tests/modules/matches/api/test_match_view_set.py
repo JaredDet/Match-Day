@@ -38,8 +38,7 @@ def _create_player(match, team_side, name):
         player=player,
         team_side=team_side,
         shirt_number=(
-            MatchSquadPlayer.objects.filter(match=match, team_side=team_side).count()
-            + 1
+            MatchSquadPlayer.objects.filter(match=match, team_side=team_side).count() + 1
         ),
         is_on_field=True,
     )
@@ -832,9 +831,7 @@ def test_rejects_substitute_as_match_captain():
                 {"player_id": str(player.id), "shirt_number": index}
                 for index, player in enumerate(starters, start=1)
             ],
-            "substitutes": [
-                {"player_id": str(substitute.id), "shirt_number": 18}
-            ],
+            "substitutes": [{"player_id": str(substitute.id), "shirt_number": 18}],
         },
         format="json",
     )

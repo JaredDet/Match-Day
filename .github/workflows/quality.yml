@@ -1,0 +1,35 @@
+name: Calidad
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Formato, reglas y pruebas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v7
+
+      - name: Instalar uv y Python
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: uv sync --locked --dev
+
+      - name: Comprobar formato
+        run: uv run ruff format --check .
+
+      - name: Comprobar calidad y nombres
+        run: uv run ruff check .
+
+      - name: Ejecutar pruebas
+        run: uv run pytest -q

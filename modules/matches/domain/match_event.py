@@ -41,11 +41,9 @@ def validate_match_clock(
     if not isinstance(minute, int) or isinstance(minute, bool):
         raise MatchErrors.InvalidMinute
     valid_minute = (
-        period == MatchPeriod.FIRST_HALF
-        and MIN_MATCH_MINUTE <= minute <= FIRST_HALF_END_MINUTE
+        period == MatchPeriod.FIRST_HALF and MIN_MATCH_MINUTE <= minute <= FIRST_HALF_END_MINUTE
     ) or (
-        period == MatchPeriod.SECOND_HALF
-        and SECOND_HALF_START_MINUTE <= minute <= MAX_MATCH_MINUTE
+        period == MatchPeriod.SECOND_HALF and SECOND_HALF_START_MINUTE <= minute <= MAX_MATCH_MINUTE
     )
     if not valid_minute:
         raise MatchErrors.InvalidMinute
@@ -53,9 +51,6 @@ def validate_match_clock(
         not isinstance(added_minute, int)
         or isinstance(added_minute, bool)
         or added_minute < 0
-        or (
-            added_minute > 0
-            and minute not in (FIRST_HALF_END_MINUTE, MAX_MATCH_MINUTE)
-        )
+        or (added_minute > 0 and minute not in (FIRST_HALF_END_MINUTE, MAX_MATCH_MINUTE))
     ):
         raise MatchErrors.InvalidAddedMinute
