@@ -6,9 +6,13 @@ from django.utils import timezone
 
 from core.constants import NAME_MAX_LENGTH
 from modules.matches.constants import (
+    EXTRA_TIME_FIRST_HALF_END_MINUTE,
+    EXTRA_TIME_FIRST_HALF_START_MINUTE,
+    EXTRA_TIME_SECOND_HALF_START_MINUTE,
     FIRST_HALF_END_MINUTE,
     MAX_MATCH_MINUTE,
     MIN_MATCH_MINUTE,
+    SECOND_HALF_END_MINUTE,
     SECOND_HALF_START_MINUTE,
 )
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
@@ -35,7 +39,7 @@ class Card(models.Model):
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
     player_name = models.CharField(max_length=NAME_MAX_LENGTH)
     card_type = models.CharField(max_length=10, choices=CardType.choices)
-    period = models.CharField(max_length=20, choices=MatchPeriod.choices)
+    period = models.CharField(max_length=25, choices=MatchPeriod.choices)
     minute = models.PositiveSmallIntegerField()
     added_minute = models.PositiveSmallIntegerField(default=0)
     rescinded_at = models.DateTimeField(null=True, blank=True)
@@ -75,6 +79,16 @@ class Card(models.Model):
                     | models.Q(
                         period=MatchPeriod.SECOND_HALF,
                         minute__gte=SECOND_HALF_START_MINUTE,
+                        minute__lte=SECOND_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                        minute__gte=EXTRA_TIME_FIRST_HALF_START_MINUTE,
+                        minute__lte=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        period=MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                        minute__gte=EXTRA_TIME_SECOND_HALF_START_MINUTE,
                         minute__lte=MAX_MATCH_MINUTE,
                     )
                 ),
@@ -88,6 +102,14 @@ class Card(models.Model):
                 )
                 | models.Q(
                     period=MatchPeriod.SECOND_HALF,
+                    minute=SECOND_HALF_END_MINUTE,
+                )
+                | models.Q(
+                    period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                    minute=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                )
+                | models.Q(
+                    period=MatchPeriod.EXTRA_TIME_SECOND_HALF,
                     minute=MAX_MATCH_MINUTE,
                 ),
                 name="valid_card_added_minute",

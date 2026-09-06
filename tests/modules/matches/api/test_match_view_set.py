@@ -704,15 +704,17 @@ def test_lists_matches_filtered_by_status_and_date():
                 "id": str(included.home_team_id),
                 "name": "Equipo Local",
                 "team_side": TeamSide.HOME,
-                "goals": 0,
+                "score": 0,
                 "formation": None,
+                "goals": [],
             },
             "away_team": {
                 "id": str(included.away_team_id),
                 "name": "Equipo Visitante",
                 "team_side": TeamSide.AWAY,
-                "goals": 0,
+                "score": 0,
                 "formation": None,
+                "goals": [],
             },
         }
     ]

@@ -3,6 +3,7 @@ from uuid import UUID
 from django.db import transaction
 from injector import inject
 
+from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchStatus
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.repository.goal_repository import GoalRepository
@@ -36,6 +37,7 @@ class RegisterGoalUseCase:
         player_id: UUID,
         minute: int,
         added_minute: int = 0,
+        goal_type: GoalType = GoalType.REGULAR,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
 
@@ -65,6 +67,7 @@ class RegisterGoalUseCase:
             player=player,
             minute=minute,
             added_minute=added_minute,
+            goal_type=goal_type,
         )
 
         self.goal_repository.save(goal)

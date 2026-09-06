@@ -27,9 +27,13 @@ class UpdateMatchDetailsUseCase:
             raise MatchErrors.NotFound
 
         details = {}
+
         if stadium_name is not _UNSET:
             details["stadium_name"] = stadium_name
+
         if referee_name is not _UNSET:
             details["referee_name"] = referee_name
+
         match.update_details(**details)
+
         self.match_repository.save(match)

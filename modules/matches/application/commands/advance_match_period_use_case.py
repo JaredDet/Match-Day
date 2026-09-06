@@ -16,7 +16,10 @@ class AdvanceMatchPeriodUseCase:
     @transaction.atomic
     def execute(self, match_id: UUID, expected_period: MatchPeriod) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         match.advance_period(expected_period)
+
         self.match_repository.save(match)

@@ -2,9 +2,12 @@ from io import StringIO
 
 import pytest
 from django.core.management import call_command
+from django.urls import reverse
+from rest_framework.test import APIClient
 
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod
+from modules.matches.domain.penalty_shootout import PenaltyShootoutStatus
 from modules.matches.management.commands.seed_demo_match import find_demo_match
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -70,6 +73,33 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert match.cards.filter(rescinded_at__isnull=False).count() == 1
     assert match.goals.filter(player_name="Lucas Contreras").exists()
     assert match.cards.filter(player_name="Ignacio Silva").exists()
+
+    shootout_match = Match.objects.get(penalty_shootout__isnull=False)
+    assert shootout_match.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
+    assert shootout_match.current_minute == 120
+    assert shootout_match.home_goal_count == shootout_match.away_goal_count
+    assert shootout_match.penalty_shootout.status == PenaltyShootoutStatus.FINISHED
+    assert shootout_match.penalty_shootout.home_score == 4
+    assert shootout_match.penalty_shootout.away_score == 3
+    assert shootout_match.penalty_shootout.kicks.count() == 8
+
+    response = APIClient().get(reverse("matches-detail", args=[shootout_match.id]))
+    assert response.status_code == 200
+    assert response.data["home_team"]["penalty_score"] == 4
+    assert response.data["away_team"]["penalty_score"] == 3
+    assert response.data["penalty_shootout"]["winner_team_side"] == "home"
+    assert len(response.data["penalty_shootout"]["kicks"]) == 8
+
+    list_response = APIClient().get(reverse("matches-list"))
+    primary_summary = next(item for item in list_response.data if item["id"] == str(match.id))
+    penalty_goal = next(
+        goal for goal in primary_summary["home_team"]["goals"] if goal["goal_type"] == "penalty"
+    )
+    assert penalty_goal == {
+        "player_name": "Lucas Contreras",
+        "goal_type": "penalty",
+        "minute": 18,
+    }
     assert match.cards.filter(player_name="Elías Figueroa").exists()
 
 

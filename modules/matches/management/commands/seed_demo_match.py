@@ -12,8 +12,14 @@ from modules.matches.application.commands.advance_match_period_use_case import (
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.finish_penalty_shootout_use_case import (
+    FinishPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
+    RegisterPenaltyShootoutKickUseCase,
+)
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
@@ -23,13 +29,18 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     SetMatchLineupUseCase,
 )
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.start_penalty_shootout_use_case import (
+    StartPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.update_match_clock_use_case import (
     UpdateMatchClockUseCase,
 )
 from modules.matches.constants import MATCH_LINEUP_SIZE
 from modules.matches.domain.card import CardType
+from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
+from modules.matches.domain.penalty_shootout import PenaltyKickOutcome
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
@@ -134,6 +145,8 @@ class DemoFixture:
     stadium: str
     score: tuple[int, int] | None
     target_period: MatchPeriod | None = None
+    shootout_score: tuple[int, int] | None = None
+    has_extra_time: bool = False
 
 
 FIXTURES = (
@@ -150,6 +163,8 @@ FIXTURES = (
         datetime(2026, 7, 27, 18, tzinfo=UTC),
         "Estadio del Valle",
         (2, 2),
+        shootout_score=(4, 3),
+        has_extra_time=True,
     ),
     DemoFixture(
         HOME_TEAM_NAME,
@@ -295,6 +310,11 @@ class Command(BaseCommand):
         self.disallow_goal = injector_instance.get(DisallowGoalUseCase)
         self.rescind_card = injector_instance.get(RescindCardUseCase)
         self.finish_match = injector_instance.get(FinishMatchUseCase)
+        self.start_penalty_shootout = injector_instance.get(StartPenaltyShootoutUseCase)
+        self.register_penalty_shootout_kick = injector_instance.get(
+            RegisterPenaltyShootoutKickUseCase
+        )
+        self.finish_penalty_shootout = injector_instance.get(FinishPenaltyShootoutUseCase)
         self.update_team = injector_instance.get(UpdateTeamUseCase)
 
     def _ensure_team(
@@ -372,14 +392,26 @@ class Command(BaseCommand):
             expected_substitutions = 2 if fixture.target_period == MatchPeriod.SECOND_HALF else 0
         else:
             expected_status = MatchStatus.FINISHED
-            expected_period = MatchPeriod.SECOND_HALF
-            expected_minute = 90
+            expected_period = (
+                MatchPeriod.EXTRA_TIME_SECOND_HALF
+                if fixture.has_extra_time
+                else MatchPeriod.SECOND_HALF
+            )
+            expected_minute = 120 if fixture.has_extra_time else 90
             expected_substitutions = 2
+        expected_shootout = fixture.shootout_score is not None
+        expected_penalty_goals = 1 if fixture.scheduled_at == SCHEDULED_AT else 0
         return (
             match.status == expected_status
             and match.current_period == expected_period
             and match.current_minute == expected_minute
             and match.substitutions.count() == expected_substitutions
+            and hasattr(match, "penalty_shootout") == expected_shootout
+            and match.goals.filter(
+                goal_type=GoalType.PENALTY,
+                disallowed_at__isnull=True,
+            ).count()
+            == expected_penalty_goals
         )
 
     def _create_fixture(self, fixture: DemoFixture, teams) -> None:
@@ -424,6 +456,11 @@ class Command(BaseCommand):
                 match_id=match_id,
                 player_id=home_players[(index + 8) % MATCH_LINEUP_SIZE],
                 minute=minute,
+                goal_type=(
+                    GoalType.PENALTY
+                    if fixture.scheduled_at == SCHEDULED_AT and index == 0
+                    else GoalType.REGULAR
+                ),
             )
         for index, minute in enumerate(away_goals):
             if minute > 45:
@@ -484,9 +521,61 @@ class Command(BaseCommand):
             return
         if fixture.scheduled_at == SCHEDULED_AT:
             self._add_primary_match_events(match_id, home_players, away_players)
+
+        finished_at = fixture.scheduled_at + timedelta(hours=1, minutes=52)
+
+        if fixture.has_extra_time:
+            self.advance_period.execute(match_id, MatchPeriod.SECOND_HALF)
+            self.update_clock.execute(match_id, MatchPeriod.EXTRA_TIME_FIRST_HALF, 105)
+            self.advance_period.execute(match_id, MatchPeriod.EXTRA_TIME_FIRST_HALF)
+            self.advance_period.execute(match_id, MatchPeriod.EXTRA_TIME_HALFTIME)
+            self.update_clock.execute(match_id, MatchPeriod.EXTRA_TIME_SECOND_HALF, 120)
+
+        if fixture.shootout_score is not None:
+            self._add_penalty_shootout(
+                match_id,
+                home_players,
+                away_players,
+                fixture.shootout_score,
+                finished_at,
+            )
+            return
+
         self.finish_match.execute(
             match_id,
-            finished_at=fixture.scheduled_at + timedelta(hours=1, minutes=52),
+            finished_at=finished_at,
+        )
+
+    def _add_penalty_shootout(
+        self,
+        match_id,
+        home_players,
+        away_players,
+        score,
+        finished_at,
+    ) -> None:
+        self.start_penalty_shootout.execute(match_id=match_id)
+
+        max_kicks = max(score)
+        for index in range(max_kicks):
+            self.register_penalty_shootout_kick.execute(
+                match_id=match_id,
+                player_id=home_players[index + 2],
+                outcome=(
+                    PenaltyKickOutcome.SCORED if index < score[0] else PenaltyKickOutcome.MISSED
+                ),
+            )
+            self.register_penalty_shootout_kick.execute(
+                match_id=match_id,
+                player_id=away_players[index + 2],
+                outcome=(
+                    PenaltyKickOutcome.SCORED if index < score[1] else PenaltyKickOutcome.MISSED
+                ),
+            )
+
+        self.finish_penalty_shootout.execute(
+            match_id=match_id,
+            finished_at=finished_at,
         )
 
     def _add_primary_match_events(self, match_id, home_players, away_players) -> None:

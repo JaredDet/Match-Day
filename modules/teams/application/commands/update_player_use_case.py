@@ -26,6 +26,7 @@ class UpdatePlayerUseCase:
         preferred_shirt_number: int | None | object = _UNSET,
     ) -> None:
         player = self.player_repository.get_for_update(player_id)
+
         if player is None or player.team_id != team_id:
             raise TeamErrors.PlayerNotFound
 
@@ -37,6 +38,7 @@ class UpdatePlayerUseCase:
                 player_id=player.id,
             ):
                 raise TeamErrors.PlayerAlreadyExists
+
         if preferred_position is not _UNSET or preferred_shirt_number is not _UNSET:
             player.update_profile(
                 preferred_position=(
@@ -58,4 +60,5 @@ class UpdatePlayerUseCase:
                 )
             ):
                 raise TeamErrors.PlayerShirtNumberAlreadyExists
+
         self.player_repository.save(player)

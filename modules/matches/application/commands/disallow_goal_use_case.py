@@ -21,11 +21,16 @@ class DisallowGoalUseCase:
     @transaction.atomic
     def execute(self, *, match_id: UUID, goal_id: UUID) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         goal = self.goal_repository.get_for_update(match_id, goal_id)
+
         if goal is None:
             raise MatchErrors.GoalNotFound
+
         match.disallow_goal(goal)
+
         self.goal_repository.save(goal)
         self.match_repository.save(match)

@@ -77,6 +77,25 @@ def test_starts_scheduled_match():
     assert match.finished_at is None
 
 
+def test_advances_tied_match_through_extra_time():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+        current_minute=90,
+    )
+
+    match.advance_period(MatchPeriod.SECOND_HALF)
+    match.update_clock(
+        expected_period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+        minute=105,
+    )
+    match.advance_period(MatchPeriod.EXTRA_TIME_FIRST_HALF)
+    match.advance_period(MatchPeriod.EXTRA_TIME_HALFTIME)
+
+    assert match.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
+    assert match.current_minute == 106
+
+
 def test_updates_and_normalizes_optional_match_details():
     match = MatchMother.create()
 

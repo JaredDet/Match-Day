@@ -4,7 +4,9 @@ from unittest.mock import Mock
 import pytest
 
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
@@ -44,6 +46,38 @@ def test_registers_goal_and_updates_match_score():
     assert match.away_goal_count == 1
     assert match.home_goal_count == 0
     match_repository.save.assert_called_once_with(match)
+
+
+def test_registers_penalty_as_a_goal_type():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    match_repository = Mock()
+    match_repository.get_for_update.return_value = match
+    goal_repository = Mock()
+    player_repository = Mock()
+    lineup_repository = Mock()
+    lineup_repository.get_for_update.return_value = Mock(
+        is_on_field=True,
+        is_sent_off=False,
+    )
+    player = Player.create(team_id=match.home_team_id, name="Lanzador")
+    player_repository.get.return_value = player
+    use_case = RegisterGoalUseCase(
+        match_repository,
+        goal_repository,
+        player_repository,
+        lineup_repository,
+    )
+
+    use_case.execute(
+        match_id=match.id,
+        player_id=player.id,
+        minute=72,
+        goal_type=GoalType.PENALTY,
+    )
+
+    goal = goal_repository.save.call_args.args[0]
+    assert goal.goal_type == GoalType.PENALTY
+    assert goal.period == MatchPeriod.SECOND_HALF
 
 
 def test_raises_not_found_without_persisting():

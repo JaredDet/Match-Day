@@ -34,8 +34,10 @@ class RegisterTeamSquadUseCase:
         resolved_players_data = players_data or [{"name": name} for name in (player_names or [])]
         players = [Player.create(team_id=team.id, **data) for data in resolved_players_data]
         normalized_names = [player.name.casefold() for player in players]
+
         if len(normalized_names) != len(set(normalized_names)):
             raise TeamErrors.PlayerAlreadyExists
+
         if any(self.player_repository.exists_by_name(team.id, player.name) for player in players):
             raise TeamErrors.PlayerAlreadyExists
 
@@ -46,6 +48,7 @@ class RegisterTeamSquadUseCase:
         ]
         if len(shirt_numbers) != len(set(shirt_numbers)):
             raise TeamErrors.PlayerShirtNumberAlreadyExists
+
         if any(
             self.player_repository.exists_by_preferred_shirt_number(
                 team_id=team.id,
@@ -56,4 +59,5 @@ class RegisterTeamSquadUseCase:
             raise TeamErrors.PlayerShirtNumberAlreadyExists
 
         self.player_repository.save_all(players)
+
         return tuple(player.id for player in players)

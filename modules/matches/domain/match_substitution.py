@@ -3,9 +3,13 @@ import uuid
 from django.db import models
 
 from modules.matches.constants import (
+    EXTRA_TIME_FIRST_HALF_END_MINUTE,
+    EXTRA_TIME_FIRST_HALF_START_MINUTE,
+    EXTRA_TIME_SECOND_HALF_START_MINUTE,
     FIRST_HALF_END_MINUTE,
     MAX_MATCH_MINUTE,
     MIN_MATCH_MINUTE,
+    SECOND_HALF_END_MINUTE,
     SECOND_HALF_START_MINUTE,
 )
 from modules.matches.domain.match_event import MatchPeriod, TeamSide, validate_match_event
@@ -31,7 +35,7 @@ class MatchSubstitution(models.Model):
         related_name="substitutions_in",
     )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
-    period = models.CharField(max_length=20, choices=MatchPeriod.choices)
+    period = models.CharField(max_length=25, choices=MatchPeriod.choices)
     minute = models.PositiveSmallIntegerField()
     added_minute = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -104,6 +108,16 @@ class MatchSubstitution(models.Model):
                     | models.Q(
                         period=MatchPeriod.SECOND_HALF,
                         minute__gte=SECOND_HALF_START_MINUTE,
+                        minute__lte=SECOND_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                        minute__gte=EXTRA_TIME_FIRST_HALF_START_MINUTE,
+                        minute__lte=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        period=MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                        minute__gte=EXTRA_TIME_SECOND_HALF_START_MINUTE,
                         minute__lte=MAX_MATCH_MINUTE,
                     )
                 ),
@@ -117,6 +131,14 @@ class MatchSubstitution(models.Model):
                 )
                 | models.Q(
                     period=MatchPeriod.SECOND_HALF,
+                    minute=SECOND_HALF_END_MINUTE,
+                )
+                | models.Q(
+                    period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                    minute=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                )
+                | models.Q(
+                    period=MatchPeriod.EXTRA_TIME_SECOND_HALF,
                     minute=MAX_MATCH_MINUTE,
                 ),
                 name="valid_substitution_added_minute",

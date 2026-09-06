@@ -12,6 +12,9 @@ from modules.matches.api.contracts.requests.create_match_request import CreateMa
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.requests.register_penalty_shootout_kick_request import (
+    RegisterPenaltyShootoutKickRequest,
+)
 from modules.matches.api.contracts.requests.register_substitution_request import (
     RegisterSubstitutionRequest,
 )
@@ -30,8 +33,14 @@ from modules.matches.application.commands.advance_match_period_use_case import (
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.finish_penalty_shootout_use_case import (
+    FinishPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
+    RegisterPenaltyShootoutKickUseCase,
+)
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
@@ -41,6 +50,9 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     SetMatchLineupUseCase,
 )
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.start_penalty_shootout_use_case import (
+    StartPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.update_match_clock_use_case import (
     UpdateMatchClockUseCase,
 )
@@ -260,6 +272,55 @@ class MatchViewSet(ViewSet):
             {"id": str(substitution_id)},
             status=status.HTTP_201_CREATED,
         )
+
+    @extend_schema(
+        operation_id="matches_start_penalty_shootout",
+        request=None,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="StartPenaltyShootoutResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="penalty-shootout/start")
+    def start_penalty_shootout(self, request, pk=None):
+        use_case = injector_instance.get(StartPenaltyShootoutUseCase)
+        shootout_id = use_case.execute(match_id=pk)
+
+        return Response({"id": str(shootout_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_penalty_shootout_kick",
+        request=RegisterPenaltyShootoutKickRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterPenaltyShootoutKickResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="penalty-shootout/kicks")
+    def register_penalty_shootout_kick(self, request, pk=None):
+        request_contract = RegisterPenaltyShootoutKickRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterPenaltyShootoutKickUseCase)
+        kick_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response({"id": str(kick_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_finish_penalty_shootout",
+        request=None,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["post"], url_path="penalty-shootout/finish")
+    def finish_penalty_shootout(self, request, pk=None):
+        use_case = injector_instance.get(FinishPenaltyShootoutUseCase)
+        use_case.execute(match_id=pk)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         operation_id="matches_disallow_goal",

@@ -57,6 +57,8 @@ class GetTeamQuery:
 
     def execute(self, team_id: UUID) -> TeamDetail:
         team = self.team_query_repository.get(team_id)
+
         if team is None:
             raise TeamErrors.NotFound
+
         return team

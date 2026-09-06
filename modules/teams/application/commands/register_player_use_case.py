@@ -29,16 +29,20 @@ class RegisterPlayerUseCase:
         preferred_shirt_number: int | None = None,
     ) -> UUID:
         team = self.team_repository.get_for_update(team_id)
+
         if team is None:
             raise TeamErrors.NotFound
+
         player = Player.create(
             team_id=team.id,
             name=name,
             preferred_position=preferred_position,
             preferred_shirt_number=preferred_shirt_number,
         )
+
         if self.player_repository.exists_by_name(team.id, player.name):
             raise TeamErrors.PlayerAlreadyExists
+
         if preferred_shirt_number is not None and (
             self.player_repository.exists_by_preferred_shirt_number(
                 team_id=team.id,
@@ -46,5 +50,7 @@ class RegisterPlayerUseCase:
             )
         ):
             raise TeamErrors.PlayerShirtNumberAlreadyExists
+
         self.player_repository.save(player)
+
         return player.id

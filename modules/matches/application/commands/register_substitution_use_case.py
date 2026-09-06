@@ -38,6 +38,7 @@ class RegisterSubstitutionUseCase:
         added_minute: int = 0,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
 
@@ -52,6 +53,7 @@ class RegisterSubstitutionUseCase:
             match_id=match.id,
             player_id=player_in_id,
         )
+
         if player_out is None or player_in is None:
             raise MatchErrors.InvalidSubstitutionPlayers
 

@@ -25,11 +25,16 @@ class StartMatchUseCase:
     @transaction.atomic
     def execute(self, match_id: UUID, *, started_at: datetime | None = None) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         if match.status != MatchStatus.SCHEDULED:
             raise MatchErrors.InvalidState
+
         squad_players = self.squad_repository.list_for_update(match_id=match.id)
+
         match.ensure_ready_for_start(squad_players)
         match.start(started_at)
+
         self.match_repository.save(match)

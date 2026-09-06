@@ -9,6 +9,13 @@ from django.db import models
 from django.utils import timezone
 
 from core.constants import NAME_MAX_LENGTH
+from modules.matches.constants import (
+    EXTRA_TIME_FIRST_HALF_END_MINUTE,
+    EXTRA_TIME_FIRST_HALF_START_MINUTE,
+    EXTRA_TIME_SECOND_HALF_START_MINUTE,
+    MAX_MATCH_MINUTE,
+    SECOND_HALF_END_MINUTE,
+)
 from modules.matches.domain.match_event import (
     MatchPeriod,
     TeamSide,
@@ -87,7 +94,7 @@ class Match(models.Model):
         default=MatchStatus.SCHEDULED,
     )
     current_period = models.CharField(
-        max_length=20,
+        max_length=25,
         choices=MatchPeriod.choices,
         null=True,
         blank=True,
@@ -256,18 +263,64 @@ class Match(models.Model):
         if expected_period == MatchPeriod.HALFTIME:
             self.start_second_half()
             return
+        if expected_period == MatchPeriod.SECOND_HALF:
+            self.start_extra_time()
+            return
+        if expected_period == MatchPeriod.EXTRA_TIME_FIRST_HALF:
+            self.end_extra_time_first_half()
+            return
+        if expected_period == MatchPeriod.EXTRA_TIME_HALFTIME:
+            self.start_extra_time_second_half()
+            return
         raise MatchErrors.InvalidPeriod
+
+    def start_extra_time(self) -> None:
+        self._ensure_period(MatchPeriod.SECOND_HALF)
+
+        if self.current_minute != SECOND_HALF_END_MINUTE:
+            raise MatchErrors.InvalidExtraTimeState
+
+        if self.home_goal_count != self.away_goal_count:
+            raise MatchErrors.ExtraTimeRequiresTie
+
+        self.current_period = MatchPeriod.EXTRA_TIME_FIRST_HALF
+        self.current_minute = EXTRA_TIME_FIRST_HALF_START_MINUTE
+        self.current_added_minute = 0
+
+    def end_extra_time_first_half(self) -> None:
+        self._ensure_period(MatchPeriod.EXTRA_TIME_FIRST_HALF)
+
+        if self.current_minute < EXTRA_TIME_FIRST_HALF_END_MINUTE:
+            self.current_minute = EXTRA_TIME_FIRST_HALF_END_MINUTE
+            self.current_added_minute = 0
+
+        self.current_period = MatchPeriod.EXTRA_TIME_HALFTIME
+
+    def start_extra_time_second_half(self) -> None:
+        self._ensure_period(MatchPeriod.EXTRA_TIME_HALFTIME)
+        self.current_period = MatchPeriod.EXTRA_TIME_SECOND_HALF
+        self.current_minute = EXTRA_TIME_SECOND_HALF_START_MINUTE
+        self.current_added_minute = 0
 
     def finish(self, finished_at: datetime | None = None) -> None:
         if self.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
-        self._ensure_period(MatchPeriod.SECOND_HALF)
+        if self.current_period not in {
+            MatchPeriod.SECOND_HALF,
+            MatchPeriod.EXTRA_TIME_SECOND_HALF,
+        }:
+            raise MatchErrors.InvalidPeriod
         resolved_finished_at = finished_at or timezone.now()
         if self.started_at is None or resolved_finished_at < self.started_at:
             raise MatchErrors.InvalidFinishTime
         self.status = MatchStatus.FINISHED
-        if self.current_minute < 90:
-            self.current_minute = 90
+        expected_final_minute = (
+            MAX_MATCH_MINUTE
+            if self.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
+            else SECOND_HALF_END_MINUTE
+        )
+        if self.current_minute < expected_final_minute:
+            self.current_minute = expected_final_minute
             self.current_added_minute = 0
         self.finished_at = resolved_finished_at
 
@@ -277,15 +330,20 @@ class Match(models.Model):
         player: Player,
         minute: int,
         added_minute: int = 0,
+        goal_type=None,
         event_id: uuid.UUID | None = None,
     ):
-        from modules.matches.domain.goal import Goal
+        from modules.matches.domain.goal import Goal, GoalType
 
         self._ensure_live()
         period = self._current_event_period()
         team_side = self._resolve_team_side(player.team_id)
         validate_match_event(team_side, period, minute, added_minute)
         self.ensure_event_time_reached(period, minute, added_minute)
+        resolved_goal_type = goal_type or GoalType.REGULAR
+        if not isinstance(resolved_goal_type, GoalType):
+            raise MatchErrors.InvalidGoalType
+
         if team_side == TeamSide.HOME:
             self.home_goal_count += 1
         else:
@@ -296,10 +354,28 @@ class Match(models.Model):
             player=player,
             team_side=team_side,
             player_name=player.name,
+            goal_type=resolved_goal_type,
             period=period,
             minute=minute,
             added_minute=added_minute,
         )
+
+    def ensure_penalty_shootout_can_start(self) -> None:
+        self._ensure_live()
+
+        valid_end = (
+            self.current_period == MatchPeriod.SECOND_HALF
+            and self.current_minute == SECOND_HALF_END_MINUTE
+        ) or (
+            self.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
+            and self.current_minute == MAX_MATCH_MINUTE
+        )
+
+        if not valid_end:
+            raise MatchErrors.InvalidPenaltyShootoutState
+
+        if self.home_goal_count != self.away_goal_count:
+            raise MatchErrors.PenaltyShootoutRequiresTie
 
     def register_card(
         self,
@@ -365,7 +441,7 @@ class Match(models.Model):
             period = MatchPeriod(self.current_period)
         except (TypeError, ValueError):
             raise MatchErrors.InvalidPeriod from None
-        if period == MatchPeriod.HALFTIME:
+        if period in {MatchPeriod.HALFTIME, MatchPeriod.EXTRA_TIME_HALFTIME}:
             raise MatchErrors.InvalidPeriod
         return period
 
@@ -416,13 +492,35 @@ class Match(models.Model):
                     | models.Q(
                         current_period=MatchPeriod.SECOND_HALF,
                         current_minute__gte=46,
-                        current_minute__lte=90,
+                        current_minute__lte=SECOND_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        current_period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                        current_minute__gte=EXTRA_TIME_FIRST_HALF_START_MINUTE,
+                        current_minute__lte=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        current_period=MatchPeriod.EXTRA_TIME_HALFTIME,
+                        current_minute=EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                    )
+                    | models.Q(
+                        current_period=MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                        current_minute__gte=EXTRA_TIME_SECOND_HALF_START_MINUTE,
+                        current_minute__lte=MAX_MATCH_MINUTE,
                     )
                 ),
                 name="valid_match_clock_period",
             ),
             models.CheckConstraint(
-                condition=models.Q(current_added_minute=0) | models.Q(current_minute__in=[45, 90]),
+                condition=models.Q(current_added_minute=0)
+                | models.Q(
+                    current_minute__in=[
+                        45,
+                        SECOND_HALF_END_MINUTE,
+                        EXTRA_TIME_FIRST_HALF_END_MINUTE,
+                        MAX_MATCH_MINUTE,
+                    ]
+                ),
                 name="valid_match_clock_added_minute",
             ),
             models.CheckConstraint(
@@ -462,8 +560,11 @@ class Match(models.Model):
                     )
                     | models.Q(
                         status=MatchStatus.FINISHED,
-                        current_period=MatchPeriod.SECOND_HALF,
-                        current_minute=90,
+                        current_period__in=[
+                            MatchPeriod.SECOND_HALF,
+                            MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                        ],
+                        current_minute__in=[SECOND_HALF_END_MINUTE, MAX_MATCH_MINUTE],
                         started_at__isnull=False,
                         finished_at__isnull=False,
                     )

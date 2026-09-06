@@ -50,19 +50,26 @@ class SetMatchLineupUseCase:
         captain_id: UUID | None = None,
     ) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         if match.status != MatchStatus.SCHEDULED:
             raise MatchErrors.InvalidState
+
         if len(players) != MATCH_LINEUP_SIZE:
             raise MatchErrors.InvalidLineupSize
+
         resolved_substitutes = substitutes or []
         squad = players + resolved_substitutes
         starter_ids = [player.player_id for player in players]
         player_ids = [player.player_id for player in squad]
+
         if len(player_ids) != len(set(player_ids)):
             raise MatchErrors.DuplicateLineupPlayer
+
         shirt_numbers = [player.shirt_number for player in squad]
+
         if len(shirt_numbers) != len(set(shirt_numbers)):
             raise MatchErrors.DuplicateLineupShirt
 
@@ -71,13 +78,16 @@ class SetMatchLineupUseCase:
             raise TeamErrors.PlayerNotFound
 
         expected_team_id = match.home_team_id if team_side == TeamSide.HOME else match.away_team_id
+
         if any(player.team_id != expected_team_id for player in found_players.values()):
             raise MatchErrors.InvalidPlayerTeam
 
         team = match.home_team if team_side == TeamSide.HOME else match.away_team
         resolved_captain_id = captain_id or team.captain_id
+
         if captain_id is not None and captain_id not in starter_ids:
             raise MatchErrors.InvalidLineupCaptain
+
         if resolved_captain_id not in starter_ids:
             logger.warning(
                 "La alineación del partido %s no tiene capitán para el equipo %s (%s); "
@@ -105,7 +115,9 @@ class SetMatchLineupUseCase:
             )
             for player in resolved_substitutes
         )
+
         match.set_formation(team_side=team_side, formation=formation)
+
         self.match_repository.save(match)
         self.lineup_repository.replace(
             match_id=match.id,

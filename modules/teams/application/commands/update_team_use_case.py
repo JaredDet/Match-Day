@@ -19,6 +19,8 @@ class UpdateTeamUseCase:
             raise TeamErrors.NotFound
 
         team.rename(name)
+
         if self.team_repository.exists_other_by_name(team.name, team.id):
             raise TeamErrors.AlreadyExists
+
         self.team_repository.save(team)

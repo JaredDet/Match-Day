@@ -7,6 +7,61 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidExtraTimeState = AppException(
+        "invalid_extra_time_state",
+        "La prórroga solo puede comenzar al finalizar el segundo tiempo",
+        ErrorType.CONFLICT,
+    )
+    ExtraTimeRequiresTie = AppException(
+        "extra_time_requires_tie",
+        "La prórroga solo puede comenzar con el marcador empatado",
+        ErrorType.CONFLICT,
+    )
+    InvalidGoalType = AppException(
+        "invalid_goal_type",
+        "El tipo de gol no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidPenaltyKickOutcome = AppException(
+        "invalid_penalty_kick_outcome",
+        "El resultado del lanzamiento no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidPenaltyShootoutPlayer = AppException(
+        "invalid_penalty_shootout_player",
+        "El lanzador debe seguir habilitado y en cancha",
+        ErrorType.VALIDATION,
+    )
+    InvalidPenaltyShootoutState = AppException(
+        "invalid_penalty_shootout_state",
+        "La tanda solo puede comenzar al finalizar el tiempo de juego",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutRequiresTie = AppException(
+        "penalty_shootout_requires_tie",
+        "La tanda solo puede comenzar con el marcador empatado",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutNotFound = AppException(
+        "penalty_shootout_not_found",
+        "Tanda de penales no encontrada",
+        ErrorType.NOT_FOUND,
+    )
+    PenaltyShootoutAlreadyExists = AppException(
+        "penalty_shootout_already_exists",
+        "El partido ya tiene una tanda de penales",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutAlreadyFinished = AppException(
+        "penalty_shootout_already_finished",
+        "La tanda de penales ya finalizó",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutIsTied = AppException(
+        "penalty_shootout_is_tied",
+        "La tanda no puede finalizar empatada",
+        ErrorType.CONFLICT,
+    )
     InvalidSentOffReason = AppException(
         "invalid_sent_off_reason",
         "El motivo de expulsión no es válido",

@@ -29,8 +29,10 @@ class CreateMatchUseCase:
     ) -> UUID:
         home_team = self.team_repository.get(home_team_id)
         away_team = self.team_repository.get(away_team_id)
+
         if home_team is None or away_team is None:
             raise TeamErrors.NotFound
+
         match = Match.schedule(
             home_team=home_team,
             away_team=away_team,
@@ -38,7 +40,10 @@ class CreateMatchUseCase:
             stadium_name=stadium_name,
             referee_name=referee_name,
         )
+
         if self.match_repository.exists_fixture(match.fixture_key):
             raise MatchErrors.AlreadyExists
+
         self.match_repository.save(match)
+
         return match.id

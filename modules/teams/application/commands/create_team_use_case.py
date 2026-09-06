@@ -16,7 +16,10 @@ class CreateTeamUseCase:
     @transaction.atomic
     def execute(self, *, name: str) -> UUID:
         team = Team.create(name=name)
+
         if self.team_repository.exists_by_name(team.name):
             raise TeamErrors.AlreadyExists
+
         self.team_repository.save(team)
+
         return team.id

@@ -28,10 +28,12 @@ class RescindCardUseCase:
     @transaction.atomic
     def execute(self, *, match_id: UUID, card_id: UUID) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
 
         card = self.card_repository.get_for_update(match_id, card_id)
+
         if card is None:
             raise MatchErrors.CardNotFound
 
@@ -51,11 +53,13 @@ class RescindCardUseCase:
                 match_id=match.id,
                 player_id=card.player_id,
             )
+
             expected_reason = (
                 SentOffReason.DIRECT_RED
                 if card.card_type == CardType.RED
                 else SentOffReason.SECOND_YELLOW
             )
+
             if (
                 squad_player is not None
                 and squad_player.is_sent_off

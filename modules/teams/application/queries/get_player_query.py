@@ -56,6 +56,8 @@ class GetPlayerQuery:
 
     def execute(self, player_id: UUID) -> PlayerDetail:
         player = self.player_query_repository.get(player_id)
+
         if player is None:
             raise TeamErrors.PlayerNotFound
+
         return player

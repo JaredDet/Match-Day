@@ -16,7 +16,10 @@ class FinishMatchUseCase:
     @transaction.atomic
     def execute(self, match_id: UUID, *, finished_at: datetime | None = None) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         match.finish(finished_at)
+
         self.match_repository.save(match)

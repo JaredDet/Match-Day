@@ -8,6 +8,10 @@ from injector import inject
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
+from modules.matches.domain.penalty_shootout import (
+    PenaltyKickOutcome,
+    PenaltyShootoutStatus,
+)
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
@@ -35,6 +39,26 @@ class MatchEventDetail:
     player_out_name: str | None = None
     player_in_id: UUID | None = None
     player_in_name: str | None = None
+    goal_type: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PenaltyShootoutKickDetail:
+    id: UUID
+    player_id: UUID
+    player_name: str
+    team_side: TeamSide
+    sequence_number: int
+    outcome: PenaltyKickOutcome
+
+
+@dataclass(frozen=True, slots=True)
+class PenaltyShootoutDetail:
+    status: PenaltyShootoutStatus
+    home_score: int
+    away_score: int
+    winner_team_side: TeamSide | None
+    kicks: tuple[PenaltyShootoutKickDetail, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +80,7 @@ class MatchTeamDetail:
     name: str
     team_side: TeamSide
     goals: int
+    penalty_score: int | None
     formation: MatchFormation | None
     lineup: tuple[MatchSquadPlayerDetail, ...]
 
@@ -75,6 +100,7 @@ class MatchDetail:
     home_team: MatchTeamDetail
     away_team: MatchTeamDetail
     events: tuple[MatchEventDetail, ...]
+    penalty_shootout: PenaltyShootoutDetail | None
 
 
 class GetMatchQuery:
@@ -84,6 +110,8 @@ class GetMatchQuery:
 
     def execute(self, match_id: UUID) -> MatchDetail:
         match = self.match_query_repository.get(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         return match

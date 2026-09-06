@@ -22,11 +22,14 @@ class UpdateMatchClockUseCase:
         added_minute: int = 0,
     ) -> None:
         match = self.match_repository.get_for_update(match_id)
+
         if match is None:
             raise MatchErrors.NotFound
+
         match.update_clock(
             expected_period=expected_period,
             minute=minute,
             added_minute=added_minute,
         )
+
         self.match_repository.save(match)

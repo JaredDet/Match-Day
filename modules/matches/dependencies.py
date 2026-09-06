@@ -6,14 +6,23 @@ from modules.matches.application.commands.advance_match_period_use_case import (
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.finish_penalty_shootout_use_case import (
+    FinishPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
+    RegisterPenaltyShootoutKickUseCase,
+)
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.start_penalty_shootout_use_case import (
+    StartPenaltyShootoutUseCase,
+)
 from modules.matches.application.commands.update_match_clock_use_case import (
     UpdateMatchClockUseCase,
 )
@@ -34,6 +43,9 @@ from modules.matches.infrastructure.repository.match_squad_repository import (
 from modules.matches.infrastructure.repository.match_substitution_repository import (
     MatchSubstitutionRepository,
 )
+from modules.matches.infrastructure.repository.penalty_shootout_repository import (
+    PenaltyShootoutRepository,
+)
 
 
 class MatchesModule(injector.Module):
@@ -47,6 +59,11 @@ class MatchesModule(injector.Module):
         )
         binder.bind(CardRepository, to=CardRepository, scope=injector.singleton)
         binder.bind(GoalRepository, to=GoalRepository, scope=injector.singleton)
+        binder.bind(
+            PenaltyShootoutRepository,
+            to=PenaltyShootoutRepository,
+            scope=injector.singleton,
+        )
         binder.bind(MatchQueryRepository, to=MatchQueryRepository, scope=injector.singleton)
         binder.bind(CreateMatchUseCase, to=CreateMatchUseCase, scope=injector.singleton)
         binder.bind(FinishMatchUseCase, to=FinishMatchUseCase, scope=injector.singleton)
@@ -57,6 +74,21 @@ class MatchesModule(injector.Module):
         )
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
+        binder.bind(
+            StartPenaltyShootoutUseCase,
+            to=StartPenaltyShootoutUseCase,
+            scope=injector.singleton,
+        )
+        binder.bind(
+            RegisterPenaltyShootoutKickUseCase,
+            to=RegisterPenaltyShootoutKickUseCase,
+            scope=injector.singleton,
+        )
+        binder.bind(
+            FinishPenaltyShootoutUseCase,
+            to=FinishPenaltyShootoutUseCase,
+            scope=injector.singleton,
+        )
         binder.bind(
             RegisterSubstitutionUseCase,
             to=RegisterSubstitutionUseCase,
