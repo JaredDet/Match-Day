@@ -7,7 +7,10 @@ from rest_framework.test import APIClient
 
 from modules.matches.domain.match import Match, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod
-from modules.matches.domain.penalty_shootout import PenaltyShootoutStatus
+from modules.matches.domain.penalty_shootout import (
+    PenaltyShootoutIneligibilityReason,
+    PenaltyShootoutStatus,
+)
 from modules.matches.management.commands.seed_demo_match import find_demo_match
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -81,14 +84,34 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert shootout_match.penalty_shootout.status == PenaltyShootoutStatus.FINISHED
     assert shootout_match.penalty_shootout.home_score == 4
     assert shootout_match.penalty_shootout.away_score == 3
-    assert shootout_match.penalty_shootout.kicks.count() == 8
+    assert shootout_match.penalty_shootout.home_kick_count == 5
+    assert shootout_match.penalty_shootout.away_kick_count == 5
+    assert shootout_match.penalty_shootout.kicks.count() == 10
 
     response = APIClient().get(reverse("matches-detail", args=[shootout_match.id]))
     assert response.status_code == 200
     assert response.data["home_team"]["penalty_score"] == 4
     assert response.data["away_team"]["penalty_score"] == 3
+    assert response.data["penalty_shootout"]["starting_team_side"] == "home"
+    assert response.data["penalty_shootout"]["next_team_side"] is None
     assert response.data["penalty_shootout"]["winner_team_side"] == "home"
-    assert len(response.data["penalty_shootout"]["kicks"]) == 8
+    assert "kicks" not in response.data["penalty_shootout"]
+    shootout_events = [
+        event for event in response.data["events"] if event["type"] == "penalty_shootout_kick"
+    ]
+    assert len(shootout_events) == 10
+    assert shootout_events[0]["sequence_number"] == 1
+    assert shootout_events[0]["outcome"] == "scored"
+    assert "minute" not in shootout_events[0]
+    participant_reasons = {
+        participant["ineligibility_reason"]
+        for participant in response.data["penalty_shootout"]["participants"]
+        if not participant["is_eligible"]
+    }
+    assert participant_reasons == {
+        PenaltyShootoutIneligibilityReason.INJURY,
+        PenaltyShootoutIneligibilityReason.OPPONENT_REDUCTION,
+    }
 
     list_response = APIClient().get(reverse("matches-list"))
     primary_summary = next(item for item in list_response.data if item["id"] == str(match.id))

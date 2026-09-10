@@ -6,7 +6,10 @@ from modules.matches.domain.match_substitution import MatchSubstitution
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootout,
+    PenaltyShootoutDepartureReason,
+    PenaltyShootoutIneligibilityReason,
     PenaltyShootoutKick,
+    PenaltyShootoutParticipant,
     PenaltyShootoutStatus,
 )
 
@@ -19,7 +22,10 @@ __all__ = [
     "MatchSquadRole",
     "MatchSubstitution",
     "PenaltyKickOutcome",
+    "PenaltyShootoutDepartureReason",
+    "PenaltyShootoutIneligibilityReason",
     "PenaltyShootout",
     "PenaltyShootoutKick",
+    "PenaltyShootoutParticipant",
     "PenaltyShootoutStatus",
 ]

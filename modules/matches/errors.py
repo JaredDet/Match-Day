@@ -57,9 +57,44 @@ class MatchErrors:
         "La tanda de penales ya finalizó",
         ErrorType.CONFLICT,
     )
-    PenaltyShootoutIsTied = AppException(
-        "penalty_shootout_is_tied",
-        "La tanda no puede finalizar empatada",
+    PenaltyShootoutAlreadyDecided = AppException(
+        "penalty_shootout_already_decided",
+        "La tanda ya tiene un ganador y no admite más lanzamientos",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutNotDecided = AppException(
+        "penalty_shootout_not_decided",
+        "La tanda todavía no tiene un ganador",
+        ErrorType.CONFLICT,
+    )
+    InvalidPenaltyShootoutTurn = AppException(
+        "invalid_penalty_shootout_turn",
+        "El lanzamiento no corresponde al equipo esperado",
+        ErrorType.CONFLICT,
+    )
+    PenaltyShootoutKickerAlreadyUsed = AppException(
+        "penalty_shootout_kicker_already_used",
+        "El lanzador no puede repetir hasta que todos los jugadores habilitados hayan lanzado",
+        ErrorType.CONFLICT,
+    )
+    InvalidPenaltyShootoutExclusions = AppException(
+        "invalid_penalty_shootout_exclusions",
+        "Debe excluirse exactamente la diferencia de jugadores del equipo con más habilitados",
+        ErrorType.VALIDATION,
+    )
+    InvalidPenaltyShootoutDepartureReason = AppException(
+        "invalid_penalty_shootout_departure_reason",
+        "El motivo de salida durante la tanda no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidPenaltyShootoutReduction = AppException(
+        "invalid_penalty_shootout_reduction",
+        "La reducción debe retirar un jugador habilitado de cada equipo",
+        ErrorType.VALIDATION,
+    )
+    UnequalPenaltyShootoutParticipants = AppException(
+        "unequal_penalty_shootout_participants",
+        "La tanda no puede continuar con distinta cantidad de jugadores habilitados",
         ErrorType.CONFLICT,
     )
     InvalidSentOffReason = AppException(

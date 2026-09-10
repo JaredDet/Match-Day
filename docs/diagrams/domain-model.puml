@@ -1,5 +1,5 @@
 @startuml Matchday Domain Model
-title Matchday V4 - Modelo de dominio
+title Matchday V4.5 - Modelo de dominio
 
 hide empty members
 skinparam classAttributeIconSize 0
@@ -41,6 +41,9 @@ package "matches" {
     first_half
     halftime
     second_half
+    extra_time_first_half
+    extra_time_halftime
+    extra_time_second_half
   }
 
   enum MatchFormation {
@@ -60,6 +63,29 @@ package "matches" {
   enum CardType {
     yellow
     red
+  }
+
+  enum GoalType {
+    regular
+    penalty
+  }
+
+  enum PenaltyShootoutStatus {
+    in_progress
+    decided
+    finished
+  }
+
+  enum PenaltyKickOutcome {
+    scored
+    missed
+  }
+
+  enum PenaltyShootoutIneligibilityReason {
+    initial_equalization
+    injury
+    sent_off
+    opponent_reduction
   }
 
   enum MatchSquadRole {
@@ -142,6 +168,7 @@ package "matches" {
     +TeamSide team_side
     +string player_name
     +MatchPeriod period
+    +GoalType goal_type
     +int minute
     +int added_minute
     +datetime disallowed_at
@@ -163,6 +190,42 @@ package "matches" {
     --
     +rescind(...): void
   }
+
+  class PenaltyShootout {
+    +UUID id
+    +UUID match_id
+    +PenaltyShootoutStatus status
+    +TeamSide starting_team_side
+    +int home_score
+    +int away_score
+    +int home_kick_count
+    +int away_kick_count
+    +TeamSide winner_team_side
+    --
+    +next_team_side: TeamSide?
+    +record_kick(...): void
+    +finish(...): void
+  }
+
+  class PenaltyShootoutKick {
+    +UUID id
+    +UUID shootout_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +int sequence_number
+    +PenaltyKickOutcome outcome
+  }
+
+  class PenaltyShootoutParticipant {
+    +UUID id
+    +UUID shootout_id
+    +UUID player_id
+    +TeamSide team_side
+    +bool is_eligible
+    +PenaltyShootoutIneligibilityReason ineligibility_reason
+    +datetime became_ineligible_at
+  }
 }
 
 Team "1" -- "0..*" Player : plantilla
@@ -176,8 +239,13 @@ MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : sale
 MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : entra
 Match "1" *-- "0..*" Goal
 Match "1" *-- "0..*" Card
+Match "1" *-- "0..1" PenaltyShootout
+PenaltyShootout "1" *-- "0..*" PenaltyShootoutKick
+PenaltyShootout "1" *-- "1..*" PenaltyShootoutParticipant : habilitados
 Player "1" <-- "0..*" Goal
 Player "1" <-- "0..*" Card
+Player "1" <-- "0..*" PenaltyShootoutKick
+Player "1" <-- "0..*" PenaltyShootoutParticipant
 Match --> MatchStatus
 Match --> MatchPeriod
 Match --> MatchFormation
@@ -186,8 +254,15 @@ MatchSquadPlayer --> MatchSquadRole
 MatchSquadPlayer --> SentOffReason
 MatchSubstitution --> TeamSide
 Goal --> TeamSide
+Goal --> GoalType
 Card --> TeamSide
 Card --> CardType
+PenaltyShootout --> PenaltyShootoutStatus
+PenaltyShootout --> TeamSide
+PenaltyShootoutKick --> TeamSide
+PenaltyShootoutKick --> PenaltyKickOutcome
+PenaltyShootoutParticipant --> TeamSide
+PenaltyShootoutParticipant --> PenaltyShootoutIneligibilityReason
 
 note right of Match
   Los nombres de equipos son snapshots.
@@ -204,5 +279,17 @@ note bottom of MatchSquadPlayer
   Si captain_id se omite, se usa el
   habitual solo cuando está alineado.
   Nunca se selecciona otro automáticamente.
+end note
+
+note bottom of PenaltyShootout
+  Regla 10 de IFAB.
+  El equipo inicial queda persistido.
+  El siguiente turno se calcula mientras
+  la tanda está activa. Un jugador solo
+  repite tras lanzar todos los habilitados.
+  Si los equipos terminan con cantidades
+  distintas, el mayor excluye la diferencia.
+  Si alguien queda fuera durante la tanda,
+  el rival excluye otro antes de continuar.
 end note
 @enduml

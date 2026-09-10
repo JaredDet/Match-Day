@@ -1,5 +1,5 @@
 @startuml Match Lifecycle
-title Matchday V4 - Ciclo de vida del partido
+title Matchday V4.5 - Ciclo de vida del partido
 
 [*] --> Scheduled : CreateMatch
 Scheduled --> Scheduled : UpdateMatchDetails
@@ -13,7 +13,23 @@ SecondHalf --> SecondHalf : RegisterGoal / RegisterCard
 SecondHalf --> SecondHalf : RegisterSubstitution
 SecondHalf --> SecondHalf : DisallowGoal / RescindCard
 SecondHalf --> Finished : FinishMatch
+SecondHalf --> ExtraTimeFirstHalf : AdvancePeriod (empate)
+ExtraTimeFirstHalf --> ExtraTimeHalftime : AdvancePeriod
+ExtraTimeHalftime --> ExtraTimeSecondHalf : AdvancePeriod
+ExtraTimeSecondHalf --> Finished : FinishMatch
+SecondHalf --> Shootout : StartPenaltyShootout (empate)
+ExtraTimeSecondHalf --> Shootout : StartPenaltyShootout (empate)
+Shootout --> Shootout : RegisterPenaltyShootoutKick
+Shootout --> Shootout : ReducePenaltyShootoutParticipants
+Shootout --> Finished : FinishPenaltyShootout
 Finished --> [*]
+
+state Shootout {
+  [*] --> InitialKicks
+  InitialKicks --> Decided : victoria matemática
+  InitialKicks --> SuddenDeath : empate tras cinco por equipo
+  SuddenDeath --> Decided : ventaja tras un par completo
+}
 
 state Scheduled {
   [*] --> Configurable
@@ -40,5 +56,14 @@ end note
 note right of Finished
   Conserva snapshots de equipos,
   jugadores y cronología válida.
+end note
+
+note right of Shootout
+  Basado en la Regla 10 de IFAB.
+  Se configura quién lanza primero.
+  No se repite lanzador hasta que todos
+  los jugadores habilitados hayan lanzado.
+  Una baja obliga a excluir un jugador rival
+  antes de admitir el siguiente lanzamiento.
 end note
 @enduml

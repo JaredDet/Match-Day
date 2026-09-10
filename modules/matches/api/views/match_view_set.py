@@ -10,6 +10,9 @@ from modules.matches.api.contracts.requests.advance_match_period_request import 
 )
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
+from modules.matches.api.contracts.requests.reduce_penalty_shootout_participants_request import (
+    ReducePenaltyShootoutParticipantsRequest,
+)
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
 from modules.matches.api.contracts.requests.register_penalty_shootout_kick_request import (
@@ -19,6 +22,9 @@ from modules.matches.api.contracts.requests.register_substitution_request import
     RegisterSubstitutionRequest,
 )
 from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
+from modules.matches.api.contracts.requests.start_penalty_shootout_request import (
+    StartPenaltyShootoutRequest,
+)
 from modules.matches.api.contracts.requests.update_match_clock_request import (
     UpdateMatchClockRequest,
 )
@@ -35,6 +41,9 @@ from modules.matches.application.commands.disallow_goal_use_case import Disallow
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.finish_penalty_shootout_use_case import (
     FinishPenaltyShootoutUseCase,
+)
+from modules.matches.application.commands.reduce_penalty_shootout_participants_use_case import (
+    ReducePenaltyShootoutParticipantsUseCase,
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
@@ -275,7 +284,7 @@ class MatchViewSet(ViewSet):
 
     @extend_schema(
         operation_id="matches_start_penalty_shootout",
-        request=None,
+        request=StartPenaltyShootoutRequest,
         responses={
             status.HTTP_201_CREATED: inline_serializer(
                 name="StartPenaltyShootoutResult",
@@ -285,8 +294,14 @@ class MatchViewSet(ViewSet):
     )
     @action(detail=True, methods=["post"], url_path="penalty-shootout/start")
     def start_penalty_shootout(self, request, pk=None):
+        request_contract = StartPenaltyShootoutRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
         use_case = injector_instance.get(StartPenaltyShootoutUseCase)
-        shootout_id = use_case.execute(match_id=pk)
+        shootout_id = use_case.execute(
+            match_id=pk,
+            **request_contract.validated_data,
+        )
 
         return Response({"id": str(shootout_id)}, status=status.HTTP_201_CREATED)
 
@@ -309,6 +324,25 @@ class MatchViewSet(ViewSet):
         kick_id = use_case.execute(match_id=pk, **request_contract.validated_data)
 
         return Response({"id": str(kick_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_reduce_penalty_shootout_participants",
+        request=ReducePenaltyShootoutParticipantsRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="penalty-shootout/participants/reduce",
+    )
+    def reduce_penalty_shootout_participants(self, request, pk=None):
+        request_contract = ReducePenaltyShootoutParticipantsRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(ReducePenaltyShootoutParticipantsUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         operation_id="matches_finish_penalty_shootout",

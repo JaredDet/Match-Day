@@ -15,6 +15,9 @@ from modules.matches.application.commands.finish_match_use_case import FinishMat
 from modules.matches.application.commands.finish_penalty_shootout_use_case import (
     FinishPenaltyShootoutUseCase,
 )
+from modules.matches.application.commands.reduce_penalty_shootout_participants_use_case import (
+    ReducePenaltyShootoutParticipantsUseCase,
+)
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
@@ -40,7 +43,11 @@ from modules.matches.domain.card import CardType
 from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
-from modules.matches.domain.penalty_shootout import PenaltyKickOutcome
+from modules.matches.domain.penalty_shootout import (
+    PenaltyKickOutcome,
+    PenaltyShootoutDepartureReason,
+    PenaltyShootoutIneligibilityReason,
+)
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
@@ -149,6 +156,17 @@ class DemoFixture:
     has_extra_time: bool = False
 
 
+SHOOTOUT_FIXTURE = DemoFixture(
+    UNION_TEAM_NAME,
+    SPORTING_TEAM_NAME,
+    datetime(2026, 7, 27, 18, tzinfo=UTC),
+    "Estadio del Valle",
+    (2, 2),
+    shootout_score=(4, 3),
+    has_extra_time=True,
+)
+
+
 FIXTURES = (
     DemoFixture(
         AWAY_TEAM_NAME,
@@ -157,15 +175,7 @@ FIXTURES = (
         "Estadio Cordillera",
         (0, 1),
     ),
-    DemoFixture(
-        UNION_TEAM_NAME,
-        SPORTING_TEAM_NAME,
-        datetime(2026, 7, 27, 18, tzinfo=UTC),
-        "Estadio del Valle",
-        (2, 2),
-        shootout_score=(4, 3),
-        has_extra_time=True,
-    ),
+    SHOOTOUT_FIXTURE,
     DemoFixture(
         HOME_TEAM_NAME,
         UNION_TEAM_NAME,
@@ -252,6 +262,16 @@ def find_demo_match() -> Match | None:
     ).first()
 
 
+def find_demo_shootout_match() -> Match | None:
+    return Match.objects.filter(
+        penalty_shootout__isnull=False,
+        scheduled_at=SHOOTOUT_FIXTURE.scheduled_at,
+        stadium_name=SHOOTOUT_FIXTURE.stadium,
+        home_team_name=SHOOTOUT_FIXTURE.home,
+        away_team_name=SHOOTOUT_FIXTURE.away,
+    ).first()
+
+
 class Command(BaseCommand):
     help = "Crea cuatro equipos y trece partidos usando los casos de uso"
 
@@ -313,6 +333,9 @@ class Command(BaseCommand):
         self.start_penalty_shootout = injector_instance.get(StartPenaltyShootoutUseCase)
         self.register_penalty_shootout_kick = injector_instance.get(
             RegisterPenaltyShootoutKickUseCase
+        )
+        self.reduce_penalty_shootout_participants = injector_instance.get(
+            ReducePenaltyShootoutParticipantsUseCase
         )
         self.finish_penalty_shootout = injector_instance.get(FinishPenaltyShootoutUseCase)
         self.update_team = injector_instance.get(UpdateTeamUseCase)
@@ -401,12 +424,32 @@ class Command(BaseCommand):
             expected_substitutions = 2
         expected_shootout = fixture.shootout_score is not None
         expected_penalty_goals = 1 if fixture.scheduled_at == SCHEDULED_AT else 0
+        shootout_is_current = not expected_shootout
+        if expected_shootout and hasattr(match, "penalty_shootout"):
+            shootout = match.penalty_shootout
+            shootout_is_current = (
+                (shootout.home_score, shootout.away_score) == fixture.shootout_score
+                and shootout.home_kick_count == 5
+                and shootout.away_kick_count == 5
+                and shootout.kicks.count() == 10
+                and set(
+                    shootout.participants.filter(is_eligible=False).values_list(
+                        "ineligibility_reason",
+                        flat=True,
+                    )
+                )
+                == {
+                    PenaltyShootoutIneligibilityReason.INJURY,
+                    PenaltyShootoutIneligibilityReason.OPPONENT_REDUCTION,
+                }
+            )
         return (
             match.status == expected_status
             and match.current_period == expected_period
             and match.current_minute == expected_minute
             and match.substitutions.count() == expected_substitutions
             and hasattr(match, "penalty_shootout") == expected_shootout
+            and shootout_is_current
             and match.goals.filter(
                 goal_type=GoalType.PENALTY,
                 disallowed_at__isnull=True,
@@ -554,10 +597,12 @@ class Command(BaseCommand):
         score,
         finished_at,
     ) -> None:
-        self.start_penalty_shootout.execute(match_id=match_id)
+        self.start_penalty_shootout.execute(
+            match_id=match_id,
+            starting_team_side=TeamSide.HOME,
+        )
 
-        max_kicks = max(score)
-        for index in range(max_kicks):
+        for index in range(5):
             self.register_penalty_shootout_kick.execute(
                 match_id=match_id,
                 player_id=home_players[index + 2],
@@ -565,6 +610,14 @@ class Command(BaseCommand):
                     PenaltyKickOutcome.SCORED if index < score[0] else PenaltyKickOutcome.MISSED
                 ),
             )
+
+            if index == 1:
+                self.reduce_penalty_shootout_participants.execute(
+                    match_id=match_id,
+                    unavailable_player_id=home_players[10],
+                    departure_reason=PenaltyShootoutDepartureReason.INJURY,
+                    opponent_excluded_player_id=away_players[10],
+                )
             self.register_penalty_shootout_kick.execute(
                 match_id=match_id,
                 player_id=away_players[index + 2],

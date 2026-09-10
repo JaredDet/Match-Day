@@ -1,5 +1,5 @@
 @startuml Matchday Architecture
-title Matchday V3 - Arquitectura modular
+title Matchday V4.5 - Arquitectura modular
 
 skinparam componentStyle rectangle
 skinparam linetype ortho
@@ -24,7 +24,7 @@ package "matches" {
   component "Match API\nViewSet + Contracts" as MatchApi
   component "Match Commands" as MatchCommands
   component "Match Queries" as MatchQueries
-  component "Match Domain\nMatch + Events + Lineup" as MatchDomain
+  component "Match Domain\nMatch + Events + Squad + Shootout" as MatchDomain
   component "Match Repositories" as MatchRepositories
   component "Match Query Repository" as MatchQueryRepository
 }

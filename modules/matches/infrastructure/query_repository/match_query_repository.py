@@ -20,6 +20,8 @@ from modules.matches.domain.match_substitution import MatchSubstitution
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootout,
+    PenaltyShootoutIneligibilityReason,
+    PenaltyShootoutKick,
     PenaltyShootoutStatus,
 )
 
@@ -210,7 +212,7 @@ class MatchQueryRepository:
     def _get_penalty_shootout(match_id: UUID):
         from modules.matches.application.queries.get_match_query import (
             PenaltyShootoutDetail,
-            PenaltyShootoutKickDetail,
+            PenaltyShootoutParticipantDetail,
         )
 
         shootout = PenaltyShootout.objects.filter(match_id=match_id).first()
@@ -218,20 +220,47 @@ class MatchQueryRepository:
         if shootout is None:
             return None
 
-        kicks = tuple(
-            PenaltyShootoutKickDetail(
-                id=kick.id,
-                player_id=kick.player_id,
-                player_name=kick.player_name,
-                team_side=TeamSide(kick.team_side),
-                sequence_number=kick.sequence_number,
-                outcome=PenaltyKickOutcome(kick.outcome),
+        participants = tuple(
+            PenaltyShootoutParticipantDetail(
+                player_id=participant.player_id,
+                player_name=participant.player.name,
+                team_side=TeamSide(participant.team_side),
+                is_eligible=participant.is_eligible,
+                ineligibility_reason=(
+                    PenaltyShootoutIneligibilityReason(participant.ineligibility_reason)
+                    if participant.ineligibility_reason is not None
+                    else None
+                ),
+                became_ineligible_at=participant.became_ineligible_at,
             )
-            for kick in shootout.kicks.order_by("sequence_number")
+            for participant in shootout.participants.select_related("player").order_by(
+                "team_side",
+                "player__name",
+            )
         )
 
         return PenaltyShootoutDetail(
             status=PenaltyShootoutStatus(shootout.status),
+            starting_team_side=TeamSide(shootout.starting_team_side),
+            next_team_side=shootout.next_team_side,
+            home_participant_ids=tuple(
+                shootout.participants.filter(
+                    team_side=TeamSide.HOME,
+                    is_eligible=True,
+                ).values_list(
+                    "player_id",
+                    flat=True,
+                )
+            ),
+            away_participant_ids=tuple(
+                shootout.participants.filter(
+                    team_side=TeamSide.AWAY,
+                    is_eligible=True,
+                ).values_list(
+                    "player_id",
+                    flat=True,
+                )
+            ),
             home_score=shootout.home_score,
             away_score=shootout.away_score,
             winner_team_side=(
@@ -239,7 +268,7 @@ class MatchQueryRepository:
                 if shootout.winner_team_side is not None
                 else None
             ),
-            kicks=kicks,
+            participants=participants,
         )
 
     def _get_lineup(self, match_id: UUID) -> tuple[MatchSquadPlayerDetail, ...]:
@@ -388,6 +417,32 @@ class MatchQueryRepository:
                         player_out_name=substitution["player_out__player__name"],
                         player_in_id=substitution["player_in__player_id"],
                         player_in_name=substitution["player_in__player__name"],
+                    ),
+                )
+            )
+        for kick in PenaltyShootoutKick.objects.filter(shootout__match_id=match_id).values(
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "sequence_number",
+            "outcome",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    4,
+                    kick["sequence_number"],
+                    0,
+                    kick["created_at"],
+                    MatchEventDetail(
+                        id=kick["id"],
+                        type=MatchEventType.PENALTY_SHOOTOUT_KICK,
+                        team_side=TeamSide(kick["team_side"]),
+                        player_id=kick["player_id"],
+                        player_name=kick["player_name"],
+                        sequence_number=kick["sequence_number"],
+                        outcome=PenaltyKickOutcome(kick["outcome"]),
                     ),
                 )
             )

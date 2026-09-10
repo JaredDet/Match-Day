@@ -6,7 +6,7 @@ from django.core.management import call_command
 pytestmark = pytest.mark.django_db
 
 
-def test_shows_v3_lists_and_details_for_demo_data():
+def test_shows_v45_lists_and_details_for_demo_data():
     call_command("seed_demo_match", stdout=StringIO())
     output = StringIO()
 
@@ -15,6 +15,7 @@ def test_shows_v3_lists_and_details_for_demo_data():
     result = output.getvalue()
     assert "LIST MATCHES" in result
     assert "GET MATCH" in result
+    assert "GET SHOOTOUT MATCH" in result
     assert "LIST TEAMS" in result
     assert "GET TEAM" in result
     assert "LIST PLAYERS" in result
@@ -27,6 +28,10 @@ def test_shows_v3_lists_and_details_for_demo_data():
     assert '"appearances"' in result
     assert '"recent_matches"' in result
     assert '"is_captain":true' in result
+    assert '"penalty_shootout"' in result
+    assert '"winner_team_side":"home"' in result
+    assert '"ineligibility_reason":"injury"' in result
+    assert '"ineligibility_reason":"opponent_reduction"' in result
     assert "Atlético del Puerto" in result
     assert "Mateo Rojas" in result
     assert "Franco Bustos" in result

@@ -5,6 +5,16 @@ from modules.matches.domain.match_squad_player import (
 
 
 class MatchSquadRepository:
+    def list_eligible_player_ids(self, *, match_id, team_side: TeamSide) -> set:
+        return set(
+            MatchSquadPlayer.objects.filter(
+                match_id=match_id,
+                team_side=team_side,
+                is_on_field=True,
+                is_sent_off=False,
+            ).values_list("player_id", flat=True)
+        )
+
     def list_for_update(self, *, match_id) -> list[MatchSquadPlayer]:
         return list(MatchSquadPlayer.objects.select_for_update().filter(match_id=match_id))
 

@@ -840,3 +840,81 @@ def test_rejects_substitute_as_match_captain():
 
     assert response.status_code == 400
     assert response.data["code"] == "invalid_lineup_captain"
+
+
+def test_starts_and_reduces_penalty_shootout_participants_through_api():
+    match = _schedule_match(
+        home_team_name="Local",
+        away_team_name="Visitante",
+        scheduled_at=timezone.now(),
+    )
+    match.status = MatchStatus.LIVE
+    match.started_at = timezone.now()
+    match.current_period = MatchPeriod.SECOND_HALF
+    match.current_minute = 90
+    match.save()
+    players = {
+        team_side: [
+            _create_player(match, team_side, f"{team_side.value} {index}") for index in range(1, 4)
+        ]
+        for team_side in TeamSide
+    }
+
+    response = APIClient().post(
+        reverse("matches-start-penalty-shootout", args=[match.id]),
+        {"starting_team_side": TeamSide.HOME},
+        format="json",
+    )
+
+    assert response.status_code == 201
+
+    response = APIClient().post(
+        reverse(
+            "matches-reduce-penalty-shootout-participants",
+            args=[match.id],
+        ),
+        {
+            "unavailable_player_id": str(players[TeamSide.HOME][0].id),
+            "departure_reason": "injury",
+            "opponent_excluded_player_id": str(players[TeamSide.AWAY][0].id),
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+
+    kick_response = APIClient().post(
+        reverse(
+            "matches-register-penalty-shootout-kick",
+            args=[match.id],
+        ),
+        {
+            "player_id": str(players[TeamSide.HOME][1].id),
+            "outcome": "scored",
+        },
+        format="json",
+    )
+
+    assert kick_response.status_code == 201
+
+    response = APIClient().get(reverse("matches-detail", args=[match.id]))
+    unavailable_participants = [
+        participant
+        for participant in response.data["penalty_shootout"]["participants"]
+        if not participant["is_eligible"]
+    ]
+
+    assert response.status_code == 200
+    assert {participant["ineligibility_reason"] for participant in unavailable_participants} == {
+        "injury",
+        "opponent_reduction",
+    }
+    assert response.data["events"][-1] == {
+        "id": kick_response.data["id"],
+        "type": "penalty_shootout_kick",
+        "team_side": "home",
+        "player_id": str(players[TeamSide.HOME][1].id),
+        "player_name": "home 2",
+        "sequence_number": 1,
+        "outcome": "scored",
+    }

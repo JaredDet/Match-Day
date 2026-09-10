@@ -2,14 +2,35 @@ import pytest
 from injector import UnsatisfiedRequirement
 
 from core.dependency_injector import injector_instance
+from modules.matches.application.commands.advance_match_period_use_case import (
+    AdvanceMatchPeriodUseCase,
+)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
+from modules.matches.application.commands.finish_penalty_shootout_use_case import (
+    FinishPenaltyShootoutUseCase,
+)
+from modules.matches.application.commands.reduce_penalty_shootout_participants_use_case import (
+    ReducePenaltyShootoutParticipantsUseCase,
+)
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
+    RegisterPenaltyShootoutKickUseCase,
+)
+from modules.matches.application.commands.register_substitution_use_case import (
+    RegisterSubstitutionUseCase,
+)
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
+from modules.matches.application.commands.start_penalty_shootout_use_case import (
+    StartPenaltyShootoutUseCase,
+)
+from modules.matches.application.commands.update_match_clock_use_case import (
+    UpdateMatchClockUseCase,
+)
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
@@ -44,11 +65,18 @@ def test_rejects_unregistered_dependencies():
         CreateMatchUseCase,
         SetMatchLineupUseCase,
         StartMatchUseCase,
+        AdvanceMatchPeriodUseCase,
+        UpdateMatchClockUseCase,
         RegisterGoalUseCase,
         RegisterCardUseCase,
+        RegisterSubstitutionUseCase,
         DisallowGoalUseCase,
         RescindCardUseCase,
         FinishMatchUseCase,
+        StartPenaltyShootoutUseCase,
+        RegisterPenaltyShootoutKickUseCase,
+        ReducePenaltyShootoutParticipantsUseCase,
+        FinishPenaltyShootoutUseCase,
         ListMatchesQuery,
         GetMatchQuery,
         ListTeamsQuery,

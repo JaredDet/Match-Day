@@ -1,5 +1,5 @@
 @startuml Matchday Use Cases
-title Matchday V4 - Casos de uso
+title Matchday V4.5 - Casos de uso
 
 left to right direction
 skinparam packageStyle rectangle
@@ -35,6 +35,10 @@ rectangle "Matches" {
   usecase "Actualizar estadio y árbitro" as UpdateDetails
   usecase "Listar partidos" as ListMatches
   usecase "Ver detalle del partido" as GetMatch
+  usecase "Iniciar tanda de penales" as StartShootout
+  usecase "Registrar lanzamiento de penal" as RegisterShootoutKick
+  usecase "Reducir participantes de la tanda" as ReduceShootoutParticipants
+  usecase "Finalizar tanda de penales" as FinishShootout
 }
 
 Admin --> CreateTeam
@@ -61,12 +65,27 @@ Admin --> RescindCard
 Admin --> UpdateDetails
 Admin --> ListMatches
 Admin --> GetMatch
+Admin --> StartShootout
+Admin --> RegisterShootoutKick
+Admin --> ReduceShootoutParticipants
+Admin --> FinishShootout
 Viewer --> ListMatches
 Viewer --> GetMatch
 Viewer --> ListTeams
 Viewer --> GetTeam
 Viewer --> ListPlayers
 Viewer --> GetPlayer
+
+StartShootout ..> AdvancePeriod : tiempo reglamentario o prórroga completados
+RegisterShootoutKick ..> StartShootout : tanda activa
+ReduceShootoutParticipants ..> StartShootout : lesión o expulsión
+FinishShootout ..> RegisterShootoutKick : ganador decidido
+
+note right of StartShootout
+  Recibe el equipo que comienza y, cuando
+  corresponda, los jugadores excluidos para
+  igualar la cantidad de habilitados.
+end note
 
 RegisterSquad ..> CreateTeam : equipo existente
 SetLineup ..> RegisterSquad : jugadores existentes

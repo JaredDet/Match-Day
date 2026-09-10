@@ -87,9 +87,16 @@ nunca se elige otro jugador automáticamente.
 La especificación completa de requests, filtros y responses está disponible en
 la documentación OpenAPI del proyecto.
 
+## Reglas de dominio
+
+La selección de jugadores, alternancia, rotación, victoria anticipada y muerte
+súbita de las tandas están documentadas en
+[`docs/penalty-shootout-rules.md`](docs/penalty-shootout-rules.md). La
+implementación sigue la Regla 10 de las Reglas de Juego de IFAB.
+
 ## Diagramas
 
-Los diagramas PlantUML de la V3 se encuentran en `docs/diagrams`:
+Los diagramas PlantUML de la V4.5 se encuentran en `docs/diagrams`:
 
 - `domain-model.puml`: entidades, relaciones y reglas principales.
 - `architecture.puml`: módulos y dependencias entre capas.

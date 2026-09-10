@@ -8,7 +8,10 @@ from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.matches.domain.match import MatchStatus
 from modules.matches.errors import MatchErrors
-from modules.matches.management.commands.seed_demo_match import find_demo_match
+from modules.matches.management.commands.seed_demo_match import (
+    find_demo_match,
+    find_demo_shootout_match,
+)
 from modules.teams.api.contracts.responses.get_player_response import GetPlayerResponse
 from modules.teams.api.contracts.responses.get_team_response import GetTeamResponse
 from modules.teams.api.contracts.responses.list_players_response import ListPlayersResponse
@@ -20,7 +23,7 @@ from modules.teams.application.queries.list_teams_query import ListTeamsQuery
 
 
 class Command(BaseCommand):
-    help = "Muestra los listados y detalles demostrativos de la V3"
+    help = "Muestra los listados y detalles demostrativos de la V4.5"
 
     def handle(self, *args, **options):
         list_matches_query = injector_instance.get(ListMatchesQuery)
@@ -42,6 +45,20 @@ class Command(BaseCommand):
         except type(MatchErrors.NotFound) as error:
             raise CommandError("No fue posible consultar el partido demo") from error
 
+        demo_shootout_match = find_demo_shootout_match()
+        if demo_shootout_match is None:
+            raise CommandError(
+                "No existe el partido demo con tanda de penales. Ejecuta primero: "
+                "uv run python manage.py seed_demo_match"
+            )
+
+        try:
+            shootout_match = get_match_query.execute(demo_shootout_match.id)
+        except type(MatchErrors.NotFound) as error:
+            raise CommandError(
+                "No fue posible consultar el partido demo con tanda de penales"
+            ) from error
+
         teams = list_teams_query.execute()
         team = get_team_query.execute(demo_match.home_team_id)
         players = list_players_query.execute(team_id=demo_match.home_team_id)
@@ -53,6 +70,8 @@ class Command(BaseCommand):
         self.stdout.write(self._render(ListMatchesResponse(matches, many=True).data))
         self.stdout.write("GET MATCH")
         self.stdout.write(self._render(GetMatchResponse(match).data))
+        self.stdout.write("GET SHOOTOUT MATCH")
+        self.stdout.write(self._render(GetMatchResponse(shootout_match).data))
         self.stdout.write("LIST TEAMS")
         self.stdout.write(self._render(ListTeamsResponse(teams, many=True).data))
         self.stdout.write("GET TEAM")

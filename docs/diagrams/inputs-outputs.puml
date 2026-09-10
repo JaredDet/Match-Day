@@ -1,5 +1,5 @@
 @startuml Matchday Inputs and Outputs
-title Matchday V3 - Entradas y salidas
+title Matchday V4.5 - Entradas y salidas
 left to right direction
 skinparam componentStyle rectangle
 skinparam linetype ortho
@@ -82,6 +82,17 @@ package "Match Commands" {
   component "POST /cards/{card_id}/rescind" as RescindApi
   component "RescindCardUseCase" as RescindCard
   artifact "204 No Content" as EmptyMatchOutput
+  component "POST /matches/{id}/penalty-shootout/start" as StartShootoutApi
+  component "StartPenaltyShootoutUseCase" as StartShootout
+  artifact "starting_team_side\nequalization_excluded_player_ids[]?" as StartShootoutInput
+  component "POST /matches/{id}/penalty-shootout/kicks" as ShootoutKickApi
+  component "RegisterPenaltyShootoutKickUseCase" as RegisterShootoutKick
+  artifact "player_id + outcome" as ShootoutKickInput
+  component "POST /matches/{id}/penalty-shootout/participants/reduce" as ReduceShootoutApi
+  component "ReducePenaltyShootoutParticipantsUseCase" as ReduceShootout
+  artifact "unavailable_player_id + departure_reason\nopponent_excluded_player_id" as ReduceShootoutInput
+  component "POST /matches/{id}/penalty-shootout/finish" as FinishShootoutApi
+  component "FinishPenaltyShootoutUseCase" as FinishShootout
 }
 
 package "Match Queries" {
@@ -91,7 +102,7 @@ package "Match Queries" {
   artifact "matches[]\nteams + score + formation" as ListMatchesOutput
   component "GET /matches/{id}" as GetMatchApi
   component "GetMatchQuery" as GetMatch
-  artifact "match detail\nteams + lineups + events" as GetMatchOutput
+  artifact "match detail\nteams + lineups + events\nshootout kicks as events\npenalty shootout?" as GetMatchOutput
 }
 
 CreateTeamInput --> CreateTeamApi
@@ -154,6 +165,17 @@ DisallowApi --> DisallowGoal
 DisallowGoal --> EmptyMatchOutput
 RescindApi --> RescindCard
 RescindCard --> EmptyMatchOutput
+StartShootoutInput --> StartShootoutApi
+StartShootoutApi --> StartShootout
+StartShootout --> EventOutput
+ShootoutKickInput --> ShootoutKickApi
+ShootoutKickApi --> RegisterShootoutKick
+RegisterShootoutKick --> EventOutput
+ReduceShootoutInput --> ReduceShootoutApi
+ReduceShootoutApi --> ReduceShootout
+ReduceShootout --> EmptyMatchOutput
+FinishShootoutApi --> FinishShootout
+FinishShootout --> EmptyMatchOutput
 ListMatchesInput --> ListMatchesApi
 ListMatchesApi --> ListMatches
 ListMatches --> ListMatchesOutput

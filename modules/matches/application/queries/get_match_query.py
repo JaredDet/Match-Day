@@ -10,6 +10,7 @@ from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
+    PenaltyShootoutIneligibilityReason,
     PenaltyShootoutStatus,
 )
 from modules.matches.errors import MatchErrors
@@ -23,6 +24,7 @@ class MatchEventType(StrEnum):
     YELLOW_CARD = "yellow_card"
     RED_CARD = "red_card"
     SUBSTITUTION = "substitution"
+    PENALTY_SHOOTOUT_KICK = "penalty_shootout_kick"
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,9 +32,9 @@ class MatchEventDetail:
     id: UUID
     type: MatchEventType
     team_side: TeamSide
-    minute: int
-    period: MatchPeriod
-    added_minute: int
+    minute: int | None = None
+    period: MatchPeriod | None = None
+    added_minute: int | None = None
     player_id: UUID | None = None
     player_name: str | None = None
     player_out_id: UUID | None = None
@@ -40,25 +42,31 @@ class MatchEventDetail:
     player_in_id: UUID | None = None
     player_in_name: str | None = None
     goal_type: str | None = None
+    sequence_number: int | None = None
+    outcome: PenaltyKickOutcome | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class PenaltyShootoutKickDetail:
-    id: UUID
+class PenaltyShootoutParticipantDetail:
     player_id: UUID
     player_name: str
     team_side: TeamSide
-    sequence_number: int
-    outcome: PenaltyKickOutcome
+    is_eligible: bool
+    ineligibility_reason: PenaltyShootoutIneligibilityReason | None
+    became_ineligible_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
 class PenaltyShootoutDetail:
     status: PenaltyShootoutStatus
+    starting_team_side: TeamSide
+    next_team_side: TeamSide | None
+    home_participant_ids: tuple[UUID, ...]
+    away_participant_ids: tuple[UUID, ...]
     home_score: int
     away_score: int
     winner_team_side: TeamSide | None
-    kicks: tuple[PenaltyShootoutKickDetail, ...]
+    participants: tuple[PenaltyShootoutParticipantDetail, ...]
 
 
 @dataclass(frozen=True, slots=True)
