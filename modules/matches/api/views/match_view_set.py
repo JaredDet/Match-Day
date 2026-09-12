@@ -14,14 +14,20 @@ from modules.matches.api.contracts.requests.reduce_penalty_shootout_participants
     ReducePenaltyShootoutParticipantsRequest,
 )
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
+from modules.matches.api.contracts.requests.register_corner_kick_request import (
+    RegisterCornerKickRequest,
+)
+from modules.matches.api.contracts.requests.register_foul_request import RegisterFoulRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
 from modules.matches.api.contracts.requests.register_injury_request import RegisterInjuryRequest
+from modules.matches.api.contracts.requests.register_offside_request import RegisterOffsideRequest
 from modules.matches.api.contracts.requests.register_penalty_attempt_request import (
     RegisterPenaltyAttemptRequest,
 )
 from modules.matches.api.contracts.requests.register_penalty_shootout_kick_request import (
     RegisterPenaltyShootoutKickRequest,
 )
+from modules.matches.api.contracts.requests.register_shot_request import RegisterShotRequest
 from modules.matches.api.contracts.requests.register_substitution_request import (
     RegisterSubstitutionRequest,
 )
@@ -38,6 +44,9 @@ from modules.matches.api.contracts.requests.update_match_clock_request import (
 from modules.matches.api.contracts.requests.update_match_details_request import (
     UpdateMatchDetailsRequest,
 )
+from modules.matches.api.contracts.requests.update_match_possession_request import (
+    UpdateMatchPossessionRequest,
+)
 from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.api.contracts.responses.list_matches_response import ListMatchesResponse
 from modules.matches.application.commands.advance_match_period_use_case import (
@@ -53,14 +62,20 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
     ReducePenaltyShootoutParticipantsUseCase,
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
+from modules.matches.application.commands.register_corner_kick_use_case import (
+    RegisterCornerKickUseCase,
+)
+from modules.matches.application.commands.register_foul_use_case import RegisterFoulUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_offside_use_case import RegisterOffsideUseCase
 from modules.matches.application.commands.register_penalty_attempt_use_case import (
     RegisterPenaltyAttemptUseCase,
 )
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
+from modules.matches.application.commands.register_shot_use_case import RegisterShotUseCase
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
@@ -81,6 +96,9 @@ from modules.matches.application.commands.update_match_clock_use_case import (
 )
 from modules.matches.application.commands.update_match_details_use_case import (
     UpdateMatchDetailsUseCase,
+)
+from modules.matches.application.commands.update_match_possession_use_case import (
+    UpdateMatchPossessionUseCase,
 )
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
@@ -221,6 +239,20 @@ class MatchViewSet(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
+        operation_id="matches_update_possession",
+        request=UpdateMatchPossessionRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["patch"], url_path="possession")
+    def update_possession(self, request, pk=None):
+        request_contract = UpdateMatchPossessionRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(UpdateMatchPossessionUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
         operation_id="matches_finish",
         request=None,
         responses={status.HTTP_204_NO_CONTENT: None},
@@ -296,6 +328,82 @@ class MatchViewSet(ViewSet):
         injury_id = use_case.execute(match_id=pk, **request_contract.validated_data)
 
         return Response({"id": str(injury_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_foul",
+        request=RegisterFoulRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterFoulResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="fouls")
+    def register_foul(self, request, pk=None):
+        request_contract = RegisterFoulRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterFoulUseCase)
+        event_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response({"id": str(event_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_corner_kick",
+        request=RegisterCornerKickRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterCornerKickResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="corners")
+    def register_corner_kick(self, request, pk=None):
+        request_contract = RegisterCornerKickRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterCornerKickUseCase)
+        event_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response({"id": str(event_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_offside",
+        request=RegisterOffsideRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterOffsideResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="offsides")
+    def register_offside(self, request, pk=None):
+        request_contract = RegisterOffsideRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterOffsideUseCase)
+        event_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response({"id": str(event_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_shot",
+        request=RegisterShotRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterShotResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="shots")
+    def register_shot(self, request, pk=None):
+        request_contract = RegisterShotRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterShotUseCase)
+        event_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response({"id": str(event_id)}, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         operation_id="matches_register_var_review",

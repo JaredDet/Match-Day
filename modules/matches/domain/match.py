@@ -31,9 +31,13 @@ _UNSET = object()
 
 if TYPE_CHECKING:
     from modules.matches.domain.card import Card, CardType
+    from modules.matches.domain.corner_kick import CornerKick
+    from modules.matches.domain.foul import Foul
     from modules.matches.domain.goal import Goal
     from modules.matches.domain.injury import Injury
+    from modules.matches.domain.offside import Offside
     from modules.matches.domain.penalty_attempt import PenaltyAttempt, PenaltyAttemptOutcome
+    from modules.matches.domain.shot import Shot, ShotOutcome
     from modules.matches.domain.var_review import VarReview, VarReviewDecision, VarReviewReason
     from modules.teams.domain.player import Player
     from modules.teams.domain.team import Team
@@ -101,6 +105,23 @@ class Match(models.Model):
     away_goal_count = models.PositiveSmallIntegerField(default=0)
     home_card_count = models.PositiveSmallIntegerField(default=0)
     away_card_count = models.PositiveSmallIntegerField(default=0)
+    home_yellow_card_count = models.PositiveSmallIntegerField(default=0)
+    away_yellow_card_count = models.PositiveSmallIntegerField(default=0)
+    home_red_card_count = models.PositiveSmallIntegerField(default=0)
+    away_red_card_count = models.PositiveSmallIntegerField(default=0)
+    home_shot_count = models.PositiveSmallIntegerField(default=0)
+    away_shot_count = models.PositiveSmallIntegerField(default=0)
+    home_shot_on_target_count = models.PositiveSmallIntegerField(default=0)
+    away_shot_on_target_count = models.PositiveSmallIntegerField(default=0)
+    home_save_count = models.PositiveSmallIntegerField(default=0)
+    away_save_count = models.PositiveSmallIntegerField(default=0)
+    home_foul_count = models.PositiveSmallIntegerField(default=0)
+    away_foul_count = models.PositiveSmallIntegerField(default=0)
+    home_corner_count = models.PositiveSmallIntegerField(default=0)
+    away_corner_count = models.PositiveSmallIntegerField(default=0)
+    home_offside_count = models.PositiveSmallIntegerField(default=0)
+    away_offside_count = models.PositiveSmallIntegerField(default=0)
+    home_possession_percentage = models.PositiveSmallIntegerField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=MatchStatus.choices,
@@ -374,6 +395,11 @@ class Match(models.Model):
             self.home_goal_count += 1
         else:
             self.away_goal_count += 1
+
+        if resolved_goal_type != GoalType.OWN_GOAL:
+            self._increment_counter(team_side, "shot")
+            self._increment_counter(team_side, "shot_on_target")
+
         return Goal(
             id=event_id or uuid.uuid4(),
             match=self,
@@ -410,6 +436,11 @@ class Match(models.Model):
 
         if not isinstance(outcome, PenaltyAttemptOutcome):
             raise MatchErrors.InvalidPenaltyAttemptOutcome
+
+        self._increment_counter(team_side, "shot")
+        if outcome == PenaltyAttemptOutcome.SAVED:
+            self._increment_counter(team_side, "shot_on_target")
+            self._increment_counter(self._opposite_side(team_side), "save")
 
         return PenaltyAttempt(
             id=event_id or uuid.uuid4(),
@@ -490,6 +521,131 @@ class Match(models.Model):
             added_minute=added_minute,
         )
 
+    def register_foul(
+        self,
+        *,
+        player: Player,
+        minute: int,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> Foul:
+        from modules.matches.domain.foul import Foul
+
+        period, team_side = self._prepare_player_event(player, minute, added_minute)
+        self._increment_counter(team_side, "foul")
+
+        return Foul(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            team_side=team_side,
+            player_name=player.name,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_corner_kick(
+        self,
+        *,
+        player: Player,
+        minute: int,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> CornerKick:
+        from modules.matches.domain.corner_kick import CornerKick
+
+        period, team_side = self._prepare_player_event(player, minute, added_minute)
+        self._increment_counter(team_side, "corner")
+
+        return CornerKick(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            team_side=team_side,
+            player_name=player.name,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_offside(
+        self,
+        *,
+        player: Player,
+        minute: int,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> Offside:
+        from modules.matches.domain.offside import Offside
+
+        period, team_side = self._prepare_player_event(player, minute, added_minute)
+        self._increment_counter(team_side, "offside")
+
+        return Offside(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            team_side=team_side,
+            player_name=player.name,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_shot(
+        self,
+        *,
+        player: Player,
+        outcome: ShotOutcome,
+        minute: int,
+        goalkeeper: Player | None = None,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> Shot:
+        from modules.matches.domain.shot import Shot, ShotOutcome
+
+        period, team_side = self._prepare_player_event(player, minute, added_minute)
+
+        if not isinstance(outcome, ShotOutcome):
+            raise MatchErrors.InvalidShotOutcome
+        if (outcome == ShotOutcome.SAVED) != (goalkeeper is not None):
+            raise MatchErrors.InvalidShotGoalkeeper
+        if goalkeeper is not None:
+            goalkeeper_side = self._resolve_team_side(goalkeeper.team_id)
+            if goalkeeper_side == team_side:
+                raise MatchErrors.InvalidShotGoalkeeper
+
+        self._increment_counter(team_side, "shot")
+        if outcome == ShotOutcome.SAVED:
+            self._increment_counter(team_side, "shot_on_target")
+            self._increment_counter(self._opposite_side(team_side), "save")
+
+        return Shot(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            goalkeeper=goalkeeper,
+            team_side=team_side,
+            player_name=player.name,
+            goalkeeper_name=goalkeeper.name if goalkeeper is not None else None,
+            outcome=outcome,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def update_possession(self, home_percentage: int) -> None:
+        self._ensure_live()
+        if (
+            not isinstance(home_percentage, int)
+            or isinstance(home_percentage, bool)
+            or not 0 <= home_percentage <= 100
+        ):
+            raise MatchErrors.InvalidPossession
+
+        self.home_possession_percentage = home_percentage
+
     def ensure_penalty_shootout_can_start(self) -> None:
         self._ensure_live()
 
@@ -525,10 +681,15 @@ class Match(models.Model):
         self.ensure_event_time_reached(period, minute, added_minute)
         if not isinstance(card_type, CardType):
             raise MatchErrors.InvalidCardType
+
         if team_side == TeamSide.HOME:
             self.home_card_count += 1
         else:
             self.away_card_count += 1
+
+        counter = "yellow_card" if card_type == CardType.YELLOW else "red_card"
+        self._increment_counter(team_side, counter)
+
         return Card(
             id=event_id or uuid.uuid4(),
             match=self,
@@ -542,6 +703,8 @@ class Match(models.Model):
         )
 
     def disallow_goal(self, goal: Goal) -> None:
+        from modules.matches.domain.goal import GoalType
+
         self._ensure_live()
         goal.disallow()
         if goal.team_side == TeamSide.HOME:
@@ -549,13 +712,22 @@ class Match(models.Model):
         else:
             self.away_goal_count -= 1
 
+        if goal.goal_type != GoalType.OWN_GOAL:
+            self._decrement_counter(TeamSide(goal.team_side), "shot")
+            self._decrement_counter(TeamSide(goal.team_side), "shot_on_target")
+
     def rescind_card(self, card: Card) -> None:
+        from modules.matches.domain.card import CardType
+
         self._ensure_live()
         card.rescind()
         if card.team_side == TeamSide.HOME:
             self.home_card_count -= 1
         else:
             self.away_card_count -= 1
+
+        counter = "yellow_card" if card.card_type == CardType.YELLOW else "red_card"
+        self._decrement_counter(TeamSide(card.team_side), counter)
 
     def _ensure_live(self) -> None:
         if self.status != MatchStatus.LIVE:
@@ -586,6 +758,31 @@ class Match(models.Model):
             self.current_added_minute,
         ):
             raise MatchErrors.EventAheadOfClock
+
+    def _prepare_player_event(
+        self,
+        player: Player,
+        minute: int,
+        added_minute: int,
+    ) -> tuple[MatchPeriod, TeamSide]:
+        self._ensure_live()
+        period = self._current_event_period()
+        team_side = self._resolve_team_side(player.team_id)
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
+        return period, team_side
+
+    def _increment_counter(self, team_side: TeamSide, counter: str) -> None:
+        field = f"{team_side.value}_{counter}_count"
+        setattr(self, field, getattr(self, field) + 1)
+
+    def _decrement_counter(self, team_side: TeamSide, counter: str) -> None:
+        field = f"{team_side.value}_{counter}_count"
+        setattr(self, field, max(0, getattr(self, field) - 1))
+
+    @staticmethod
+    def _opposite_side(team_side: TeamSide) -> TeamSide:
+        return TeamSide.AWAY if team_side == TeamSide.HOME else TeamSide.HOME
 
     def _resolve_team_side(self, team_id: uuid.UUID) -> TeamSide:
         if team_id == self.home_team_id:
@@ -666,6 +863,13 @@ class Match(models.Model):
                     | models.Q(away_formation__in=MatchFormation.values)
                 ),
                 name="valid_away_match_formation",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(home_possession_percentage__isnull=True)
+                    | models.Q(home_possession_percentage__lte=100)
+                ),
+                name="valid_home_possession_percentage",
             ),
             models.CheckConstraint(
                 condition=~models.Q(home_team=models.F("away_team")),

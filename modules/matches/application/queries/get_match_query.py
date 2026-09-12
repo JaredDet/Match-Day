@@ -15,6 +15,7 @@ from modules.matches.domain.penalty_shootout import (
     PenaltyShootoutIneligibilityReason,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.shot import ShotOutcome
 from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
@@ -30,6 +31,10 @@ class MatchEventType(StrEnum):
     PENALTY_ATTEMPT = "penalty_attempt"
     INJURY = "injury"
     VAR_REVIEW = "var_review"
+    FOUL = "foul"
+    CORNER_KICK = "corner_kick"
+    OFFSIDE = "offside"
+    SHOT = "shot"
     PENALTY_SHOOTOUT_KICK = "penalty_shootout_kick"
 
 
@@ -52,6 +57,9 @@ class MatchEventDetail:
     substitution_reason: SubstitutionReason | None = None
     goal_type: str | None = None
     penalty_outcome: PenaltyAttemptOutcome | None = None
+    shot_outcome: ShotOutcome | None = None
+    goalkeeper_id: UUID | None = None
+    goalkeeper_name: str | None = None
     var_reason: VarReviewReason | None = None
     var_decision: VarReviewDecision | None = None
     reviewed_event_id: UUID | None = None
@@ -96,6 +104,19 @@ class MatchSquadPlayerDetail:
 
 
 @dataclass(frozen=True, slots=True)
+class MatchTeamStatistics:
+    possession: int | None
+    yellow_cards: int
+    red_cards: int
+    shots: int
+    shots_on_target: int
+    saves: int
+    fouls: int
+    corners: int
+    offsides: int
+
+
+@dataclass(frozen=True, slots=True)
 class MatchTeamDetail:
     id: UUID
     name: str
@@ -104,6 +125,7 @@ class MatchTeamDetail:
     goals: int
     penalty_score: int | None
     formation: MatchFormation | None
+    statistics: MatchTeamStatistics
     lineup: tuple[MatchSquadPlayerDetail, ...]
 
 

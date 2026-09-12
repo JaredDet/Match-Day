@@ -80,6 +80,21 @@ package "Match Commands" {
   component "POST /matches/{id}/var-reviews" as VarReviewApi
   component "RegisterVarReviewUseCase" as RegisterVarReview
   artifact "team_side + reason + decision\nreviewed_event_id? + minute + added_minute?" as VarReviewInput
+  component "POST /matches/{id}/fouls" as FoulApi
+  component "RegisterFoulUseCase" as RegisterFoul
+  artifact "player_id + minute + added_minute?" as FoulInput
+  component "POST /matches/{id}/corners" as CornerKickApi
+  component "RegisterCornerKickUseCase" as RegisterCornerKick
+  artifact "player_id + minute + added_minute?" as CornerKickInput
+  component "POST /matches/{id}/offsides" as OffsideApi
+  component "RegisterOffsideUseCase" as RegisterOffside
+  artifact "player_id + minute + added_minute?" as OffsideInput
+  component "POST /matches/{id}/shots" as ShotApi
+  component "RegisterShotUseCase" as RegisterShot
+  artifact "player_id + outcome + goalkeeper_id?\nminute + added_minute?" as ShotInput
+  component "PATCH /matches/{id}/possession" as PossessionApi
+  component "UpdateMatchPossessionUseCase" as UpdatePossession
+  artifact "home_percentage" as PossessionInput
   component "POST /matches/{id}/cards" as CardApi
   component "RegisterCardUseCase" as RegisterCard
   artifact "player_id + card_type + minute + added_minute?" as CardInput
@@ -111,7 +126,7 @@ package "Match Queries" {
   artifact "matches[]\nteams + score + formation" as ListMatchesOutput
   component "GET /matches/{id}" as GetMatchApi
   component "GetMatchQuery" as GetMatch
-  artifact "match detail\nteams + lineups + events\nshootout kicks as events\npenalty shootout?" as GetMatchOutput
+  artifact "match detail\nteams + lineups + events\nteam statistics: possession, cards,\nshots, shots on target, saves, fouls,\ncorners and offsides\npenalty shootout?" as GetMatchOutput
 }
 
 CreateTeamInput --> CreateTeamApi
@@ -173,6 +188,21 @@ RegisterInjury --> EventOutput
 VarReviewInput --> VarReviewApi
 VarReviewApi --> RegisterVarReview
 RegisterVarReview --> EventOutput
+FoulInput --> FoulApi
+FoulApi --> RegisterFoul
+RegisterFoul --> EventOutput
+CornerKickInput --> CornerKickApi
+CornerKickApi --> RegisterCornerKick
+RegisterCornerKick --> EventOutput
+OffsideInput --> OffsideApi
+OffsideApi --> RegisterOffside
+RegisterOffside --> EventOutput
+ShotInput --> ShotApi
+ShotApi --> RegisterShot
+RegisterShot --> EventOutput
+PossessionInput --> PossessionApi
+PossessionApi --> UpdatePossession
+UpdatePossession --> EmptyMatchOutput
 CardInput --> CardApi
 CardApi --> RegisterCard
 RegisterCard --> EventOutput

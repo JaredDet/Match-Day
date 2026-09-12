@@ -45,6 +45,8 @@ def test_registers_card_and_derives_away_side():
     assert card.player_name == "Defensor Visitante"
     assert card.team_side == TeamSide.AWAY
     assert match.away_card_count == 1
+    assert match.away_yellow_card_count == 1
+    assert match.away_red_card_count == 0
 
 
 def test_registers_own_goal_for_opposing_team():

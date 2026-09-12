@@ -7,6 +7,21 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidShotOutcome = AppException(
+        "invalid_shot_outcome",
+        "El resultado del tiro no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidShotGoalkeeper = AppException(
+        "invalid_shot_goalkeeper",
+        "Un tiro atajado debe indicar un arquero rival en cancha",
+        ErrorType.VALIDATION,
+    )
+    InvalidPossession = AppException(
+        "invalid_match_possession",
+        "La posesión local debe ser un porcentaje entre 0 y 100",
+        ErrorType.VALIDATION,
+    )
     InvalidPenaltyAttemptOutcome = AppException(
         "invalid_penalty_attempt_outcome",
         "El resultado del penal no es válido",

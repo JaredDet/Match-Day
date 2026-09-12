@@ -56,7 +56,8 @@ Crea cuatro equipos ficticios, sus 64 jugadores y quince partidos: ocho
 finalizados, tres en vivo y cuatro programados. Los partidos demostrativos
 incluyen estadio, árbitro, directores técnicos, formaciones, alineaciones,
 capitanes habituales,
-goles, autogoles, asistencias, tarjetas, sustituciones, lesiones, penales y VAR:
+goles, autogoles, asistencias, tarjetas, sustituciones, lesiones, penales, VAR,
+faltas, tiros de esquina, fueras de juego, tiros, atajadas y posesión:
 
 ```bash
 uv run python manage.py seed_demo_match

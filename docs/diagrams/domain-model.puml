@@ -79,6 +79,13 @@ package "matches" {
     hit_post
   }
 
+  enum ShotOutcome {
+    off_target
+    saved
+    blocked
+    woodwork
+  }
+
   enum VarReviewReason {
     goal
     penalty
@@ -136,6 +143,23 @@ package "matches" {
     +int away_goal_count
     +int home_card_count
     +int away_card_count
+    +int home_yellow_card_count
+    +int away_yellow_card_count
+    +int home_red_card_count
+    +int away_red_card_count
+    +int home_shot_count
+    +int away_shot_count
+    +int home_shot_on_target_count
+    +int away_shot_on_target_count
+    +int home_save_count
+    +int away_save_count
+    +int home_foul_count
+    +int away_foul_count
+    +int home_corner_count
+    +int away_corner_count
+    +int home_offside_count
+    +int away_offside_count
+    +int home_possession_percentage
     +MatchStatus status
     +MatchPeriod current_period
     +int current_minute
@@ -156,6 +180,11 @@ package "matches" {
     +register_penalty_attempt(...): PenaltyAttempt
     +register_injury(...): Injury
     +register_var_review(...): VarReview
+    +register_foul(...): Foul
+    +register_corner_kick(...): CornerKick
+    +register_offside(...): Offside
+    +register_shot(...): Shot
+    +update_possession(...): void
     +register_card(...): Card
     +disallow_goal(...): void
     +rescind_card(...): void
@@ -246,6 +275,53 @@ package "matches" {
     +int added_minute
   }
 
+  class Foul {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
+  class CornerKick {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
+  class Offside {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
+  class Shot {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +UUID goalkeeper_id
+    +string player_name
+    +string goalkeeper_name
+    +TeamSide team_side
+    +ShotOutcome outcome
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
   class Card {
     +UUID id
     +UUID match_id
@@ -312,6 +388,10 @@ Match "1" *-- "0..*" Card
 Match "1" *-- "0..*" PenaltyAttempt
 Match "1" *-- "0..*" Injury
 Match "1" *-- "0..*" VarReview
+Match "1" *-- "0..*" Foul
+Match "1" *-- "0..*" CornerKick
+Match "1" *-- "0..*" Offside
+Match "1" *-- "0..*" Shot
 Match "1" *-- "0..1" PenaltyShootout
 PenaltyShootout "1" *-- "0..*" PenaltyShootoutKick
 PenaltyShootout "1" *-- "1..*" PenaltyShootoutParticipant : habilitados
@@ -320,6 +400,11 @@ Player "0..1" <-- "0..*" Goal : asistencia
 Player "1" <-- "0..*" Card
 Player "1" <-- "0..*" PenaltyAttempt
 Player "1" <-- "0..*" Injury
+Player "1" <-- "0..*" Foul
+Player "1" <-- "0..*" CornerKick
+Player "1" <-- "0..*" Offside
+Player "1" <-- "0..*" Shot : rematador
+Player "0..1" <-- "0..*" Shot : portero
 Player "1" <-- "0..*" PenaltyShootoutKick
 Player "1" <-- "0..*" PenaltyShootoutParticipant
 Match --> MatchStatus
@@ -338,6 +423,11 @@ Injury --> TeamSide
 VarReview --> TeamSide
 VarReview --> VarReviewReason
 VarReview --> VarReviewDecision
+Foul --> TeamSide
+CornerKick --> TeamSide
+Offside --> TeamSide
+Shot --> TeamSide
+Shot --> ShotOutcome
 Card --> TeamSide
 Card --> CardType
 PenaltyShootout --> PenaltyShootoutStatus

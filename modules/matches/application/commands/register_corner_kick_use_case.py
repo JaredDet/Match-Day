@@ -4,30 +4,29 @@ from django.db import transaction
 from injector import inject
 
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.errors import MatchErrors
+from modules.matches.infrastructure.repository.corner_kick_repository import (
+    CornerKickRepository,
+)
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.matches.infrastructure.repository.match_squad_repository import (
     MatchSquadRepository,
-)
-from modules.matches.infrastructure.repository.penalty_attempt_repository import (
-    PenaltyAttemptRepository,
 )
 from modules.teams.errors import TeamErrors
 from modules.teams.infrastructure.repository.player_repository import PlayerRepository
 
 
-class RegisterPenaltyAttemptUseCase:
+class RegisterCornerKickUseCase:
     @inject
     def __init__(
         self,
         match_repository: MatchRepository,
-        penalty_attempt_repository: PenaltyAttemptRepository,
+        corner_kick_repository: CornerKickRepository,
         player_repository: PlayerRepository,
         squad_repository: MatchSquadRepository,
     ):
         self.match_repository = match_repository
-        self.penalty_attempt_repository = penalty_attempt_repository
+        self.corner_kick_repository = corner_kick_repository
         self.player_repository = player_repository
         self.squad_repository = squad_repository
 
@@ -37,7 +36,6 @@ class RegisterPenaltyAttemptUseCase:
         *,
         match_id: UUID,
         player_id: UUID,
-        outcome: PenaltyAttemptOutcome,
         minute: int,
         added_minute: int = 0,
     ) -> UUID:
@@ -45,12 +43,10 @@ class RegisterPenaltyAttemptUseCase:
 
         if match is None:
             raise MatchErrors.NotFound
-
         if match.status != MatchStatus.LIVE:
             raise MatchErrors.InvalidState
 
         player = self.player_repository.get(player_id)
-
         if player is None:
             raise TeamErrors.PlayerNotFound
 
@@ -59,20 +55,17 @@ class RegisterPenaltyAttemptUseCase:
             player_id=player.id,
         )
 
+        if squad_player is not None and squad_player.is_sent_off:
+            raise MatchErrors.PlayerSentOff
         if squad_player is None or not squad_player.is_on_field:
-            if squad_player is not None and squad_player.is_sent_off:
-                raise MatchErrors.PlayerSentOff
-
             raise MatchErrors.PlayerNotOnField
 
-        penalty_attempt = match.register_penalty_attempt(
+        corner_kick = match.register_corner_kick(
             player=player,
-            outcome=outcome,
             minute=minute,
             added_minute=added_minute,
         )
 
-        self.penalty_attempt_repository.save(penalty_attempt)
+        self.corner_kick_repository.save(corner_kick)
         self.match_repository.save(match)
-
-        return penalty_attempt.id
+        return corner_kick.id

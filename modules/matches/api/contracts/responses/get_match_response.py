@@ -11,6 +11,7 @@ from modules.matches.domain.penalty_shootout import (
     PenaltyShootoutIneligibilityReason,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.shot import ShotOutcome
 from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 
 
@@ -38,6 +39,9 @@ class MatchEventResponse(serializers.Serializer):
         choices=PenaltyAttemptOutcome.choices,
         allow_null=True,
     )
+    shot_outcome = serializers.ChoiceField(choices=ShotOutcome.choices, allow_null=True)
+    goalkeeper_id = serializers.UUIDField(allow_null=True)
+    goalkeeper_name = serializers.CharField(allow_null=True)
     var_reason = serializers.ChoiceField(choices=VarReviewReason.choices, allow_null=True)
     var_decision = serializers.ChoiceField(
         choices=VarReviewDecision.choices,
@@ -119,7 +123,20 @@ class TeamDetailResponse(serializers.Serializer):
         return representation
 
 
+class MatchTeamStatisticsResponse(serializers.Serializer):
+    possession = serializers.IntegerField(allow_null=True)
+    yellow_cards = serializers.IntegerField()
+    red_cards = serializers.IntegerField()
+    shots = serializers.IntegerField()
+    shots_on_target = serializers.IntegerField()
+    saves = serializers.IntegerField()
+    fouls = serializers.IntegerField()
+    corners = serializers.IntegerField()
+    offsides = serializers.IntegerField()
+
+
 class MatchTeamDetailResponse(TeamDetailResponse):
+    statistics = MatchTeamStatisticsResponse()
     lineup = MatchSquadPlayerResponse(many=True)
 
 

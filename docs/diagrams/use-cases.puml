@@ -31,6 +31,11 @@ rectangle "Matches" {
   usecase "Registrar penal no convertido" as RegisterPenaltyAttempt
   usecase "Registrar lesión" as RegisterInjury
   usecase "Registrar revisión VAR" as RegisterVarReview
+  usecase "Registrar falta" as RegisterFoul
+  usecase "Registrar tiro de esquina" as RegisterCornerKick
+  usecase "Registrar fuera de juego" as RegisterOffside
+  usecase "Registrar tiro o atajada" as RegisterShot
+  usecase "Actualizar posesión" as UpdatePossession
   usecase "Anular gol" as DisallowGoal
   usecase "Registrar tarjeta" as RegisterCard
   usecase "Registrar sustitución" as RegisterSubstitution
@@ -64,6 +69,11 @@ Admin --> RegisterGoal
 Admin --> RegisterPenaltyAttempt
 Admin --> RegisterInjury
 Admin --> RegisterVarReview
+Admin --> RegisterFoul
+Admin --> RegisterCornerKick
+Admin --> RegisterOffside
+Admin --> RegisterShot
+Admin --> UpdatePossession
 Admin --> DisallowGoal
 Admin --> RegisterCard
 Admin --> RegisterSubstitution

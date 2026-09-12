@@ -160,6 +160,30 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     detail_response = APIClient().get(reverse("matches-detail", args=[match.id]))
     assert detail_response.data["home_team"]["head_coach_name"] == "Carlos Medina"
     assert detail_response.data["away_team"]["head_coach_name"] == "Rafael Contreras"
+    assert detail_response.data["home_team"]["statistics"] == {
+        "possession": 50,
+        "yellow_cards": 2,
+        "red_cards": 0,
+        "shots": 4,
+        "shots_on_target": 2,
+        "saves": 1,
+        "fouls": 1,
+        "corners": 1,
+        "offsides": 1,
+    }
+    assert detail_response.data["away_team"]["statistics"] == {
+        "possession": 50,
+        "yellow_cards": 0,
+        "red_cards": 1,
+        "shots": 2,
+        "shots_on_target": 2,
+        "saves": 0,
+        "fouls": 1,
+        "corners": 1,
+        "offsides": 1,
+    }
+    detail_event_types = {event["type"] for event in detail_response.data["events"]}
+    assert {"shot", "foul", "corner_kick", "offside"} <= detail_event_types
     own_goal_summary = next(
         item for item in list_response.data if item["id"] == str(own_goal_match.id)
     )

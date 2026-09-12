@@ -15,14 +15,20 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
     ReducePenaltyShootoutParticipantsUseCase,
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
+from modules.matches.application.commands.register_corner_kick_use_case import (
+    RegisterCornerKickUseCase,
+)
+from modules.matches.application.commands.register_foul_use_case import RegisterFoulUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_offside_use_case import RegisterOffsideUseCase
 from modules.matches.application.commands.register_penalty_attempt_use_case import (
     RegisterPenaltyAttemptUseCase,
 )
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
+from modules.matches.application.commands.register_shot_use_case import RegisterShotUseCase
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
@@ -37,6 +43,9 @@ from modules.matches.application.commands.start_penalty_shootout_use_case import
 )
 from modules.matches.application.commands.update_match_clock_use_case import (
     UpdateMatchClockUseCase,
+)
+from modules.matches.application.commands.update_match_possession_use_case import (
+    UpdateMatchPossessionUseCase,
 )
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
@@ -74,7 +83,12 @@ def test_rejects_unregistered_dependencies():
         StartMatchUseCase,
         AdvanceMatchPeriodUseCase,
         UpdateMatchClockUseCase,
+        UpdateMatchPossessionUseCase,
         RegisterGoalUseCase,
+        RegisterFoulUseCase,
+        RegisterCornerKickUseCase,
+        RegisterOffsideUseCase,
+        RegisterShotUseCase,
         RegisterPenaltyAttemptUseCase,
         RegisterInjuryUseCase,
         RegisterVarReviewUseCase,

@@ -14,6 +14,7 @@ from modules.matches.domain.match_squad_player import (
     MatchSquadRole,
 )
 from modules.matches.domain.match_substitution import MatchSubstitution
+from modules.matches.domain.shot import ShotOutcome
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -606,6 +607,17 @@ def test_gets_match_detail_with_unified_event_timeline():
         "team_side": TeamSide.HOME,
         "goals": 1,
         "formation": None,
+        "statistics": {
+            "possession": None,
+            "yellow_cards": 0,
+            "red_cards": 0,
+            "shots": 1,
+            "shots_on_target": 1,
+            "saves": 0,
+            "fouls": 0,
+            "corners": 0,
+            "offsides": 0,
+        },
         "lineup": [
             {
                 "player_id": str(goal_player.id),
@@ -625,6 +637,17 @@ def test_gets_match_detail_with_unified_event_timeline():
         "team_side": TeamSide.AWAY,
         "goals": 0,
         "formation": None,
+        "statistics": {
+            "possession": None,
+            "yellow_cards": 0,
+            "red_cards": 1,
+            "shots": 0,
+            "shots_on_target": 0,
+            "saves": 0,
+            "fouls": 0,
+            "corners": 0,
+            "offsides": 0,
+        },
         "lineup": [
             {
                 "player_id": str(card_player.id),
@@ -1035,3 +1058,90 @@ def test_starts_and_reduces_penalty_shootout_participants_through_api():
         "sequence_number": 1,
         "outcome": "scored",
     }
+
+
+def test_registers_match_statistics_events_and_exposes_team_statistics():
+    match = _schedule_match(
+        home_team_name="Local",
+        away_team_name="Visitante",
+        scheduled_at=timezone.now(),
+    )
+    match.save()
+    shooter = Player.objects.create(team=match.home_team, name="Delantero")
+    goalkeeper = Player.objects.create(team=match.away_team, name="Arquero")
+    match.add_squad_player(player=shooter, shirt_number=9).save()
+    match.add_squad_player(player=goalkeeper, shirt_number=1).save()
+    match.start()
+    match.update_clock(expected_period=MatchPeriod.FIRST_HALF, minute=30)
+    match.save()
+    client = APIClient()
+
+    possession_response = client.patch(
+        reverse("matches-update-possession", args=[match.id]),
+        {"home_percentage": 57},
+        format="json",
+    )
+    shot_response = client.post(
+        reverse("matches-register-shot", args=[match.id]),
+        {
+            "player_id": str(shooter.id),
+            "goalkeeper_id": str(goalkeeper.id),
+            "outcome": ShotOutcome.SAVED,
+            "minute": 10,
+        },
+        format="json",
+    )
+    foul_response = client.post(
+        reverse("matches-register-foul", args=[match.id]),
+        {"player_id": str(goalkeeper.id), "minute": 11},
+        format="json",
+    )
+    corner_response = client.post(
+        reverse("matches-register-corner-kick", args=[match.id]),
+        {"player_id": str(shooter.id), "minute": 12},
+        format="json",
+    )
+    offside_response = client.post(
+        reverse("matches-register-offside", args=[match.id]),
+        {"player_id": str(goalkeeper.id), "minute": 13},
+        format="json",
+    )
+
+    assert possession_response.status_code == 204
+    assert shot_response.status_code == 201
+    assert foul_response.status_code == 201
+    assert corner_response.status_code == 201
+    assert offside_response.status_code == 201
+
+    detail = client.get(reverse("matches-detail", args=[match.id]))
+
+    assert detail.data["home_team"]["statistics"] == {
+        "possession": 57,
+        "yellow_cards": 0,
+        "red_cards": 0,
+        "shots": 1,
+        "shots_on_target": 1,
+        "saves": 0,
+        "fouls": 0,
+        "corners": 1,
+        "offsides": 0,
+    }
+    assert detail.data["away_team"]["statistics"] == {
+        "possession": 43,
+        "yellow_cards": 0,
+        "red_cards": 0,
+        "shots": 0,
+        "shots_on_target": 0,
+        "saves": 1,
+        "fouls": 1,
+        "corners": 0,
+        "offsides": 1,
+    }
+    assert [event["type"] for event in detail.data["events"]] == [
+        "shot",
+        "foul",
+        "corner_kick",
+        "offside",
+    ]
+    assert detail.data["events"][0]["shot_outcome"] == "saved"
+    assert detail.data["events"][0]["goalkeeper_name"] == "Arquero"

@@ -8,6 +8,8 @@ from django.db.models import Case, IntegerField, Value, When
 
 from modules.matches.application.queries.team_detail import MatchGoalPreview, TeamDetail
 from modules.matches.domain.card import Card, CardType
+from modules.matches.domain.corner_kick import CornerKick
+from modules.matches.domain.foul import Foul
 from modules.matches.domain.goal import Goal, GoalType
 from modules.matches.domain.injury import Injury
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
@@ -18,6 +20,7 @@ from modules.matches.domain.match_squad_player import (
     SentOffReason,
 )
 from modules.matches.domain.match_substitution import MatchSubstitution
+from modules.matches.domain.offside import Offside
 from modules.matches.domain.penalty_attempt import PenaltyAttempt, PenaltyAttemptOutcome
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
@@ -26,6 +29,7 @@ from modules.matches.domain.penalty_shootout import (
     PenaltyShootoutKick,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.shot import Shot, ShotOutcome
 from modules.matches.domain.var_review import VarReview, VarReviewDecision, VarReviewReason
 
 if TYPE_CHECKING:
@@ -133,6 +137,7 @@ class MatchQueryRepository:
         from modules.matches.application.queries.get_match_query import (
             MatchDetail,
             MatchTeamDetail,
+            MatchTeamStatistics,
         )
 
         match = (
@@ -158,6 +163,23 @@ class MatchQueryRepository:
                 "away_head_coach_name",
                 "home_goal_count",
                 "away_goal_count",
+                "home_yellow_card_count",
+                "away_yellow_card_count",
+                "home_red_card_count",
+                "away_red_card_count",
+                "home_shot_count",
+                "away_shot_count",
+                "home_shot_on_target_count",
+                "away_shot_on_target_count",
+                "home_save_count",
+                "away_save_count",
+                "home_foul_count",
+                "away_foul_count",
+                "home_corner_count",
+                "away_corner_count",
+                "home_offside_count",
+                "away_offside_count",
+                "home_possession_percentage",
             )
             .first()
         )
@@ -196,6 +218,17 @@ class MatchQueryRepository:
                     if match["home_formation"] is not None
                     else None
                 ),
+                statistics=MatchTeamStatistics(
+                    possession=match["home_possession_percentage"],
+                    yellow_cards=match["home_yellow_card_count"],
+                    red_cards=match["home_red_card_count"],
+                    shots=match["home_shot_count"],
+                    shots_on_target=match["home_shot_on_target_count"],
+                    saves=match["home_save_count"],
+                    fouls=match["home_foul_count"],
+                    corners=match["home_corner_count"],
+                    offsides=match["home_offside_count"],
+                ),
                 lineup=home_lineup,
             ),
             away_team=MatchTeamDetail(
@@ -209,6 +242,21 @@ class MatchQueryRepository:
                     MatchFormation(match["away_formation"])
                     if match["away_formation"] is not None
                     else None
+                ),
+                statistics=MatchTeamStatistics(
+                    possession=(
+                        100 - match["home_possession_percentage"]
+                        if match["home_possession_percentage"] is not None
+                        else None
+                    ),
+                    yellow_cards=match["away_yellow_card_count"],
+                    red_cards=match["away_red_card_count"],
+                    shots=match["away_shot_count"],
+                    shots_on_target=match["away_shot_on_target_count"],
+                    saves=match["away_save_count"],
+                    fouls=match["away_foul_count"],
+                    corners=match["away_corner_count"],
+                    offsides=match["away_offside_count"],
                 ),
                 lineup=away_lineup,
             ),
@@ -519,6 +567,74 @@ class MatchQueryRepository:
                         period=MatchPeriod(var_review["period"]),
                         minute=var_review["minute"],
                         added_minute=var_review["added_minute"],
+                    ),
+                )
+            )
+        player_event_models = (
+            (Foul, MatchEventType.FOUL),
+            (CornerKick, MatchEventType.CORNER_KICK),
+            (Offside, MatchEventType.OFFSIDE),
+        )
+        for event_model, event_type in player_event_models:
+            for event in event_model.objects.filter(match_id=match_id).values(
+                "id",
+                "team_side",
+                "player_id",
+                "player_name",
+                "period",
+                "minute",
+                "added_minute",
+                "created_at",
+            ):
+                events_with_order.append(
+                    (
+                        self._period_order(event["period"]),
+                        event["minute"],
+                        event["added_minute"],
+                        event["created_at"],
+                        MatchEventDetail(
+                            id=event["id"],
+                            type=event_type,
+                            team_side=TeamSide(event["team_side"]),
+                            player_id=event["player_id"],
+                            player_name=event["player_name"],
+                            period=MatchPeriod(event["period"]),
+                            minute=event["minute"],
+                            added_minute=event["added_minute"],
+                        ),
+                    )
+                )
+        for shot in Shot.objects.filter(match_id=match_id).values(
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "goalkeeper_id",
+            "goalkeeper_name",
+            "outcome",
+            "period",
+            "minute",
+            "added_minute",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    self._period_order(shot["period"]),
+                    shot["minute"],
+                    shot["added_minute"],
+                    shot["created_at"],
+                    MatchEventDetail(
+                        id=shot["id"],
+                        type=MatchEventType.SHOT,
+                        team_side=TeamSide(shot["team_side"]),
+                        player_id=shot["player_id"],
+                        player_name=shot["player_name"],
+                        goalkeeper_id=shot["goalkeeper_id"],
+                        goalkeeper_name=shot["goalkeeper_name"],
+                        shot_outcome=ShotOutcome(shot["outcome"]),
+                        period=MatchPeriod(shot["period"]),
+                        minute=shot["minute"],
+                        added_minute=shot["added_minute"],
                     ),
                 )
             )

@@ -29,6 +29,7 @@ def test_rescinds_card_and_decrements_counter():
 
     assert card.rescinded_at is not None
     assert match.away_card_count == 0
+    assert match.away_yellow_card_count == 0
     card_repository.save.assert_called_once_with(card)
     match_repository.save.assert_called_once_with(match)
 
@@ -101,6 +102,7 @@ def test_rejects_rescinding_card_twice():
         use_case.execute(match_id=match.id, card_id=card.id)
 
     assert match.home_card_count == 0
+    assert match.home_red_card_count == 0
     card_repository.save.assert_not_called()
     match_repository.save.assert_not_called()
 

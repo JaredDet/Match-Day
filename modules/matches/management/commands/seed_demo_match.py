@@ -20,14 +20,20 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
     ReducePenaltyShootoutParticipantsUseCase,
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
+from modules.matches.application.commands.register_corner_kick_use_case import (
+    RegisterCornerKickUseCase,
+)
+from modules.matches.application.commands.register_foul_use_case import RegisterFoulUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
 from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_offside_use_case import RegisterOffsideUseCase
 from modules.matches.application.commands.register_penalty_attempt_use_case import (
     RegisterPenaltyAttemptUseCase,
 )
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
+from modules.matches.application.commands.register_shot_use_case import RegisterShotUseCase
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
 )
@@ -46,6 +52,9 @@ from modules.matches.application.commands.start_penalty_shootout_use_case import
 from modules.matches.application.commands.update_match_clock_use_case import (
     UpdateMatchClockUseCase,
 )
+from modules.matches.application.commands.update_match_possession_use_case import (
+    UpdateMatchPossessionUseCase,
+)
 from modules.matches.constants import MATCH_LINEUP_SIZE
 from modules.matches.domain.card import CardType
 from modules.matches.domain.goal import GoalType
@@ -58,6 +67,7 @@ from modules.matches.domain.penalty_shootout import (
     PenaltyShootoutDepartureReason,
     PenaltyShootoutIneligibilityReason,
 )
+from modules.matches.domain.shot import ShotOutcome
 from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
@@ -365,6 +375,11 @@ class Command(BaseCommand):
         self.advance_period = injector_instance.get(AdvanceMatchPeriodUseCase)
         self.update_clock = injector_instance.get(UpdateMatchClockUseCase)
         self.register_goal = injector_instance.get(RegisterGoalUseCase)
+        self.register_foul = injector_instance.get(RegisterFoulUseCase)
+        self.register_corner_kick = injector_instance.get(RegisterCornerKickUseCase)
+        self.register_offside = injector_instance.get(RegisterOffsideUseCase)
+        self.register_shot = injector_instance.get(RegisterShotUseCase)
+        self.update_possession = injector_instance.get(UpdateMatchPossessionUseCase)
         self.register_penalty_attempt = injector_instance.get(RegisterPenaltyAttemptUseCase)
         self.register_injury = injector_instance.get(RegisterInjuryUseCase)
         self.register_var_review = injector_instance.get(RegisterVarReviewUseCase)
@@ -458,6 +473,8 @@ class Command(BaseCommand):
             expected_period = None
             expected_minute = None
             expected_substitutions = 0
+            expected_stat_events = 0
+            expected_possession = None
         elif fixture.target_period is not None:
             expected_status = MatchStatus.LIVE
             expected_period = fixture.target_period
@@ -467,6 +484,8 @@ class Command(BaseCommand):
                 MatchPeriod.SECOND_HALF: 72,
             }[fixture.target_period]
             expected_substitutions = 2 if fixture.target_period == MatchPeriod.SECOND_HALF else 0
+            expected_stat_events = 2 if fixture.target_period != MatchPeriod.SECOND_HALF else 3
+            expected_possession = 50 + fixture.scheduled_at.day % 5
         else:
             expected_status = MatchStatus.FINISHED
             expected_period = (
@@ -478,6 +497,8 @@ class Command(BaseCommand):
             expected_substitutions = 2 + int(
                 fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR
             )
+            expected_stat_events = 3
+            expected_possession = 50 + fixture.scheduled_at.day % 5
         expected_shootout = fixture.shootout_score is not None
         expected_penalty_goals = 1 if fixture.scheduled_at == SCHEDULED_AT else 0
         expected_own_goals = int(fixture.event_showcase == DemoEventShowcase.OWN_GOAL_AND_ASSIST)
@@ -511,6 +532,12 @@ class Command(BaseCommand):
             and match.away_head_coach_name == TEAM_HEAD_COACHES[fixture.away]
             and match.current_period == expected_period
             and match.current_minute == expected_minute
+            and match.home_possession_percentage == expected_possession
+            and match.shots.count() == expected_stat_events
+            and match.fouls.count() == (0 if fixture.score is None else expected_stat_events - 1)
+            and match.corner_kicks.count()
+            == (0 if fixture.score is None else expected_stat_events - 1)
+            and match.offsides.count() == (0 if fixture.score is None else expected_stat_events - 1)
             and match.substitutions.count() == expected_substitutions
             and hasattr(match, "penalty_shootout") == expected_shootout
             and shootout_is_current
@@ -563,6 +590,10 @@ class Command(BaseCommand):
             MatchPeriod.FIRST_HALF,
             34 if fixture.target_period == MatchPeriod.FIRST_HALF else 45,
         )
+        self.update_possession.execute(
+            match_id=match_id,
+            home_percentage=50 + fixture.scheduled_at.day % 5,
+        )
         home_goals = [18 + index * 22 for index in range(fixture.score[0])]
         away_goals = [31 + index * 24 for index in range(fixture.score[1])]
         for index, minute in enumerate(home_goals):
@@ -608,6 +639,7 @@ class Command(BaseCommand):
                 assist_player_id=assist_player_id,
                 minute=minute,
             )
+        self._add_first_half_stat_events(match_id, home_players, away_players)
         if fixture.target_period == MatchPeriod.FIRST_HALF:
             return
         if fixture.scheduled_at == SCHEDULED_AT:
@@ -643,6 +675,7 @@ class Command(BaseCommand):
                 player_id=away_players[(index + 9) % MATCH_LINEUP_SIZE],
                 minute=minute,
             )
+        self._add_second_half_stat_events(match_id, home_players, away_players)
         self.register_substitution.execute(
             match_id=match_id,
             player_out_id=home_players[1],
@@ -786,6 +819,59 @@ class Command(BaseCommand):
             player_in_id=away_players[MATCH_LINEUP_SIZE + 1],
             reason=SubstitutionReason.INJURY,
             minute=72,
+        )
+
+    def _add_first_half_stat_events(self, match_id, home_players, away_players) -> None:
+        self.register_shot.execute(
+            match_id=match_id,
+            player_id=home_players[6],
+            outcome=ShotOutcome.OFF_TARGET,
+            minute=8,
+        )
+        self.register_foul.execute(
+            match_id=match_id,
+            player_id=away_players[6],
+            minute=11,
+        )
+        self.register_corner_kick.execute(
+            match_id=match_id,
+            player_id=home_players[7],
+            minute=14,
+        )
+        self.register_offside.execute(
+            match_id=match_id,
+            player_id=away_players[8],
+            minute=22,
+        )
+        self.register_shot.execute(
+            match_id=match_id,
+            player_id=away_players[9],
+            goalkeeper_id=home_players[0],
+            outcome=ShotOutcome.SAVED,
+            minute=26,
+        )
+
+    def _add_second_half_stat_events(self, match_id, home_players, away_players) -> None:
+        self.register_foul.execute(
+            match_id=match_id,
+            player_id=home_players[3],
+            minute=50,
+        )
+        self.register_corner_kick.execute(
+            match_id=match_id,
+            player_id=away_players[4],
+            minute=55,
+        )
+        self.register_offside.execute(
+            match_id=match_id,
+            player_id=home_players[8],
+            minute=58,
+        )
+        self.register_shot.execute(
+            match_id=match_id,
+            player_id=home_players[9],
+            outcome=ShotOutcome.WOODWORK,
+            minute=67,
         )
 
     @staticmethod
