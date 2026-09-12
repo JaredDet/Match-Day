@@ -5,3 +5,8 @@ from core.constants import NAME_MAX_LENGTH
 
 class CreateTeamRequest(serializers.Serializer):
     name = serializers.CharField(max_length=NAME_MAX_LENGTH)
+    head_coach_name = serializers.CharField(
+        max_length=NAME_MAX_LENGTH,
+        required=False,
+        allow_null=True,
+    )

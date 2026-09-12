@@ -3,31 +3,33 @@ from uuid import UUID
 from django.db import transaction
 from injector import inject
 
-from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.errors import MatchErrors
-from modules.matches.infrastructure.repository.goal_repository import GoalRepository
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.matches.infrastructure.repository.match_squad_repository import (
     MatchSquadRepository,
+)
+from modules.matches.infrastructure.repository.penalty_attempt_repository import (
+    PenaltyAttemptRepository,
 )
 from modules.teams.errors import TeamErrors
 from modules.teams.infrastructure.repository.player_repository import PlayerRepository
 
 
-class RegisterGoalUseCase:
+class RegisterPenaltyAttemptUseCase:
     @inject
     def __init__(
         self,
         match_repository: MatchRepository,
-        goal_repository: GoalRepository,
+        penalty_attempt_repository: PenaltyAttemptRepository,
         player_repository: PlayerRepository,
-        lineup_repository: MatchSquadRepository,
+        squad_repository: MatchSquadRepository,
     ):
         self.match_repository = match_repository
-        self.goal_repository = goal_repository
+        self.penalty_attempt_repository = penalty_attempt_repository
         self.player_repository = player_repository
-        self.lineup_repository = lineup_repository
+        self.squad_repository = squad_repository
 
     @transaction.atomic
     def execute(
@@ -35,10 +37,9 @@ class RegisterGoalUseCase:
         *,
         match_id: UUID,
         player_id: UUID,
-        assist_player_id: UUID | None = None,
+        outcome: PenaltyAttemptOutcome,
         minute: int,
         added_minute: int = 0,
-        goal_type: GoalType = GoalType.REGULAR,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
 
@@ -53,7 +54,7 @@ class RegisterGoalUseCase:
         if player is None:
             raise TeamErrors.PlayerNotFound
 
-        squad_player = self.lineup_repository.get_for_update(
+        squad_player = self.squad_repository.get_for_update(
             match_id=match.id,
             player_id=player.id,
         )
@@ -64,34 +65,13 @@ class RegisterGoalUseCase:
 
             raise MatchErrors.PlayerNotOnField
 
-        assist_player = None
-
-        if assist_player_id is not None:
-            assist_player = self.player_repository.get(assist_player_id)
-
-            if assist_player is None:
-                raise TeamErrors.PlayerNotFound
-
-            assist_squad_player = self.lineup_repository.get_for_update(
-                match_id=match.id,
-                player_id=assist_player.id,
-            )
-
-            if assist_squad_player is None or not assist_squad_player.is_on_field:
-                if assist_squad_player is not None and assist_squad_player.is_sent_off:
-                    raise MatchErrors.PlayerSentOff
-
-                raise MatchErrors.PlayerNotOnField
-
-        goal = match.register_goal(
+        penalty_attempt = match.register_penalty_attempt(
             player=player,
-            assist_player=assist_player,
+            outcome=outcome,
             minute=minute,
             added_minute=added_minute,
-            goal_type=goal_type,
         )
 
-        self.goal_repository.save(goal)
-        self.match_repository.save(match)
+        self.penalty_attempt_repository.save(penalty_attempt)
 
-        return goal.id
+        return penalty_attempt.id

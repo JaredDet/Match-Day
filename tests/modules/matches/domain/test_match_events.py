@@ -3,9 +3,12 @@ import uuid
 import pytest
 
 from modules.matches.domain.card import Card, CardType
-from modules.matches.domain.goal import Goal
+from modules.matches.domain.goal import Goal, GoalType
+from modules.matches.domain.injury import Injury
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
+from modules.matches.domain.penalty_attempt import PenaltyAttempt, PenaltyAttemptOutcome
+from modules.matches.domain.var_review import VarReview, VarReviewDecision, VarReviewReason
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
@@ -42,6 +45,83 @@ def test_registers_card_and_derives_away_side():
     assert card.player_name == "Defensor Visitante"
     assert card.team_side == TeamSide.AWAY
     assert match.away_card_count == 1
+
+
+def test_registers_own_goal_for_opposing_team():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    player = Player.create(team_id=match.home_team_id, name="Defensor local")
+
+    goal = match.register_goal(
+        player=player,
+        goal_type=GoalType.OWN_GOAL,
+        minute=50,
+    )
+
+    assert goal.team_side == TeamSide.AWAY
+    assert match.home_goal_count == 0
+    assert match.away_goal_count == 1
+
+    match.disallow_goal(goal)
+
+    assert match.away_goal_count == 0
+
+
+def test_registers_goal_with_assistant_snapshot():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    scorer = Player.create(team_id=match.home_team_id, name="Goleador")
+    assistant = Player.create(team_id=match.home_team_id, name="Asistente")
+
+    goal = match.register_goal(
+        player=scorer,
+        assist_player=assistant,
+        minute=60,
+    )
+    assistant.rename("Nombre posterior")
+
+    assert goal.assist_player == assistant
+    assert goal.assist_player_name == "Asistente"
+
+
+@pytest.mark.parametrize("goal_type", [GoalType.PENALTY, GoalType.OWN_GOAL])
+def test_rejects_assistance_for_goal_types_without_assist(goal_type):
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    scorer = Player.create(team_id=match.home_team_id, name="Goleador")
+    assistant = Player.create(team_id=match.home_team_id, name="Asistente")
+
+    with pytest.raises(type(MatchErrors.InvalidGoalAssist)):
+        match.register_goal(
+            player=scorer,
+            assist_player=assistant,
+            goal_type=goal_type,
+            minute=60,
+        )
+
+
+def test_registers_penalty_attempt_injury_and_var_review():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    player = Player.create(team_id=match.home_team_id, name="Jugador")
+    reviewed_event_id = uuid.uuid4()
+
+    penalty_attempt = match.register_penalty_attempt(
+        player=player,
+        outcome=PenaltyAttemptOutcome.SAVED,
+        minute=55,
+    )
+    injury = match.register_injury(player=player, minute=60)
+    var_review = match.register_var_review(
+        team_side=TeamSide.HOME,
+        reason=VarReviewReason.PENALTY,
+        decision=VarReviewDecision.CONFIRMED,
+        reviewed_event_id=reviewed_event_id,
+        minute=61,
+    )
+
+    assert isinstance(penalty_attempt, PenaltyAttempt)
+    assert penalty_attempt.outcome == PenaltyAttemptOutcome.SAVED
+    assert isinstance(injury, Injury)
+    assert injury.player_name == "Jugador"
+    assert isinstance(var_review, VarReview)
+    assert var_review.reviewed_event_id == reviewed_event_id
 
 
 def test_registers_first_half_added_time_without_changing_official_minute():

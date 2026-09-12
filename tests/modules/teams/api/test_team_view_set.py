@@ -49,6 +49,8 @@ def test_lists_teams_with_last_result_and_next_match():
 
 def test_gets_team_detail_with_statistics_and_current_players():
     home_team = Team.objects.create(name="Atlético Bahía")
+    home_team.head_coach_name = "Carlos Medina"
+    home_team.save()
     away_team = Team.objects.create(name="Deportivo Cordillera")
     player = Player.objects.create(team=home_team, name="Mateo Rojas")
     finished = Match.schedule(
@@ -67,6 +69,7 @@ def test_gets_team_detail_with_statistics_and_current_players():
 
     assert response.status_code == 200
     assert response.data["id"] == str(home_team.id)
+    assert response.data["head_coach_name"] == "Carlos Medina"
     assert response.data["statistics"] == {
         "matches_played": 1,
         "wins": 1,
@@ -97,13 +100,17 @@ def test_returns_not_found_when_getting_unknown_team():
 def test_creates_team_through_injected_use_case():
     response = APIClient().post(
         reverse("teams-list"),
-        {"name": "  Colo-Colo  "},
+        {
+            "name": "  Colo-Colo  ",
+            "head_coach_name": "  Jorge   Almiron ",
+        },
         format="json",
     )
 
     assert response.status_code == 201
     team = Team.objects.get(id=UUID(response.data["id"]))
     assert team.name == "Colo-Colo"
+    assert team.head_coach_name == "Jorge Almiron"
 
 
 def test_rejects_duplicate_team_name_case_insensitively():
@@ -131,6 +138,21 @@ def test_updates_team_through_injected_use_case():
     assert response.status_code == 204
     team.refresh_from_db()
     assert team.name == "Nombre nuevo"
+
+
+def test_updates_only_team_head_coach():
+    team = Team.objects.create(name="Colo-Colo")
+
+    response = APIClient().patch(
+        reverse("teams-detail", args=[team.id]),
+        {"head_coach_name": "Jorge Almiron"},
+        format="json",
+    )
+
+    assert response.status_code == 204
+    team.refresh_from_db()
+    assert team.name == "Colo-Colo"
+    assert team.head_coach_name == "Jorge Almiron"
 
 
 def test_returns_not_found_when_updating_unknown_team():

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from uuid import UUID
 
 from django.core.management.base import BaseCommand, CommandError
@@ -20,11 +21,18 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_penalty_attempt_use_case import (
+    RegisterPenaltyAttemptUseCase,
+)
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
+)
+from modules.matches.application.commands.register_var_review_use_case import (
+    RegisterVarReviewUseCase,
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import (
@@ -43,11 +51,14 @@ from modules.matches.domain.card import CardType
 from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
+from modules.matches.domain.match_substitution import SubstitutionReason
+from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootoutDepartureReason,
     PenaltyShootoutIneligibilityReason,
 )
+from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
@@ -67,6 +78,13 @@ UNION_TEAM_NAME = "Unión del Valle"
 SPORTING_TEAM_NAME = "Sporting del Bosque"
 SCHEDULED_AT = datetime(2026, 8, 30, 20, tzinfo=UTC)
 STADIUM_NAME = "Estadio del Horizonte"
+
+TEAM_HEAD_COACHES = {
+    HOME_TEAM_NAME: "Carlos Medina",
+    AWAY_TEAM_NAME: "Rafael Contreras",
+    UNION_TEAM_NAME: "Miguel Salinas",
+    SPORTING_TEAM_NAME: "Fernando Lagos",
+}
 
 TEAM_PLAYERS = {
     HOME_TEAM_NAME: [
@@ -144,6 +162,11 @@ TEAM_PLAYERS = {
 }
 
 
+class DemoEventShowcase(StrEnum):
+    OWN_GOAL_AND_ASSIST = "own_goal_and_assist"
+    PENALTY_INJURY_VAR = "penalty_injury_var"
+
+
 @dataclass(frozen=True, slots=True)
 class DemoFixture:
     home: str
@@ -154,6 +177,7 @@ class DemoFixture:
     target_period: MatchPeriod | None = None
     shootout_score: tuple[int, int] | None = None
     has_extra_time: bool = False
+    event_showcase: DemoEventShowcase | None = None
 
 
 SHOOTOUT_FIXTURE = DemoFixture(
@@ -168,6 +192,22 @@ SHOOTOUT_FIXTURE = DemoFixture(
 
 
 FIXTURES = (
+    DemoFixture(
+        HOME_TEAM_NAME,
+        SPORTING_TEAM_NAME,
+        datetime(2026, 7, 13, 18, tzinfo=UTC),
+        "Estadio del Horizonte",
+        (2, 1),
+        event_showcase=DemoEventShowcase.OWN_GOAL_AND_ASSIST,
+    ),
+    DemoFixture(
+        AWAY_TEAM_NAME,
+        UNION_TEAM_NAME,
+        datetime(2026, 7, 16, 20, tzinfo=UTC),
+        "Estadio Cordillera",
+        (1, 0),
+        event_showcase=DemoEventShowcase.PENALTY_INJURY_VAR,
+    ),
     DemoFixture(
         AWAY_TEAM_NAME,
         HOME_TEAM_NAME,
@@ -273,7 +313,7 @@ def find_demo_shootout_match() -> Match | None:
 
 
 class Command(BaseCommand):
-    help = "Crea cuatro equipos y trece partidos usando los casos de uso"
+    help = "Crea cuatro equipos y quince partidos usando los casos de uso"
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -325,6 +365,9 @@ class Command(BaseCommand):
         self.advance_period = injector_instance.get(AdvanceMatchPeriodUseCase)
         self.update_clock = injector_instance.get(UpdateMatchClockUseCase)
         self.register_goal = injector_instance.get(RegisterGoalUseCase)
+        self.register_penalty_attempt = injector_instance.get(RegisterPenaltyAttemptUseCase)
+        self.register_injury = injector_instance.get(RegisterInjuryUseCase)
+        self.register_var_review = injector_instance.get(RegisterVarReviewUseCase)
         self.register_card = injector_instance.get(RegisterCardUseCase)
         self.register_substitution = injector_instance.get(RegisterSubstitutionUseCase)
         self.disallow_goal = injector_instance.get(DisallowGoalUseCase)
@@ -349,7 +392,18 @@ class Command(BaseCommand):
         if name == HOME_TEAM_NAME:
             aliases.append(HOME_TEAM_CURRENT_NAME)
         team = Team.objects.filter(name__in=aliases).first()
-        team_id = self.create_team.execute(name=name) if team is None else team.id
+        head_coach_name = TEAM_HEAD_COACHES[name]
+        if team is None:
+            team_id = self.create_team.execute(
+                name=name,
+                head_coach_name=head_coach_name,
+            )
+        else:
+            team_id = team.id
+            self.update_team.execute(
+                team_id=team_id,
+                head_coach_name=head_coach_name,
+            )
 
         existing_players = {
             player.name: player.id for player in Player.objects.filter(team_id=team_id)
@@ -421,9 +475,17 @@ class Command(BaseCommand):
                 else MatchPeriod.SECOND_HALF
             )
             expected_minute = 120 if fixture.has_extra_time else 90
-            expected_substitutions = 2
+            expected_substitutions = 2 + int(
+                fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR
+            )
         expected_shootout = fixture.shootout_score is not None
         expected_penalty_goals = 1 if fixture.scheduled_at == SCHEDULED_AT else 0
+        expected_own_goals = int(fixture.event_showcase == DemoEventShowcase.OWN_GOAL_AND_ASSIST)
+        expected_assisted_goals = expected_own_goals
+        has_penalty_showcase = fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR
+        expected_penalty_attempts = int(has_penalty_showcase)
+        expected_injuries = int(has_penalty_showcase)
+        expected_var_reviews = int(has_penalty_showcase)
         shootout_is_current = not expected_shootout
         if expected_shootout and hasattr(match, "penalty_shootout"):
             shootout = match.penalty_shootout
@@ -445,6 +507,8 @@ class Command(BaseCommand):
             )
         return (
             match.status == expected_status
+            and match.home_head_coach_name == TEAM_HEAD_COACHES[fixture.home]
+            and match.away_head_coach_name == TEAM_HEAD_COACHES[fixture.away]
             and match.current_period == expected_period
             and match.current_minute == expected_minute
             and match.substitutions.count() == expected_substitutions
@@ -455,6 +519,15 @@ class Command(BaseCommand):
                 disallowed_at__isnull=True,
             ).count()
             == expected_penalty_goals
+            and match.goals.filter(
+                goal_type=GoalType.OWN_GOAL,
+                disallowed_at__isnull=True,
+            ).count()
+            == expected_own_goals
+            and match.goals.filter(assist_player__isnull=False).count() == expected_assisted_goals
+            and match.penalty_attempts.count() == expected_penalty_attempts
+            and match.injuries.count() == expected_injuries
+            and match.var_reviews.count() == expected_var_reviews
         )
 
     def _create_fixture(self, fixture: DemoFixture, teams) -> None:
@@ -495,22 +568,44 @@ class Command(BaseCommand):
         for index, minute in enumerate(home_goals):
             if minute > 45:
                 continue
+
+            is_showcase_own_goal = (
+                fixture.event_showcase == DemoEventShowcase.OWN_GOAL_AND_ASSIST and index == 1
+            )
+            player_id = (
+                away_players[4]
+                if is_showcase_own_goal
+                else home_players[(index + 8) % MATCH_LINEUP_SIZE]
+            )
+            goal_type = (
+                GoalType.PENALTY
+                if fixture.scheduled_at == SCHEDULED_AT and index == 0
+                else GoalType.OWN_GOAL
+                if is_showcase_own_goal
+                else GoalType.REGULAR
+            )
+
             self.register_goal.execute(
                 match_id=match_id,
-                player_id=home_players[(index + 8) % MATCH_LINEUP_SIZE],
+                player_id=player_id,
                 minute=minute,
-                goal_type=(
-                    GoalType.PENALTY
-                    if fixture.scheduled_at == SCHEDULED_AT and index == 0
-                    else GoalType.REGULAR
-                ),
+                goal_type=goal_type,
             )
+
         for index, minute in enumerate(away_goals):
             if minute > 45:
                 continue
+
+            assist_player_id = (
+                away_players[(index + 8) % MATCH_LINEUP_SIZE]
+                if fixture.event_showcase == DemoEventShowcase.OWN_GOAL_AND_ASSIST and index == 0
+                else None
+            )
+
             self.register_goal.execute(
                 match_id=match_id,
                 player_id=away_players[(index + 9) % MATCH_LINEUP_SIZE],
+                assist_player_id=assist_player_id,
                 minute=minute,
             )
         if fixture.target_period == MatchPeriod.FIRST_HALF:
@@ -564,6 +659,8 @@ class Command(BaseCommand):
             return
         if fixture.scheduled_at == SCHEDULED_AT:
             self._add_primary_match_events(match_id, home_players, away_players)
+        if fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR:
+            self._add_penalty_injury_var_events(match_id, home_players, away_players)
 
         finished_at = fixture.scheduled_at + timedelta(hours=1, minutes=52)
 
@@ -637,7 +734,9 @@ class Command(BaseCommand):
             player_id=away_players[7],
             minute=74,
         )
+
         self.disallow_goal.execute(match_id=match_id, goal_id=disallowed_goal_id)
+
         self.register_card.execute(
             match_id=match_id,
             player_id=home_players[MATCH_LINEUP_SIZE],
@@ -657,6 +756,37 @@ class Command(BaseCommand):
             minute=52,
         )
         self.rescind_card.execute(match_id=match_id, card_id=rescinded_card_id)
+
+    def _add_penalty_injury_var_events(self, match_id, home_players, away_players) -> None:
+        self.register_injury.execute(
+            match_id=match_id,
+            player_id=away_players[5],
+            minute=69,
+        )
+
+        penalty_attempt_id = self.register_penalty_attempt.execute(
+            match_id=match_id,
+            player_id=home_players[8],
+            outcome=PenaltyAttemptOutcome.SAVED,
+            minute=70,
+        )
+
+        self.register_var_review.execute(
+            match_id=match_id,
+            team_side=TeamSide.HOME,
+            reason=VarReviewReason.PENALTY,
+            decision=VarReviewDecision.CONFIRMED,
+            reviewed_event_id=penalty_attempt_id,
+            minute=71,
+        )
+
+        self.register_substitution.execute(
+            match_id=match_id,
+            player_out_id=away_players[5],
+            player_in_id=away_players[MATCH_LINEUP_SIZE + 1],
+            reason=SubstitutionReason.INJURY,
+            minute=72,
+        )
 
     @staticmethod
     def _lineup(player_ids) -> list[LineupPlayerInput]:

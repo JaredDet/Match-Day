@@ -14,8 +14,8 @@ class CreateTeamUseCase:
         self.team_repository = team_repository
 
     @transaction.atomic
-    def execute(self, *, name: str) -> UUID:
-        team = Team.create(name=name)
+    def execute(self, *, name: str, head_coach_name: str | None = None) -> UUID:
+        team = Team.create(name=name, head_coach_name=head_coach_name)
 
         if self.team_repository.exists_by_name(team.name):
             raise TeamErrors.AlreadyExists

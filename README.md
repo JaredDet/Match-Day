@@ -1,7 +1,7 @@
 # Matchday
 
 API para administrar y consultar partidos de fútbol, incluyendo equipos,
-jugadores, formaciones, alineaciones, goles y tarjetas.
+jugadores, formaciones, alineaciones y una cronología completa de eventos.
 
 ## Requisitos
 
@@ -52,10 +52,11 @@ http://127.0.0.1:8000/api/docs/
 
 ## Datos de demostración
 
-Crea cuatro equipos ficticios, sus 44 jugadores y diez partidos: seis
-finalizados y cuatro programados. El partido demostrativo principal incluye
-estadio, árbitro, formaciones, alineaciones, capitanes habituales, goles y
-tarjetas:
+Crea cuatro equipos ficticios, sus 64 jugadores y quince partidos: ocho
+finalizados, tres en vivo y cuatro programados. Los partidos demostrativos
+incluyen estadio, árbitro, directores técnicos, formaciones, alineaciones,
+capitanes habituales,
+goles, autogoles, asistencias, tarjetas, sustituciones, lesiones, penales y VAR:
 
 ```bash
 uv run python manage.py seed_demo_match
@@ -96,7 +97,7 @@ implementación sigue la Regla 10 de las Reglas de Juego de IFAB.
 
 ## Diagramas
 
-Los diagramas PlantUML de la V4.5 se encuentran en `docs/diagrams`:
+Los diagramas PlantUML de la V5 se encuentran en `docs/diagrams`:
 
 - `domain-model.puml`: entidades, relaciones y reglas principales.
 - `architecture.puml`: módulos y dependencias entre capas.

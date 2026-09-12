@@ -7,6 +7,7 @@ from modules.matches.domain.match_event import MatchPeriod, TeamSide
 
 class MatchGoalPreviewResponse(serializers.Serializer):
     player_name = serializers.CharField()
+    assist_player_name = serializers.CharField(allow_null=True)
     goal_type = serializers.ChoiceField(choices=GoalType.choices)
     minute = serializers.IntegerField()
     added_minute = serializers.IntegerField()
@@ -16,6 +17,9 @@ class MatchGoalPreviewResponse(serializers.Serializer):
 
         if representation["added_minute"] == 0:
             representation.pop("added_minute")
+
+        if representation["assist_player_name"] is None:
+            representation.pop("assist_player_name")
 
         return representation
 

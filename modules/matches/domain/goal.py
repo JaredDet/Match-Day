@@ -22,6 +22,7 @@ from modules.matches.errors import MatchErrors
 class GoalType(models.TextChoices):
     REGULAR = "regular"
     PENALTY = "penalty"
+    OWN_GOAL = "own_goal"
 
 
 class Goal(models.Model):
@@ -36,8 +37,20 @@ class Goal(models.Model):
         on_delete=models.PROTECT,
         related_name="goals",
     )
+    assist_player = models.ForeignKey(
+        "teams.Player",
+        on_delete=models.PROTECT,
+        related_name="assisted_goals",
+        null=True,
+        blank=True,
+    )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
     player_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    assist_player_name = models.CharField(
+        max_length=NAME_MAX_LENGTH,
+        null=True,
+        blank=True,
+    )
     goal_type = models.CharField(
         max_length=10,
         choices=GoalType.choices,
@@ -121,5 +134,31 @@ class Goal(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(player_name=""),
                 name="goal_player_name_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        assist_player__isnull=True,
+                        assist_player_name__isnull=True,
+                    )
+                    | models.Q(
+                        assist_player__isnull=False,
+                        assist_player_name__isnull=False,
+                    )
+                ),
+                name="valid_goal_assist_snapshot",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(goal_type=GoalType.REGULAR) | models.Q(assist_player__isnull=True)
+                ),
+                name="assist_only_for_regular_goal",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(assist_player__isnull=True)
+                    | ~models.Q(assist_player=models.F("player"))
+                ),
+                name="goal_scorer_and_assistant_different",
             ),
         ]

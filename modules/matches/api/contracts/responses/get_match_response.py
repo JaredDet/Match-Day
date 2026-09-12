@@ -4,11 +4,14 @@ from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
+from modules.matches.domain.match_substitution import SubstitutionReason
+from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootoutIneligibilityReason,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 
 
 class MatchEventResponse(serializers.Serializer):
@@ -20,11 +23,27 @@ class MatchEventResponse(serializers.Serializer):
     added_minute = serializers.IntegerField(allow_null=True)
     player_id = serializers.UUIDField(allow_null=True)
     player_name = serializers.CharField(allow_null=True)
+    assist_player_id = serializers.UUIDField(allow_null=True)
+    assist_player_name = serializers.CharField(allow_null=True)
     player_out_id = serializers.UUIDField(allow_null=True)
     player_out_name = serializers.CharField(allow_null=True)
     player_in_id = serializers.UUIDField(allow_null=True)
     player_in_name = serializers.CharField(allow_null=True)
+    substitution_reason = serializers.ChoiceField(
+        choices=SubstitutionReason.choices,
+        allow_null=True,
+    )
     goal_type = serializers.CharField(allow_null=True)
+    penalty_outcome = serializers.ChoiceField(
+        choices=PenaltyAttemptOutcome.choices,
+        allow_null=True,
+    )
+    var_reason = serializers.ChoiceField(choices=VarReviewReason.choices, allow_null=True)
+    var_decision = serializers.ChoiceField(
+        choices=VarReviewDecision.choices,
+        allow_null=True,
+    )
+    reviewed_event_id = serializers.UUIDField(allow_null=True)
     sequence_number = serializers.IntegerField(allow_null=True)
     outcome = serializers.ChoiceField(
         choices=PenaltyKickOutcome.choices,
@@ -80,6 +99,7 @@ class PenaltyShootoutResponse(serializers.Serializer):
 class TeamDetailResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    head_coach_name = serializers.CharField(allow_null=True)
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
     goals = serializers.IntegerField()
     penalty_score = serializers.IntegerField(allow_null=True)
@@ -93,6 +113,8 @@ class TeamDetailResponse(serializers.Serializer):
 
         if representation["penalty_score"] is None:
             representation.pop("penalty_score")
+        if representation["head_coach_name"] is None:
+            representation.pop("head_coach_name")
 
         return representation
 

@@ -7,6 +7,26 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    InvalidPenaltyAttemptOutcome = AppException(
+        "invalid_penalty_attempt_outcome",
+        "El resultado del penal no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidVarReviewReason = AppException(
+        "invalid_var_review_reason",
+        "El motivo de la revisión VAR no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidVarReviewDecision = AppException(
+        "invalid_var_review_decision",
+        "La decisión de la revisión VAR no es válida",
+        ErrorType.VALIDATION,
+    )
+    ReviewedEventNotFound = AppException(
+        "reviewed_event_not_found",
+        "El evento revisado no pertenece al partido",
+        ErrorType.NOT_FOUND,
+    )
     InvalidExtraTimeState = AppException(
         "invalid_extra_time_state",
         "La prórroga solo puede comenzar al finalizar el segundo tiempo",
@@ -20,6 +40,11 @@ class MatchErrors:
     InvalidGoalType = AppException(
         "invalid_goal_type",
         "El tipo de gol no es válido",
+        ErrorType.VALIDATION,
+    )
+    InvalidGoalAssist = AppException(
+        "invalid_goal_assist",
+        "La asistencia debe corresponder a otro jugador en cancha del equipo goleador",
         ErrorType.VALIDATION,
     )
     InvalidPenaltyKickOutcome = AppException(
@@ -155,6 +180,11 @@ class MatchErrors:
     InvalidSubstitutionPlayers = AppException(
         "invalid_substitution_players",
         "Los jugadores de la sustitución deben pertenecer al mismo equipo y partido",
+        ErrorType.VALIDATION,
+    )
+    InvalidSubstitutionReason = AppException(
+        "invalid_substitution_reason",
+        "El motivo de la sustitución no es válido",
         ErrorType.VALIDATION,
     )
     InvalidSquadRole = AppException(

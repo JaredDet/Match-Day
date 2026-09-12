@@ -1,5 +1,5 @@
 @startuml Matchday Domain Model
-title Matchday V4.5 - Modelo de dominio
+title Matchday V5 - Modelo de dominio
 
 hide empty members
 skinparam classAttributeIconSize 0
@@ -9,12 +9,14 @@ package "teams" {
   class Team {
     +UUID id
     +string name
+    +string head_coach_name
     +UUID captain_id
     +datetime created_at
     +datetime updated_at
     --
     +create(name): Team
     +rename(name): void
+    +set_head_coach(name): void
     +assign_captain(player): void
   }
 
@@ -68,6 +70,26 @@ package "matches" {
   enum GoalType {
     regular
     penalty
+    own_goal
+  }
+
+  enum PenaltyAttemptOutcome {
+    missed
+    saved
+    hit_post
+  }
+
+  enum VarReviewReason {
+    goal
+    penalty
+    direct_red_card
+    mistaken_identity
+  }
+
+  enum VarReviewDecision {
+    confirmed
+    overturned
+    changed
   }
 
   enum PenaltyShootoutStatus {
@@ -104,6 +126,8 @@ package "matches" {
     +UUID away_team_id
     +string home_team_name
     +string away_team_name
+    +string home_head_coach_name
+    +string away_head_coach_name
     +MatchFormation home_formation
     +MatchFormation away_formation
     +string stadium_name
@@ -129,6 +153,9 @@ package "matches" {
     +update_clock(...): void
     +finish(...): void
     +register_goal(...): Goal
+    +register_penalty_attempt(...): PenaltyAttempt
+    +register_injury(...): Injury
+    +register_var_review(...): VarReview
     +register_card(...): Card
     +disallow_goal(...): void
     +rescind_card(...): void
@@ -155,18 +182,26 @@ package "matches" {
     +UUID match_id
     +UUID player_out_id
     +UUID player_in_id
-    +TeamSide team_side
+      +TeamSide team_side
+      +SubstitutionReason reason
     +MatchPeriod period
     +int minute
     +int added_minute
+  }
+
+  enum SubstitutionReason {
+    tactical
+    injury
   }
 
   class Goal {
     +UUID id
     +UUID match_id
     +UUID player_id
+    +UUID assist_player_id
     +TeamSide team_side
     +string player_name
+    +string assist_player_name
     +MatchPeriod period
     +GoalType goal_type
     +int minute
@@ -174,6 +209,41 @@ package "matches" {
     +datetime disallowed_at
     --
     +disallow(...): void
+  }
+
+  class PenaltyAttempt {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +PenaltyAttemptOutcome outcome
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
+  class Injury {
+    +UUID id
+    +UUID match_id
+    +UUID player_id
+    +string player_name
+    +TeamSide team_side
+    +MatchPeriod period
+    +int minute
+    +int added_minute
+  }
+
+  class VarReview {
+    +UUID id
+    +UUID match_id
+    +TeamSide team_side
+    +VarReviewReason reason
+    +VarReviewDecision decision
+    +UUID reviewed_event_id
+    +MatchPeriod period
+    +int minute
+    +int added_minute
   }
 
   class Card {
@@ -239,11 +309,17 @@ MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : sale
 MatchSquadPlayer "1" <-- "0..*" MatchSubstitution : entra
 Match "1" *-- "0..*" Goal
 Match "1" *-- "0..*" Card
+Match "1" *-- "0..*" PenaltyAttempt
+Match "1" *-- "0..*" Injury
+Match "1" *-- "0..*" VarReview
 Match "1" *-- "0..1" PenaltyShootout
 PenaltyShootout "1" *-- "0..*" PenaltyShootoutKick
 PenaltyShootout "1" *-- "1..*" PenaltyShootoutParticipant : habilitados
 Player "1" <-- "0..*" Goal
+Player "0..1" <-- "0..*" Goal : asistencia
 Player "1" <-- "0..*" Card
+Player "1" <-- "0..*" PenaltyAttempt
+Player "1" <-- "0..*" Injury
 Player "1" <-- "0..*" PenaltyShootoutKick
 Player "1" <-- "0..*" PenaltyShootoutParticipant
 Match --> MatchStatus
@@ -252,9 +328,16 @@ Match --> MatchFormation
 MatchSquadPlayer --> TeamSide
 MatchSquadPlayer --> MatchSquadRole
 MatchSquadPlayer --> SentOffReason
-MatchSubstitution --> TeamSide
+  MatchSubstitution --> TeamSide
+  MatchSubstitution --> SubstitutionReason
 Goal --> TeamSide
 Goal --> GoalType
+PenaltyAttempt --> PenaltyAttemptOutcome
+PenaltyAttempt --> TeamSide
+Injury --> TeamSide
+VarReview --> TeamSide
+VarReview --> VarReviewReason
+VarReview --> VarReviewDecision
 Card --> TeamSide
 Card --> CardType
 PenaltyShootout --> PenaltyShootoutStatus

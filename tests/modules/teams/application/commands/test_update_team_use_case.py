@@ -35,6 +35,21 @@ def test_rejects_unknown_team():
     repository.save.assert_not_called()
 
 
+def test_updates_and_clears_head_coach():
+    team = Team.create(name="Equipo", head_coach_name="Tecnico anterior")
+    repository = Mock()
+    repository.get_for_update.return_value = team
+    use_case = UpdateTeamUseCase(repository)
+
+    use_case.execute(team_id=team.id, head_coach_name="  Tecnico   nuevo ")
+
+    assert team.head_coach_name == "Tecnico nuevo"
+
+    use_case.execute(team_id=team.id, head_coach_name=None)
+
+    assert team.head_coach_name is None
+
+
 def test_rejects_name_used_by_another_team():
     team = Team.create(name="Nombre anterior")
     repository = Mock()

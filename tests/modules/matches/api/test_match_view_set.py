@@ -410,6 +410,7 @@ def test_registers_substitution_and_updates_players_on_field():
             "player_out_id": str(player_out.id),
             "player_in_id": str(player_in.id),
             "minute": 60,
+            "reason": "injury",
         },
         format="json",
     )
@@ -418,6 +419,7 @@ def test_registers_substitution_and_updates_players_on_field():
     substitution = MatchSubstitution.objects.get(id=response.data["id"])
     assert substitution.player_out.player == player_out
     assert substitution.player_in.player == player_in
+    assert substitution.reason == "injury"
     substitution.player_out.refresh_from_db()
     substitution.player_in.refresh_from_db()
     assert substitution.player_out.is_on_field is False
@@ -436,6 +438,7 @@ def test_registers_substitution_and_updates_players_on_field():
         "player_out_name": "Titular",
         "player_in_id": str(player_in.id),
         "player_in_name": "Suplente",
+        "substitution_reason": "injury",
     }
     assert [player["is_on_field"] for player in detail.data["home_team"]["lineup"]] == [
         False,
@@ -648,6 +651,120 @@ def test_returns_not_found_when_getting_unknown_match():
 
     assert response.status_code == 404
     assert response.data["code"] == "match_not_found"
+
+
+def test_registers_new_match_events_and_returns_them_in_chronological_order():
+    match = _schedule_match(
+        home_team_name="Local",
+        away_team_name="Visitante",
+        scheduled_at=timezone.now(),
+    )
+    match.status = MatchStatus.LIVE
+    match.started_at = timezone.now()
+    match.current_period = MatchPeriod.SECOND_HALF
+    match.current_minute = 90
+    match.save()
+    home_scorer = _create_player(match, TeamSide.HOME, "Goleador local")
+    home_assistant = _create_player(match, TeamSide.HOME, "Asistente local")
+    away_defender = _create_player(match, TeamSide.AWAY, "Defensor visitante")
+
+    own_goal_response = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {
+            "player_id": str(away_defender.id),
+            "goal_type": "own_goal",
+            "minute": 50,
+        },
+        format="json",
+    )
+    assisted_goal_response = APIClient().post(
+        reverse("matches-register-goal", args=[match.id]),
+        {
+            "player_id": str(home_scorer.id),
+            "assist_player_id": str(home_assistant.id),
+            "minute": 55,
+        },
+        format="json",
+    )
+    penalty_response = APIClient().post(
+        reverse("matches-register-penalty-attempt", args=[match.id]),
+        {
+            "player_id": str(home_scorer.id),
+            "outcome": "saved",
+            "minute": 60,
+        },
+        format="json",
+    )
+    injury_response = APIClient().post(
+        reverse("matches-register-injury", args=[match.id]),
+        {
+            "player_id": str(away_defender.id),
+            "minute": 65,
+        },
+        format="json",
+    )
+    var_response = APIClient().post(
+        reverse("matches-register-var-review", args=[match.id]),
+        {
+            "team_side": "home",
+            "reason": "penalty",
+            "decision": "confirmed",
+            "reviewed_event_id": penalty_response.data["id"],
+            "minute": 66,
+        },
+        format="json",
+    )
+
+    assert own_goal_response.status_code == 201
+    assert assisted_goal_response.status_code == 201
+    assert penalty_response.status_code == 201
+    assert injury_response.status_code == 201
+    assert var_response.status_code == 201
+
+    response = APIClient().get(reverse("matches-detail", args=[match.id]))
+
+    assert response.status_code == 200
+    assert response.data["home_team"]["goals"] == 2
+    assert response.data["away_team"]["goals"] == 0
+    assert [event["type"] for event in response.data["events"]] == [
+        "goal",
+        "goal",
+        "penalty_attempt",
+        "injury",
+        "var_review",
+    ]
+    assert response.data["events"][0]["goal_type"] == "own_goal"
+    assert response.data["events"][1]["assist_player_name"] == "Asistente local"
+    assert response.data["events"][2]["penalty_outcome"] == "saved"
+    assert response.data["events"][4]["reviewed_event_id"] == penalty_response.data["id"]
+
+
+def test_rejects_var_reference_from_outside_match():
+    match = _schedule_match(
+        home_team_name="Local",
+        away_team_name="Visitante",
+        scheduled_at=timezone.now(),
+    )
+    match.status = MatchStatus.LIVE
+    match.started_at = timezone.now()
+    match.current_period = MatchPeriod.FIRST_HALF
+    match.current_minute = 30
+    match.save()
+
+    response = APIClient().post(
+        reverse("matches-register-var-review", args=[match.id]),
+        {
+            "team_side": "home",
+            "reason": "goal",
+            "decision": "confirmed",
+            "reviewed_event_id": str(uuid4()),
+            "minute": 25,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "reviewed_event_not_found"
 
 
 def test_updates_match_details_through_injected_use_case():

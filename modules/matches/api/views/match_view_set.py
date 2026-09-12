@@ -15,11 +15,18 @@ from modules.matches.api.contracts.requests.reduce_penalty_shootout_participants
 )
 from modules.matches.api.contracts.requests.register_card_request import RegisterCardRequest
 from modules.matches.api.contracts.requests.register_goal_request import RegisterGoalRequest
+from modules.matches.api.contracts.requests.register_injury_request import RegisterInjuryRequest
+from modules.matches.api.contracts.requests.register_penalty_attempt_request import (
+    RegisterPenaltyAttemptRequest,
+)
 from modules.matches.api.contracts.requests.register_penalty_shootout_kick_request import (
     RegisterPenaltyShootoutKickRequest,
 )
 from modules.matches.api.contracts.requests.register_substitution_request import (
     RegisterSubstitutionRequest,
+)
+from modules.matches.api.contracts.requests.register_var_review_request import (
+    RegisterVarReviewRequest,
 )
 from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
 from modules.matches.api.contracts.requests.start_penalty_shootout_request import (
@@ -47,11 +54,18 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_penalty_attempt_use_case import (
+    RegisterPenaltyAttemptUseCase,
+)
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
+)
+from modules.matches.application.commands.register_var_review_use_case import (
+    RegisterVarReviewUseCase,
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import (
@@ -236,6 +250,72 @@ class MatchViewSet(ViewSet):
         goal_id = use_case.execute(match_id=pk, **request_contract.validated_data)
 
         return Response({"id": str(goal_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_penalty_attempt",
+        request=RegisterPenaltyAttemptRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterPenaltyAttemptResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="penalty-attempts")
+    def register_penalty_attempt(self, request, pk=None):
+        request_contract = RegisterPenaltyAttemptRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterPenaltyAttemptUseCase)
+        penalty_attempt_id = use_case.execute(
+            match_id=pk,
+            **request_contract.validated_data,
+        )
+
+        return Response(
+            {"id": str(penalty_attempt_id)},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        operation_id="matches_register_injury",
+        request=RegisterInjuryRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterInjuryResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="injuries")
+    def register_injury(self, request, pk=None):
+        request_contract = RegisterInjuryRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterInjuryUseCase)
+        injury_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response({"id": str(injury_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="matches_register_var_review",
+        request=RegisterVarReviewRequest,
+        responses={
+            status.HTTP_201_CREATED: inline_serializer(
+                name="RegisterVarReviewResult",
+                fields={"id": serializers.UUIDField()},
+            )
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="var-reviews")
+    def register_var_review(self, request, pk=None):
+        request_contract = RegisterVarReviewRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(RegisterVarReviewUseCase)
+        var_review_id = use_case.execute(match_id=pk, **request_contract.validated_data)
+
+        return Response({"id": str(var_review_id)}, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         operation_id="matches_register_card",

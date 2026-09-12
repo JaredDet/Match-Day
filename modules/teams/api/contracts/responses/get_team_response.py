@@ -38,6 +38,7 @@ class TeamRecentMatchResponse(serializers.Serializer):
 class GetTeamResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    head_coach_name = serializers.CharField(allow_null=True)
     statistics = TeamStatisticsResponse()
     players = TeamPlayerDetailResponse(many=True)
     recent_matches = TeamRecentMatchResponse(many=True)

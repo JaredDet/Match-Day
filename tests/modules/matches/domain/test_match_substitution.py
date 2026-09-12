@@ -3,7 +3,7 @@ import pytest
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.domain.match_squad_player import MatchSquadRole
-from modules.matches.domain.match_substitution import MatchSubstitution
+from modules.matches.domain.match_substitution import MatchSubstitution, SubstitutionReason
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
 from tests.mothers.matches.match_mother import MatchMother
@@ -31,8 +31,34 @@ def test_substitutes_player_and_updates_on_field_state():
     )
 
     assert substitution.minute == 60
+    assert substitution.reason == SubstitutionReason.TACTICAL
     assert squad_player_out.is_on_field is False
     assert squad_player_in.is_on_field is True
+
+
+def test_records_injury_as_substitution_reason():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
+    injured_player = Player.create(team_id=match.home_team_id, name="Lesionado")
+    replacement = Player.create(team_id=match.home_team_id, name="Reemplazo")
+    player_out = match.add_squad_player(player=injured_player, shirt_number=7)
+    player_in = match.add_squad_player(
+        player=replacement,
+        shirt_number=18,
+        role=MatchSquadRole.SUBSTITUTE,
+    )
+
+    substitution = MatchSubstitution.create(
+        match=match,
+        player_out=player_out,
+        player_in=player_in,
+        minute=60,
+        reason=SubstitutionReason.INJURY,
+    )
+
+    assert substitution.reason == SubstitutionReason.INJURY
 
 
 def test_rejects_outgoing_player_who_is_not_on_field():

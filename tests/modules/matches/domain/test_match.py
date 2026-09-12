@@ -13,8 +13,11 @@ from tests.mothers.matches.match_mother import MatchMother
 
 def test_schedules_match_with_teams():
     scheduled_at = timezone.now() + timedelta(days=1)
-    home_team = Team.create(name="Colo-Colo")
-    away_team = Team.create(name="Universidad de Chile")
+    home_team = Team.create(name="Colo-Colo", head_coach_name="Jorge Almiron")
+    away_team = Team.create(
+        name="Universidad de Chile",
+        head_coach_name="Gustavo Alvarez",
+    )
 
     match = Match.schedule(
         home_team=home_team,
@@ -26,8 +29,14 @@ def test_schedules_match_with_teams():
     assert match.away_team == away_team
     assert match.home_team_name == home_team.name
     assert match.away_team_name == away_team.name
+    assert match.home_head_coach_name == "Jorge Almiron"
+    assert match.away_head_coach_name == "Gustavo Alvarez"
     assert match.scheduled_at == scheduled_at
     assert match.status == MatchStatus.SCHEDULED
+
+    home_team.set_head_coach("Otro tecnico")
+
+    assert match.home_head_coach_name == "Jorge Almiron"
 
 
 def test_fixture_key_ignores_team_order_and_timezone_offset():

@@ -45,6 +45,7 @@ class TeamRecentMatch:
 class TeamDetail:
     id: UUID
     name: str
+    head_coach_name: str | None
     statistics: TeamStatistics
     players: tuple[TeamPlayerDetail, ...]
     recent_matches: tuple[TeamRecentMatch, ...]

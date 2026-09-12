@@ -1,5 +1,5 @@
 @startuml Matchday Inputs and Outputs
-title Matchday V4.5 - Entradas y salidas
+title Matchday V5 - Entradas y salidas
 left to right direction
 skinparam componentStyle rectangle
 skinparam linetype ortho
@@ -7,11 +7,11 @@ skinparam linetype ortho
 package "Team Commands" {
   component "POST /teams" as CreateTeamApi
   component "CreateTeamUseCase" as CreateTeam
-  artifact "name" as CreateTeamInput
+  artifact "name + head_coach_name?" as CreateTeamInput
   artifact "201: id" as CreateTeamOutput
   component "PATCH /teams/{id}" as UpdateTeamApi
   component "UpdateTeamUseCase" as UpdateTeam
-  artifact "name" as UpdateTeamInput
+  artifact "name? + head_coach_name?" as UpdateTeamInput
   component "POST /teams/{id}/players" as RegisterPlayerApi
   component "RegisterPlayerUseCase" as RegisterPlayer
   artifact "name" as RegisterPlayerInput
@@ -69,14 +69,23 @@ package "Match Commands" {
   component "FinishMatchUseCase" as FinishMatch
   component "POST /matches/{id}/goals" as GoalApi
   component "RegisterGoalUseCase" as RegisterGoal
-  artifact "player_id + minute + added_minute?" as GoalInput
+  artifact "player_id + assist_player_id?\ngoal_type + minute + added_minute?" as GoalInput
   artifact "201: event id" as EventOutput
+  component "POST /matches/{id}/penalty-attempts" as PenaltyAttemptApi
+  component "RegisterPenaltyAttemptUseCase" as RegisterPenaltyAttempt
+  artifact "player_id + outcome + minute + added_minute?" as PenaltyAttemptInput
+  component "POST /matches/{id}/injuries" as InjuryApi
+  component "RegisterInjuryUseCase" as RegisterInjury
+  artifact "player_id + minute + added_minute?" as InjuryInput
+  component "POST /matches/{id}/var-reviews" as VarReviewApi
+  component "RegisterVarReviewUseCase" as RegisterVarReview
+  artifact "team_side + reason + decision\nreviewed_event_id? + minute + added_minute?" as VarReviewInput
   component "POST /matches/{id}/cards" as CardApi
   component "RegisterCardUseCase" as RegisterCard
   artifact "player_id + card_type + minute + added_minute?" as CardInput
   component "POST /matches/{id}/substitutions" as SubstitutionApi
   component "RegisterSubstitutionUseCase" as RegisterSubstitution
-  artifact "player_out_id + player_in_id + minute + added_minute?" as SubstitutionInput
+  artifact "player_out_id + player_in_id + reason? + minute + added_minute?" as SubstitutionInput
   component "POST /goals/{goal_id}/disallow" as DisallowApi
   component "DisallowGoalUseCase" as DisallowGoal
   component "POST /cards/{card_id}/rescind" as RescindApi
@@ -155,6 +164,15 @@ FinishMatch --> EmptyMatchOutput
 GoalInput --> GoalApi
 GoalApi --> RegisterGoal
 RegisterGoal --> EventOutput
+PenaltyAttemptInput --> PenaltyAttemptApi
+PenaltyAttemptApi --> RegisterPenaltyAttempt
+RegisterPenaltyAttempt --> EventOutput
+InjuryInput --> InjuryApi
+InjuryApi --> RegisterInjury
+RegisterInjury --> EventOutput
+VarReviewInput --> VarReviewApi
+VarReviewApi --> RegisterVarReview
+RegisterVarReview --> EventOutput
 CardInput --> CardApi
 CardApi --> RegisterCard
 RegisterCard --> EventOutput

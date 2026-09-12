@@ -1,5 +1,5 @@
 @startuml Matchday Use Cases
-title Matchday V4.5 - Casos de uso
+title Matchday V5 - Casos de uso
 
 left to right direction
 skinparam packageStyle rectangle
@@ -28,6 +28,9 @@ rectangle "Matches" {
   usecase "Actualizar reloj oficial" as UpdateClock
   usecase "Finalizar partido" as FinishMatch
   usecase "Registrar gol" as RegisterGoal
+  usecase "Registrar penal no convertido" as RegisterPenaltyAttempt
+  usecase "Registrar lesión" as RegisterInjury
+  usecase "Registrar revisión VAR" as RegisterVarReview
   usecase "Anular gol" as DisallowGoal
   usecase "Registrar tarjeta" as RegisterCard
   usecase "Registrar sustitución" as RegisterSubstitution
@@ -58,6 +61,9 @@ Admin --> AdvancePeriod
 Admin --> UpdateClock
 Admin --> FinishMatch
 Admin --> RegisterGoal
+Admin --> RegisterPenaltyAttempt
+Admin --> RegisterInjury
+Admin --> RegisterVarReview
 Admin --> DisallowGoal
 Admin --> RegisterCard
 Admin --> RegisterSubstitution

@@ -4,15 +4,24 @@ from modules.teams.api.contracts.requests.update_team_request import UpdateTeamR
 
 
 def test_accepts_team_name():
-    request = UpdateTeamRequest(data={"name": "Nombre nuevo"})
+    request = UpdateTeamRequest(data={"name": "Nombre nuevo", "head_coach_name": "Tecnico nuevo"})
 
     assert request.is_valid()
-    assert request.validated_data == {"name": "Nombre nuevo"}
+    assert request.validated_data == {
+        "name": "Nombre nuevo",
+        "head_coach_name": "Tecnico nuevo",
+    }
 
 
 @pytest.mark.parametrize("data", [{}, {"name": ""}, {"name": " "}])
-def test_rejects_missing_or_blank_team_name(data):
+def test_rejects_empty_update(data):
     request = UpdateTeamRequest(data=data)
 
     assert not request.is_valid()
-    assert "name" in request.errors
+
+
+def test_accepts_clearing_head_coach():
+    request = UpdateTeamRequest(data={"head_coach_name": None})
+
+    assert request.is_valid()
+    assert request.validated_data == {"head_coach_name": None}

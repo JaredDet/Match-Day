@@ -1,5 +1,5 @@
 @startuml Match Lifecycle
-title Matchday V4.5 - Ciclo de vida del partido
+title Matchday V5 - Ciclo de vida del partido
 
 [*] --> Scheduled : CreateMatch
 Scheduled --> Scheduled : UpdateMatchDetails

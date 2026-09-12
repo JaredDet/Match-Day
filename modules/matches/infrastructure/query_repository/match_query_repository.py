@@ -9,6 +9,7 @@ from django.db.models import Case, IntegerField, Value, When
 from modules.matches.application.queries.team_detail import MatchGoalPreview, TeamDetail
 from modules.matches.domain.card import Card, CardType
 from modules.matches.domain.goal import Goal, GoalType
+from modules.matches.domain.injury import Injury
 from modules.matches.domain.match import Match, MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import (
@@ -17,6 +18,7 @@ from modules.matches.domain.match_squad_player import (
     SentOffReason,
 )
 from modules.matches.domain.match_substitution import MatchSubstitution
+from modules.matches.domain.penalty_attempt import PenaltyAttempt, PenaltyAttemptOutcome
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootout,
@@ -24,6 +26,7 @@ from modules.matches.domain.penalty_shootout import (
     PenaltyShootoutKick,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.var_review import VarReview, VarReviewDecision, VarReviewReason
 
 if TYPE_CHECKING:
     from modules.matches.application.queries.get_match_query import (
@@ -77,6 +80,7 @@ class MatchQueryRepository:
             goals_by_match[goal.match_id][TeamSide(goal.team_side)].append(
                 MatchGoalPreview(
                     player_name=goal.player_name,
+                    assist_player_name=goal.assist_player_name,
                     goal_type=GoalType(goal.goal_type),
                     minute=goal.minute,
                     added_minute=goal.added_minute,
@@ -150,6 +154,8 @@ class MatchQueryRepository:
                 "away_team_id",
                 "home_team_name",
                 "away_team_name",
+                "home_head_coach_name",
+                "away_head_coach_name",
                 "home_goal_count",
                 "away_goal_count",
             )
@@ -181,6 +187,7 @@ class MatchQueryRepository:
             home_team=MatchTeamDetail(
                 id=match["home_team_id"],
                 name=match["home_team_name"],
+                head_coach_name=match["home_head_coach_name"],
                 team_side=TeamSide.HOME,
                 goals=match["home_goal_count"],
                 penalty_score=(penalty_shootout.home_score if penalty_shootout else None),
@@ -194,6 +201,7 @@ class MatchQueryRepository:
             away_team=MatchTeamDetail(
                 id=match["away_team_id"],
                 name=match["away_team_name"],
+                head_coach_name=match["away_head_coach_name"],
                 team_side=TeamSide.AWAY,
                 goals=match["away_goal_count"],
                 penalty_score=(penalty_shootout.away_score if penalty_shootout else None),
@@ -329,6 +337,8 @@ class MatchQueryRepository:
             "team_side",
             "player_id",
             "player_name",
+            "assist_player_id",
+            "assist_player_name",
             "goal_type",
             "period",
             "minute",
@@ -347,6 +357,8 @@ class MatchQueryRepository:
                         team_side=TeamSide(goal["team_side"]),
                         player_id=goal["player_id"],
                         player_name=goal["player_name"],
+                        assist_player_id=goal["assist_player_id"],
+                        assist_player_name=goal["assist_player_name"],
                         goal_type=GoalType(goal["goal_type"]),
                         period=MatchPeriod(goal["period"]),
                         minute=goal["minute"],
@@ -395,6 +407,7 @@ class MatchQueryRepository:
             "player_out__player__name",
             "player_in__player_id",
             "player_in__player__name",
+            "reason",
             "period",
             "minute",
             "added_minute",
@@ -417,6 +430,95 @@ class MatchQueryRepository:
                         player_out_name=substitution["player_out__player__name"],
                         player_in_id=substitution["player_in__player_id"],
                         player_in_name=substitution["player_in__player__name"],
+                        substitution_reason=substitution["reason"],
+                    ),
+                )
+            )
+        for penalty_attempt in PenaltyAttempt.objects.filter(match_id=match_id).values(
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "outcome",
+            "period",
+            "minute",
+            "added_minute",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    self._period_order(penalty_attempt["period"]),
+                    penalty_attempt["minute"],
+                    penalty_attempt["added_minute"],
+                    penalty_attempt["created_at"],
+                    MatchEventDetail(
+                        id=penalty_attempt["id"],
+                        type=MatchEventType.PENALTY_ATTEMPT,
+                        team_side=TeamSide(penalty_attempt["team_side"]),
+                        player_id=penalty_attempt["player_id"],
+                        player_name=penalty_attempt["player_name"],
+                        penalty_outcome=PenaltyAttemptOutcome(penalty_attempt["outcome"]),
+                        period=MatchPeriod(penalty_attempt["period"]),
+                        minute=penalty_attempt["minute"],
+                        added_minute=penalty_attempt["added_minute"],
+                    ),
+                )
+            )
+        for injury in Injury.objects.filter(match_id=match_id).values(
+            "id",
+            "team_side",
+            "player_id",
+            "player_name",
+            "period",
+            "minute",
+            "added_minute",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    self._period_order(injury["period"]),
+                    injury["minute"],
+                    injury["added_minute"],
+                    injury["created_at"],
+                    MatchEventDetail(
+                        id=injury["id"],
+                        type=MatchEventType.INJURY,
+                        team_side=TeamSide(injury["team_side"]),
+                        player_id=injury["player_id"],
+                        player_name=injury["player_name"],
+                        period=MatchPeriod(injury["period"]),
+                        minute=injury["minute"],
+                        added_minute=injury["added_minute"],
+                    ),
+                )
+            )
+        for var_review in VarReview.objects.filter(match_id=match_id).values(
+            "id",
+            "team_side",
+            "reason",
+            "decision",
+            "reviewed_event_id",
+            "period",
+            "minute",
+            "added_minute",
+            "created_at",
+        ):
+            events_with_order.append(
+                (
+                    self._period_order(var_review["period"]),
+                    var_review["minute"],
+                    var_review["added_minute"],
+                    var_review["created_at"],
+                    MatchEventDetail(
+                        id=var_review["id"],
+                        type=MatchEventType.VAR_REVIEW,
+                        team_side=TeamSide(var_review["team_side"]),
+                        var_reason=VarReviewReason(var_review["reason"]),
+                        var_decision=VarReviewDecision(var_review["decision"]),
+                        reviewed_event_id=var_review["reviewed_event_id"],
+                        period=MatchPeriod(var_review["period"]),
+                        minute=var_review["minute"],
+                        added_minute=var_review["added_minute"],
                     ),
                 )
             )

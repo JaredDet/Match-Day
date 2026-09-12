@@ -4,10 +4,13 @@ from modules.teams.api.contracts.requests.create_team_request import CreateTeamR
 
 
 def test_accepts_team_name():
-    request = CreateTeamRequest(data={"name": "Colo-Colo"})
+    request = CreateTeamRequest(data={"name": "Colo-Colo", "head_coach_name": "Jorge Almiron"})
 
     assert request.is_valid()
-    assert request.validated_data == {"name": "Colo-Colo"}
+    assert request.validated_data == {
+        "name": "Colo-Colo",
+        "head_coach_name": "Jorge Almiron",
+    }
 
 
 @pytest.mark.parametrize("data", [{}, {"name": ""}, {"name": " "}])

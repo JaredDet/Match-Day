@@ -14,12 +14,16 @@ def test_creates_and_persists_team():
     repository.exists_by_name.return_value = False
     use_case = CreateTeamUseCase(repository)
 
-    team_id = use_case.execute(name="  Universidad   de Chile  ")
+    team_id = use_case.execute(
+        name="  Universidad   de Chile  ",
+        head_coach_name="  Gustavo   Alvarez  ",
+    )
 
     team = repository.save.call_args.args[0]
     assert isinstance(team, Team)
     assert team.id == team_id
     assert team.name == "Universidad de Chile"
+    assert team.head_coach_name == "Gustavo Alvarez"
     repository.exists_by_name.assert_called_once_with("Universidad de Chile")
     repository.save.assert_called_once_with(team)
 

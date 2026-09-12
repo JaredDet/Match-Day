@@ -13,6 +13,11 @@ from modules.teams.errors import TeamErrors
 class Team(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=NAME_MAX_LENGTH)
+    head_coach_name = models.CharField(
+        max_length=NAME_MAX_LENGTH,
+        null=True,
+        blank=True,
+    )
     captain = models.ForeignKey(
         "teams.Player",
         on_delete=models.SET_NULL,
@@ -24,11 +29,17 @@ class Team(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     @classmethod
-    def create(cls, *, name: str) -> Team:
-        return cls(name=cls._normalize_name(name))
+    def create(cls, *, name: str, head_coach_name: str | None = None) -> Team:
+        return cls(
+            name=cls._normalize_name(name),
+            head_coach_name=cls._normalize_optional_name(head_coach_name),
+        )
 
     def rename(self, name: str) -> None:
         self.name = self._normalize_name(name)
+
+    def set_head_coach(self, head_coach_name: str | None) -> None:
+        self.head_coach_name = self._normalize_optional_name(head_coach_name)
 
     def assign_captain(self, player) -> None:
         if player.team_id != self.id:
@@ -41,6 +52,11 @@ class Team(models.Model):
         if not normalized_name:
             raise TeamErrors.InvalidName
         return normalized_name
+
+    @staticmethod
+    def _normalize_optional_name(name: str | None) -> str | None:
+        normalized_name = normalize_whitespace(name)
+        return normalized_name or None
 
     class Meta:
         db_table = "teams"

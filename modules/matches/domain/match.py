@@ -32,6 +32,9 @@ _UNSET = object()
 if TYPE_CHECKING:
     from modules.matches.domain.card import Card, CardType
     from modules.matches.domain.goal import Goal
+    from modules.matches.domain.injury import Injury
+    from modules.matches.domain.penalty_attempt import PenaltyAttempt, PenaltyAttemptOutcome
+    from modules.matches.domain.var_review import VarReview, VarReviewDecision, VarReviewReason
     from modules.teams.domain.player import Player
     from modules.teams.domain.team import Team
 
@@ -65,6 +68,16 @@ class Match(models.Model):
     )
     home_team_name = models.CharField(max_length=NAME_MAX_LENGTH)
     away_team_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    home_head_coach_name = models.CharField(
+        max_length=NAME_MAX_LENGTH,
+        null=True,
+        blank=True,
+    )
+    away_head_coach_name = models.CharField(
+        max_length=NAME_MAX_LENGTH,
+        null=True,
+        blank=True,
+    )
     stadium_name = models.CharField(max_length=NAME_MAX_LENGTH, null=True, blank=True)
     referee_name = models.CharField(max_length=NAME_MAX_LENGTH, null=True, blank=True)
     home_formation = models.CharField(
@@ -124,6 +137,8 @@ class Match(models.Model):
             away_team=away_team,
             home_team_name=home_team.name,
             away_team_name=away_team.name,
+            home_head_coach_name=home_team.head_coach_name,
+            away_head_coach_name=away_team.head_coach_name,
             stadium_name=cls._normalize_optional_name(stadium_name),
             referee_name=cls._normalize_optional_name(referee_name),
             fixture_key=cls.build_fixture_key(home_team.id, away_team.id, scheduled_at),
@@ -328,6 +343,7 @@ class Match(models.Model):
         self,
         *,
         player: Player,
+        assist_player: Player | None = None,
         minute: int,
         added_minute: int = 0,
         goal_type=None,
@@ -344,6 +360,16 @@ class Match(models.Model):
         if not isinstance(resolved_goal_type, GoalType):
             raise MatchErrors.InvalidGoalType
 
+        if resolved_goal_type == GoalType.OWN_GOAL:
+            team_side = TeamSide.AWAY if team_side == TeamSide.HOME else TeamSide.HOME
+
+        if assist_player is not None and (
+            resolved_goal_type != GoalType.REGULAR
+            or assist_player.id == player.id
+            or assist_player.team_id != player.team_id
+        ):
+            raise MatchErrors.InvalidGoalAssist
+
         if team_side == TeamSide.HOME:
             self.home_goal_count += 1
         else:
@@ -352,9 +378,113 @@ class Match(models.Model):
             id=event_id or uuid.uuid4(),
             match=self,
             player=player,
+            assist_player=assist_player,
             team_side=team_side,
             player_name=player.name,
+            assist_player_name=(assist_player.name if assist_player is not None else None),
             goal_type=resolved_goal_type,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_penalty_attempt(
+        self,
+        *,
+        player: Player,
+        outcome: PenaltyAttemptOutcome,
+        minute: int,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> PenaltyAttempt:
+        from modules.matches.domain.penalty_attempt import (
+            PenaltyAttempt,
+            PenaltyAttemptOutcome,
+        )
+
+        self._ensure_live()
+        period = self._current_event_period()
+        team_side = self._resolve_team_side(player.team_id)
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
+
+        if not isinstance(outcome, PenaltyAttemptOutcome):
+            raise MatchErrors.InvalidPenaltyAttemptOutcome
+
+        return PenaltyAttempt(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            team_side=team_side,
+            player_name=player.name,
+            outcome=outcome,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_injury(
+        self,
+        *,
+        player: Player,
+        minute: int,
+        added_minute: int = 0,
+        event_id: uuid.UUID | None = None,
+    ) -> Injury:
+        from modules.matches.domain.injury import Injury
+
+        self._ensure_live()
+        period = self._current_event_period()
+        team_side = self._resolve_team_side(player.team_id)
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
+
+        return Injury(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            player=player,
+            team_side=team_side,
+            player_name=player.name,
+            period=period,
+            minute=minute,
+            added_minute=added_minute,
+        )
+
+    def register_var_review(
+        self,
+        *,
+        team_side: TeamSide,
+        reason: VarReviewReason,
+        decision: VarReviewDecision,
+        minute: int,
+        added_minute: int = 0,
+        reviewed_event_id: uuid.UUID | None = None,
+        event_id: uuid.UUID | None = None,
+    ) -> VarReview:
+        from modules.matches.domain.var_review import (
+            VarReview,
+            VarReviewDecision,
+            VarReviewReason,
+        )
+
+        self._ensure_live()
+        period = self._current_event_period()
+        validate_match_event(team_side, period, minute, added_minute)
+        self.ensure_event_time_reached(period, minute, added_minute)
+
+        if not isinstance(reason, VarReviewReason):
+            raise MatchErrors.InvalidVarReviewReason
+
+        if not isinstance(decision, VarReviewDecision):
+            raise MatchErrors.InvalidVarReviewDecision
+
+        return VarReview(
+            id=event_id or uuid.uuid4(),
+            match=self,
+            team_side=team_side,
+            reason=reason,
+            decision=decision,
+            reviewed_event_id=reviewed_event_id,
             period=period,
             minute=minute,
             added_minute=added_minute,

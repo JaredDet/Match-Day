@@ -25,7 +25,11 @@ class TeamQueryRepository:
         )
         from modules.teams.application.queries.list_teams_query import TeamMatchResult
 
-        team = Team.objects.filter(id=team_id).values("id", "name", "captain_id").first()
+        team = (
+            Team.objects.filter(id=team_id)
+            .values("id", "name", "head_coach_name", "captain_id")
+            .first()
+        )
         if team is None:
             return None
 
@@ -92,6 +96,7 @@ class TeamQueryRepository:
         return TeamDetail(
             id=team["id"],
             name=team["name"],
+            head_coach_name=team["head_coach_name"],
             statistics=TeamStatistics(
                 matches_played=len(matches),
                 wins=wins,

@@ -9,6 +9,7 @@ from modules.matches.domain.match_event import TeamSide
 @dataclass(frozen=True, slots=True)
 class MatchGoalPreview:
     player_name: str
+    assist_player_name: str | None
     goal_type: GoalType
     minute: int
     added_minute: int

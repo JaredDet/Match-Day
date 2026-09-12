@@ -66,6 +66,8 @@ def test_filters_teams_by_partial_case_insensitive_name():
 
 def test_gets_team_statistics_players_captain_and_last_five_matches():
     team = Team.objects.create(name="Atlético Bahía")
+    team.head_coach_name = "Carlos Medina"
+    team.save()
     opponent = Team.objects.create(name="Deportivo Cordillera")
     captain = Player.objects.create(team=team, name="Mateo Rojas")
     Player.objects.create(team=team, name="Lucas Contreras")
@@ -87,6 +89,7 @@ def test_gets_team_statistics_players_captain_and_last_five_matches():
     result = TeamQueryRepository().get(team.id)
 
     assert result.name == "Atlético Bahía"
+    assert result.head_coach_name == "Carlos Medina"
     assert result.statistics.matches_played == 6
     assert result.statistics.wins == 3
     assert result.statistics.draws == 1

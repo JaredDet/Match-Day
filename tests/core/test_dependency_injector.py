@@ -16,11 +16,18 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_penalty_attempt_use_case import (
+    RegisterPenaltyAttemptUseCase,
+)
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
+)
+from modules.matches.application.commands.register_var_review_use_case import (
+    RegisterVarReviewUseCase,
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
@@ -68,6 +75,9 @@ def test_rejects_unregistered_dependencies():
         AdvanceMatchPeriodUseCase,
         UpdateMatchClockUseCase,
         RegisterGoalUseCase,
+        RegisterPenaltyAttemptUseCase,
+        RegisterInjuryUseCase,
+        RegisterVarReviewUseCase,
         RegisterCardUseCase,
         RegisterSubstitutionUseCase,
         DisallowGoalUseCase,

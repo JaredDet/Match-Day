@@ -28,8 +28,8 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert match is not None
     assert Team.objects.count() == 4
     assert Player.objects.count() == 64
-    assert Match.objects.count() == 13
-    assert Match.objects.filter(status=MatchStatus.FINISHED).count() == 6
+    assert Match.objects.count() == 15
+    assert Match.objects.filter(status=MatchStatus.FINISHED).count() == 8
     assert Match.objects.filter(status=MatchStatus.SCHEDULED).count() == 4
     assert (
         Match.objects.filter(
@@ -59,6 +59,9 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert match.status == MatchStatus.FINISHED
     assert match.home_team_name == "Atlético del Puerto"
     assert match.home_team.name == "Atlético Bahía"
+    assert match.home_team.head_coach_name == "Carlos Medina"
+    assert match.home_head_coach_name == "Carlos Medina"
+    assert match.away_head_coach_name == "Rafael Contreras"
     assert match.stadium_name == "Estadio del Horizonte"
     assert match.referee_name == "Alex Rivera"
     assert match.home_goal_count == 2
@@ -76,6 +79,37 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
     assert match.cards.filter(rescinded_at__isnull=False).count() == 1
     assert match.goals.filter(player_name="Lucas Contreras").exists()
     assert match.cards.filter(player_name="Ignacio Silva").exists()
+    assert not match.goals.filter(goal_type="own_goal").exists()
+    assert not match.goals.filter(assist_player__isnull=False).exists()
+    assert not match.penalty_attempts.exists()
+    assert not match.injuries.exists()
+    assert not match.var_reviews.exists()
+
+    own_goal_match = Match.objects.get(goals__goal_type="own_goal")
+    assert own_goal_match.goals.filter(goal_type="own_goal").count() == 1
+    assert own_goal_match.goals.filter(assist_player__isnull=False).count() == 1
+
+    penalty_showcase_match = Match.objects.get(penalty_attempts__isnull=False)
+    assert penalty_showcase_match.penalty_attempts.filter(outcome="saved").count() == 1
+    assert penalty_showcase_match.injuries.count() == 1
+    injury_substitution = penalty_showcase_match.substitutions.get(reason="injury")
+    assert (
+        injury_substitution.player_out.player_id == penalty_showcase_match.injuries.get().player_id
+    )
+    assert injury_substitution.player_out.is_on_field is False
+    assert (
+        penalty_showcase_match.var_reviews.filter(
+            reason="penalty",
+            decision="confirmed",
+        ).count()
+        == 1
+    )
+
+    showcase_response = APIClient().get(reverse("matches-detail", args=[penalty_showcase_match.id]))
+    showcase_event_types = [event["type"] for event in showcase_response.data["events"]]
+    assert "penalty_attempt" in showcase_event_types
+    assert "injury" in showcase_event_types
+    assert "var_review" in showcase_event_types
 
     shootout_match = Match.objects.get(penalty_shootout__isnull=False)
     assert shootout_match.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
@@ -123,6 +157,21 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
         "goal_type": "penalty",
         "minute": 18,
     }
+    detail_response = APIClient().get(reverse("matches-detail", args=[match.id]))
+    assert detail_response.data["home_team"]["head_coach_name"] == "Carlos Medina"
+    assert detail_response.data["away_team"]["head_coach_name"] == "Rafael Contreras"
+    own_goal_summary = next(
+        item for item in list_response.data if item["id"] == str(own_goal_match.id)
+    )
+    own_goal = next(
+        goal for goal in own_goal_summary["home_team"]["goals"] if goal["goal_type"] == "own_goal"
+    )
+    assert own_goal["player_name"] == "Kevin Garrido"
+    assisted_goal = next(
+        goal for goal in own_goal_summary["away_team"]["goals"] if "assist_player_name" in goal
+    )
+    assisted_goal_record = own_goal_match.goals.get(assist_player__isnull=False)
+    assert assisted_goal["assist_player_name"] == assisted_goal_record.assist_player_name
     assert match.cards.filter(player_name="Elías Figueroa").exists()
 
 

@@ -4,7 +4,7 @@ from django.db import transaction
 from injector import inject
 
 from modules.matches.domain.match import MatchStatus
-from modules.matches.domain.match_substitution import MatchSubstitution
+from modules.matches.domain.match_substitution import MatchSubstitution, SubstitutionReason
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.matches.infrastructure.repository.match_squad_repository import (
@@ -36,6 +36,7 @@ class RegisterSubstitutionUseCase:
         player_in_id: UUID,
         minute: int,
         added_minute: int = 0,
+        reason: SubstitutionReason = SubstitutionReason.TACTICAL,
     ) -> UUID:
         match = self.match_repository.get_for_update(match_id)
 
@@ -66,6 +67,7 @@ class RegisterSubstitutionUseCase:
             player_in=player_in,
             minute=minute,
             added_minute=added_minute,
+            reason=reason,
         )
 
         self.squad_repository.save_all([player_out, player_in])

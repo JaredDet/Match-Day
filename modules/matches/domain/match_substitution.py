@@ -17,6 +17,11 @@ from modules.matches.domain.match_squad_player import MatchSquadRole
 from modules.matches.errors import MatchErrors
 
 
+class SubstitutionReason(models.TextChoices):
+    TACTICAL = "tactical"
+    INJURY = "injury"
+
+
 class MatchSubstitution(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     match = models.ForeignKey(
@@ -35,6 +40,11 @@ class MatchSubstitution(models.Model):
         related_name="substitutions_in",
     )
     team_side = models.CharField(max_length=10, choices=TeamSide.choices)
+    reason = models.CharField(
+        max_length=10,
+        choices=SubstitutionReason.choices,
+        default=SubstitutionReason.TACTICAL,
+    )
     period = models.CharField(max_length=25, choices=MatchPeriod.choices)
     minute = models.PositiveSmallIntegerField()
     added_minute = models.PositiveSmallIntegerField(default=0)
@@ -49,6 +59,7 @@ class MatchSubstitution(models.Model):
         player_in,
         minute: int,
         added_minute: int = 0,
+        reason: SubstitutionReason = SubstitutionReason.TACTICAL,
     ) -> "MatchSubstitution":
         if (
             player_out.id == player_in.id
@@ -64,6 +75,9 @@ class MatchSubstitution(models.Model):
             raise MatchErrors.InvalidOutgoingPlayer
         if player_in.role != MatchSquadRole.SUBSTITUTE or player_in.is_on_field:
             raise MatchErrors.InvalidSubstitutePlayer
+        if not isinstance(reason, SubstitutionReason):
+            raise MatchErrors.InvalidSubstitutionReason
+
         team_side = TeamSide(player_out.team_side)
         try:
             period = MatchPeriod(match.current_period)
@@ -78,6 +92,7 @@ class MatchSubstitution(models.Model):
             player_out=player_out,
             player_in=player_in,
             team_side=team_side,
+            reason=reason,
             period=period,
             minute=minute,
             added_minute=added_minute,
@@ -90,6 +105,10 @@ class MatchSubstitution(models.Model):
             models.CheckConstraint(
                 condition=models.Q(team_side__in=TeamSide.values),
                 name="valid_substitution_team_side",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(reason__in=SubstitutionReason.values),
+                name="valid_substitution_reason",
             ),
             models.CheckConstraint(
                 condition=models.Q(

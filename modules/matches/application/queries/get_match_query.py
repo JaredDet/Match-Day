@@ -8,11 +8,14 @@ from injector import inject
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
+from modules.matches.domain.match_substitution import SubstitutionReason
+from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.domain.penalty_shootout import (
     PenaltyKickOutcome,
     PenaltyShootoutIneligibilityReason,
     PenaltyShootoutStatus,
 )
+from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
@@ -24,6 +27,9 @@ class MatchEventType(StrEnum):
     YELLOW_CARD = "yellow_card"
     RED_CARD = "red_card"
     SUBSTITUTION = "substitution"
+    PENALTY_ATTEMPT = "penalty_attempt"
+    INJURY = "injury"
+    VAR_REVIEW = "var_review"
     PENALTY_SHOOTOUT_KICK = "penalty_shootout_kick"
 
 
@@ -37,11 +43,18 @@ class MatchEventDetail:
     added_minute: int | None = None
     player_id: UUID | None = None
     player_name: str | None = None
+    assist_player_id: UUID | None = None
+    assist_player_name: str | None = None
     player_out_id: UUID | None = None
     player_out_name: str | None = None
     player_in_id: UUID | None = None
     player_in_name: str | None = None
+    substitution_reason: SubstitutionReason | None = None
     goal_type: str | None = None
+    penalty_outcome: PenaltyAttemptOutcome | None = None
+    var_reason: VarReviewReason | None = None
+    var_decision: VarReviewDecision | None = None
+    reviewed_event_id: UUID | None = None
     sequence_number: int | None = None
     outcome: PenaltyKickOutcome | None = None
 
@@ -86,6 +99,7 @@ class MatchSquadPlayerDetail:
 class MatchTeamDetail:
     id: UUID
     name: str
+    head_coach_name: str | None
     team_side: TeamSide
     goals: int
     penalty_score: int | None

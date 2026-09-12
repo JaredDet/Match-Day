@@ -14,11 +14,18 @@ from modules.matches.application.commands.reduce_penalty_shootout_participants_u
 )
 from modules.matches.application.commands.register_card_use_case import RegisterCardUseCase
 from modules.matches.application.commands.register_goal_use_case import RegisterGoalUseCase
+from modules.matches.application.commands.register_injury_use_case import RegisterInjuryUseCase
+from modules.matches.application.commands.register_penalty_attempt_use_case import (
+    RegisterPenaltyAttemptUseCase,
+)
 from modules.matches.application.commands.register_penalty_shootout_kick_use_case import (
     RegisterPenaltyShootoutKickUseCase,
 )
 from modules.matches.application.commands.register_substitution_use_case import (
     RegisterSubstitutionUseCase,
+)
+from modules.matches.application.commands.register_var_review_use_case import (
+    RegisterVarReviewUseCase,
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
@@ -39,6 +46,7 @@ from modules.matches.infrastructure.query_repository.match_query_repository impo
 )
 from modules.matches.infrastructure.repository.card_repository import CardRepository
 from modules.matches.infrastructure.repository.goal_repository import GoalRepository
+from modules.matches.infrastructure.repository.injury_repository import InjuryRepository
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.matches.infrastructure.repository.match_squad_repository import (
     MatchSquadRepository,
@@ -46,9 +54,13 @@ from modules.matches.infrastructure.repository.match_squad_repository import (
 from modules.matches.infrastructure.repository.match_substitution_repository import (
     MatchSubstitutionRepository,
 )
+from modules.matches.infrastructure.repository.penalty_attempt_repository import (
+    PenaltyAttemptRepository,
+)
 from modules.matches.infrastructure.repository.penalty_shootout_repository import (
     PenaltyShootoutRepository,
 )
+from modules.matches.infrastructure.repository.var_review_repository import VarReviewRepository
 
 
 class MatchesModule(injector.Module):
@@ -62,6 +74,13 @@ class MatchesModule(injector.Module):
         )
         binder.bind(CardRepository, to=CardRepository, scope=injector.singleton)
         binder.bind(GoalRepository, to=GoalRepository, scope=injector.singleton)
+        binder.bind(InjuryRepository, to=InjuryRepository, scope=injector.singleton)
+        binder.bind(
+            PenaltyAttemptRepository,
+            to=PenaltyAttemptRepository,
+            scope=injector.singleton,
+        )
+        binder.bind(VarReviewRepository, to=VarReviewRepository, scope=injector.singleton)
         binder.bind(
             PenaltyShootoutRepository,
             to=PenaltyShootoutRepository,
@@ -77,6 +96,17 @@ class MatchesModule(injector.Module):
         )
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)
         binder.bind(RegisterGoalUseCase, to=RegisterGoalUseCase, scope=injector.singleton)
+        binder.bind(RegisterInjuryUseCase, to=RegisterInjuryUseCase, scope=injector.singleton)
+        binder.bind(
+            RegisterPenaltyAttemptUseCase,
+            to=RegisterPenaltyAttemptUseCase,
+            scope=injector.singleton,
+        )
+        binder.bind(
+            RegisterVarReviewUseCase,
+            to=RegisterVarReviewUseCase,
+            scope=injector.singleton,
+        )
         binder.bind(
             ReducePenaltyShootoutParticipantsUseCase,
             to=ReducePenaltyShootoutParticipantsUseCase,
