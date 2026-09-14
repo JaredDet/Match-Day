@@ -1,238 +1,37 @@
-@startuml Matchday Inputs and Outputs
-title Matchday V5 - Entradas y salidas
+@startuml Matchday Inputs Outputs Overview
+title Matchday V5 - Vista general de entradas y salidas
+
 left to right direction
 skinparam componentStyle rectangle
-skinparam linetype ortho
 
-package "Team Commands" {
-  component "POST /teams" as CreateTeamApi
-  component "CreateTeamUseCase" as CreateTeam
-  artifact "name + head_coach_name?" as CreateTeamInput
-  artifact "201: id" as CreateTeamOutput
-  component "PATCH /teams/{id}" as UpdateTeamApi
-  component "UpdateTeamUseCase" as UpdateTeam
-  artifact "name? + head_coach_name?" as UpdateTeamInput
-  component "POST /teams/{id}/players" as RegisterPlayerApi
-  component "RegisterPlayerUseCase" as RegisterPlayer
-  artifact "name" as RegisterPlayerInput
-  artifact "201: id" as RegisterPlayerOutput
-  component "POST /teams/{id}/squad" as RegisterSquadApi
-  component "RegisterTeamSquadUseCase" as RegisterSquad
-  artifact "players[1..50]: name" as RegisterSquadInput
-  artifact "201: ids[]" as RegisterSquadOutput
-  component "PATCH /teams/{id}/players/{player_id}" as UpdatePlayerApi
-  component "UpdatePlayerUseCase" as UpdatePlayer
-  artifact "player name" as UpdatePlayerInput
-  component "PUT /teams/{id}/captain" as SetCaptainApi
-  component "SetTeamCaptainUseCase" as SetCaptain
-  artifact "player_id" as SetCaptainInput
-  artifact "204 No Content" as EmptyTeamOutput
-}
+component "Team API" as TeamApi
+component "Match Lifecycle API" as LifecycleApi
+component "Match Event API" as EventApi
+component "Query API" as QueryApi
 
-package "Team and Player Queries" {
-  component "GET /teams" as ListTeamsApi
-  component "ListTeamsQuery" as ListTeams
-  artifact "search?" as ListTeamsInput
-  artifact "teams[]\nlast_match + next_match" as ListTeamsOutput
-  component "GET /teams/{id}" as GetTeamApi
-  component "GetTeamQuery" as GetTeam
-  artifact "team detail\nstats + players + last 5" as GetTeamOutput
-  component "GET /players" as ListPlayersApi
-  component "ListPlayersQuery" as ListPlayers
-  artifact "search? + team_id?" as ListPlayersInput
-  artifact "players[]\nteam + captain + appearances + goals" as ListPlayersOutput
-  component "GET /players/{id}" as GetPlayerApi
-  component "GetPlayerQuery" as GetPlayer
-  artifact "player detail\nstats + last 5 matches" as GetPlayerOutput
-}
+artifact "Team / Player requests" as TeamInput
+artifact "Match configuration" as MatchInput
+artifact "Timed event requests" as EventInput
+artifact "Summary / Detail responses" as Output
 
-package "Match Commands" {
-  component "POST /matches" as CreateMatchApi
-  component "CreateMatchUseCase" as CreateMatch
-  artifact "home_team_id + away_team_id\nscheduled_at + stadium? + referee?" as CreateMatchInput
-  artifact "201: id" as CreateMatchOutput
-  component "PATCH /matches/{id}/details" as UpdateDetailsApi
-  component "UpdateMatchDetailsUseCase" as UpdateDetails
-  artifact "stadium_name? + referee_name?" as UpdateDetailsInput
-  component "PUT /matches/{id}/lineups/{side}" as SetLineupApi
-  component "SetMatchLineupUseCase" as SetLineup
-  artifact "formation + captain_id?\nplayers[11] + substitutes[]:\nplayer_id + shirt_number" as SetLineupInput
-  component "POST /matches/{id}/start" as StartApi
-  component "StartMatchUseCase" as StartMatch
-  component "POST /matches/{id}/advance-period" as AdvancePeriodApi
-  component "AdvanceMatchPeriodUseCase" as AdvancePeriod
-  artifact "expected_period" as AdvancePeriodInput
-  component "PATCH /matches/{id}/clock" as UpdateClockApi
-  component "UpdateMatchClockUseCase" as UpdateClock
-  artifact "expected_period + minute + added_minute?" as UpdateClockInput
-  component "POST /matches/{id}/finish" as FinishApi
-  component "FinishMatchUseCase" as FinishMatch
-  component "POST /matches/{id}/goals" as GoalApi
-  component "RegisterGoalUseCase" as RegisterGoal
-  artifact "player_id + assist_player_id?\ngoal_type + minute + added_minute?" as GoalInput
-  artifact "201: event id" as EventOutput
-  component "POST /matches/{id}/penalty-attempts" as PenaltyAttemptApi
-  component "RegisterPenaltyAttemptUseCase" as RegisterPenaltyAttempt
-  artifact "player_id + outcome + minute + added_minute?" as PenaltyAttemptInput
-  component "POST /matches/{id}/injuries" as InjuryApi
-  component "RegisterInjuryUseCase" as RegisterInjury
-  artifact "player_id + minute + added_minute?" as InjuryInput
-  component "POST /matches/{id}/var-reviews" as VarReviewApi
-  component "RegisterVarReviewUseCase" as RegisterVarReview
-  artifact "team_side + reason + decision\nreviewed_event_id? + minute + added_minute?" as VarReviewInput
-  component "POST /matches/{id}/fouls" as FoulApi
-  component "RegisterFoulUseCase" as RegisterFoul
-  artifact "player_id + minute + added_minute?" as FoulInput
-  component "POST /matches/{id}/corners" as CornerKickApi
-  component "RegisterCornerKickUseCase" as RegisterCornerKick
-  artifact "player_id + minute + added_minute?" as CornerKickInput
-  component "POST /matches/{id}/offsides" as OffsideApi
-  component "RegisterOffsideUseCase" as RegisterOffside
-  artifact "player_id + minute + added_minute?" as OffsideInput
-  component "POST /matches/{id}/shots" as ShotApi
-  component "RegisterShotUseCase" as RegisterShot
-  artifact "player_id + outcome + goalkeeper_id?\nminute + added_minute?" as ShotInput
-  component "PATCH /matches/{id}/possession" as PossessionApi
-  component "UpdateMatchPossessionUseCase" as UpdatePossession
-  artifact "home_percentage" as PossessionInput
-  component "POST /matches/{id}/cards" as CardApi
-  component "RegisterCardUseCase" as RegisterCard
-  artifact "player_id + card_type + minute + added_minute?" as CardInput
-  component "POST /matches/{id}/substitutions" as SubstitutionApi
-  component "RegisterSubstitutionUseCase" as RegisterSubstitution
-  artifact "player_out_id + player_in_id + reason? + minute + added_minute?" as SubstitutionInput
-  component "POST /goals/{goal_id}/disallow" as DisallowApi
-  component "DisallowGoalUseCase" as DisallowGoal
-  component "POST /cards/{card_id}/rescind" as RescindApi
-  component "RescindCardUseCase" as RescindCard
-  artifact "204 No Content" as EmptyMatchOutput
-  component "POST /matches/{id}/penalty-shootout/start" as StartShootoutApi
-  component "StartPenaltyShootoutUseCase" as StartShootout
-  artifact "starting_team_side\nequalization_excluded_player_ids[]?" as StartShootoutInput
-  component "POST /matches/{id}/penalty-shootout/kicks" as ShootoutKickApi
-  component "RegisterPenaltyShootoutKickUseCase" as RegisterShootoutKick
-  artifact "player_id + outcome" as ShootoutKickInput
-  component "POST /matches/{id}/penalty-shootout/participants/reduce" as ReduceShootoutApi
-  component "ReducePenaltyShootoutParticipantsUseCase" as ReduceShootout
-  artifact "unavailable_player_id + departure_reason\nopponent_excluded_player_id" as ReduceShootoutInput
-  component "POST /matches/{id}/penalty-shootout/finish" as FinishShootoutApi
-  component "FinishPenaltyShootoutUseCase" as FinishShootout
-}
+TeamInput --> TeamApi
+MatchInput --> LifecycleApi
+EventInput --> EventApi
+TeamApi --> Output
+LifecycleApi --> Output
+EventApi --> Output
+QueryApi --> Output
 
-package "Match Queries" {
-  component "GET /matches" as ListMatchesApi
-  component "ListMatchesQuery" as ListMatches
-  artifact "status? + date?" as ListMatchesInput
-  artifact "matches[]\nteams + score + formation" as ListMatchesOutput
-  component "GET /matches/{id}" as GetMatchApi
-  component "GetMatchQuery" as GetMatch
-  artifact "match detail\nteams + lineups + events\nteam statistics: possession, cards,\nshots, shots on target, saves, fouls,\ncorners and offsides\npenalty shootout?" as GetMatchOutput
-}
-
-CreateTeamInput --> CreateTeamApi
-CreateTeamApi --> CreateTeam
-CreateTeam --> CreateTeamOutput
-UpdateTeamInput --> UpdateTeamApi
-UpdateTeamApi --> UpdateTeam
-UpdateTeam --> EmptyTeamOutput
-RegisterPlayerInput --> RegisterPlayerApi
-RegisterPlayerApi --> RegisterPlayer
-RegisterPlayer --> RegisterPlayerOutput
-RegisterSquadInput --> RegisterSquadApi
-RegisterSquadApi --> RegisterSquad
-RegisterSquad --> RegisterSquadOutput
-UpdatePlayerInput --> UpdatePlayerApi
-UpdatePlayerApi --> UpdatePlayer
-UpdatePlayer --> EmptyTeamOutput
-SetCaptainInput --> SetCaptainApi
-SetCaptainApi --> SetCaptain
-SetCaptain --> EmptyTeamOutput
-ListTeamsInput --> ListTeamsApi
-ListTeamsApi --> ListTeams
-ListTeams --> ListTeamsOutput
-GetTeamApi --> GetTeam
-GetTeam --> GetTeamOutput
-ListPlayersInput --> ListPlayersApi
-ListPlayersApi --> ListPlayers
-ListPlayers --> ListPlayersOutput
-GetPlayerApi --> GetPlayer
-GetPlayer --> GetPlayerOutput
-CreateMatchInput --> CreateMatchApi
-CreateMatchApi --> CreateMatch
-CreateMatch --> CreateMatchOutput
-UpdateDetailsInput --> UpdateDetailsApi
-UpdateDetailsApi --> UpdateDetails
-UpdateDetails --> EmptyMatchOutput
-SetLineupInput --> SetLineupApi
-SetLineupApi --> SetLineup
-SetLineup --> EmptyMatchOutput
-StartApi --> StartMatch
-StartMatch --> EmptyMatchOutput
-AdvancePeriodInput --> AdvancePeriodApi
-AdvancePeriodApi --> AdvancePeriod
-AdvancePeriod --> EmptyMatchOutput
-UpdateClockInput --> UpdateClockApi
-UpdateClockApi --> UpdateClock
-UpdateClock --> EmptyMatchOutput
-FinishApi --> FinishMatch
-FinishMatch --> EmptyMatchOutput
-GoalInput --> GoalApi
-GoalApi --> RegisterGoal
-RegisterGoal --> EventOutput
-PenaltyAttemptInput --> PenaltyAttemptApi
-PenaltyAttemptApi --> RegisterPenaltyAttempt
-RegisterPenaltyAttempt --> EventOutput
-InjuryInput --> InjuryApi
-InjuryApi --> RegisterInjury
-RegisterInjury --> EventOutput
-VarReviewInput --> VarReviewApi
-VarReviewApi --> RegisterVarReview
-RegisterVarReview --> EventOutput
-FoulInput --> FoulApi
-FoulApi --> RegisterFoul
-RegisterFoul --> EventOutput
-CornerKickInput --> CornerKickApi
-CornerKickApi --> RegisterCornerKick
-RegisterCornerKick --> EventOutput
-OffsideInput --> OffsideApi
-OffsideApi --> RegisterOffside
-RegisterOffside --> EventOutput
-ShotInput --> ShotApi
-ShotApi --> RegisterShot
-RegisterShot --> EventOutput
-PossessionInput --> PossessionApi
-PossessionApi --> UpdatePossession
-UpdatePossession --> EmptyMatchOutput
-CardInput --> CardApi
-CardApi --> RegisterCard
-RegisterCard --> EventOutput
-SubstitutionInput --> SubstitutionApi
-SubstitutionApi --> RegisterSubstitution
-RegisterSubstitution --> EventOutput
-DisallowApi --> DisallowGoal
-DisallowGoal --> EmptyMatchOutput
-RescindApi --> RescindCard
-RescindCard --> EmptyMatchOutput
-StartShootoutInput --> StartShootoutApi
-StartShootoutApi --> StartShootout
-StartShootout --> EventOutput
-ShootoutKickInput --> ShootoutKickApi
-ShootoutKickApi --> RegisterShootoutKick
-RegisterShootoutKick --> EventOutput
-ReduceShootoutInput --> ReduceShootoutApi
-ReduceShootoutApi --> ReduceShootout
-ReduceShootout --> EmptyMatchOutput
-FinishShootoutApi --> FinishShootout
-FinishShootout --> EmptyMatchOutput
-ListMatchesInput --> ListMatchesApi
-ListMatchesApi --> ListMatches
-ListMatches --> ListMatchesOutput
-GetMatchApi --> GetMatch
-GetMatch --> GetMatchOutput
-
-note right of SetLineupInput
-  Sin captain_id se intenta usar el habitual.
-  Si no está alineado, queda sin capitán
-  y se registra una advertencia.
+note bottom of TeamApi
+  Ver api/teams.puml
+end note
+note bottom of LifecycleApi
+  Ver api/match-lifecycle.puml
+end note
+note bottom of EventApi
+  Ver api/match-events.puml
+end note
+note bottom of QueryApi
+  Ver api/match-queries.puml
 end note
 @enduml

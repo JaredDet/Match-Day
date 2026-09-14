@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from modules.matches.api.contracts.responses.get_match_response import MatchClockResponse
 from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
@@ -51,6 +52,7 @@ class ListMatchesResponse(serializers.Serializer):
     )
     current_minute = serializers.IntegerField(allow_null=True)
     current_added_minute = serializers.IntegerField()
+    clock = MatchClockResponse()
     scheduled_at = serializers.DateTimeField()
     home_team = MatchTeamPreviewResponse()
     away_team = MatchTeamPreviewResponse()

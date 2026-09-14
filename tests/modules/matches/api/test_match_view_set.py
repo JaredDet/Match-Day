@@ -182,65 +182,6 @@ def test_returns_not_found_when_starting_unknown_match():
     assert response.data["code"] == "match_not_found"
 
 
-def test_advances_match_through_halftime_and_second_half():
-    match = _schedule_match(
-        home_team_name="Colo-Colo",
-        away_team_name="Universidad de Chile",
-        scheduled_at=timezone.now(),
-    )
-    match.start()
-    match.save()
-
-    url = reverse("matches-advance-period", args=[match.id])
-    halftime_response = APIClient().post(
-        url,
-        {"expected_period": "first_half"},
-        format="json",
-    )
-    repeated_response = APIClient().post(
-        url,
-        {"expected_period": "first_half"},
-        format="json",
-    )
-    second_half_response = APIClient().post(
-        url,
-        {"expected_period": "halftime"},
-        format="json",
-    )
-
-    assert halftime_response.status_code == 204
-    assert repeated_response.status_code == 409
-    assert repeated_response.data["code"] == "match_period_mismatch"
-    assert second_half_response.status_code == 204
-    match.refresh_from_db()
-    assert match.current_period == "second_half"
-
-
-def test_updates_match_clock_with_expected_period():
-    match = _schedule_match(
-        home_team_name="Colo-Colo",
-        away_team_name="Universidad de Chile",
-        scheduled_at=timezone.now(),
-    )
-    match.start()
-    match.save()
-
-    response = APIClient().patch(
-        reverse("matches-update-clock", args=[match.id]),
-        {
-            "expected_period": "first_half",
-            "minute": 45,
-            "added_minute": 2,
-        },
-        format="json",
-    )
-
-    assert response.status_code == 204
-    match.refresh_from_db()
-    assert match.current_minute == 45
-    assert match.current_added_minute == 2
-
-
 def test_finishes_live_match_through_injected_use_case():
     match = _schedule_match(
         home_team_name="Colo-Colo",
@@ -832,12 +773,20 @@ def test_lists_matches_filtered_by_status_and_date():
     )
 
     assert response.status_code == 200
+    clock = response.data[0].pop("clock")
+    assert clock["period"] == MatchPeriod.FIRST_HALF
+    assert clock["status"] == "running"
+    assert clock["minute"] == 0
+    assert clock["announced_added_minutes"] == 0
+    assert clock["version"] == 1
+    assert clock["deadline_at"] is not None
+    assert clock["as_of"] is not None
     assert response.data == [
         {
             "id": str(included.id),
             "status": "live",
             "current_period": "first_half",
-            "current_minute": 1,
+            "current_minute": 0,
             "current_added_minute": 0,
             "scheduled_at": "2026-08-30T20:00:00Z",
             "home_team": {

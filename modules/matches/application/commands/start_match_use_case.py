@@ -6,6 +6,7 @@ from injector import inject
 
 from modules.matches.domain.match import MatchStatus
 from modules.matches.errors import MatchErrors
+from modules.matches.infrastructure.realtime.match_clock_publisher import MatchClockPublisher
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.matches.infrastructure.repository.match_squad_repository import (
     MatchSquadRepository,
@@ -18,9 +19,11 @@ class StartMatchUseCase:
         self,
         match_repository: MatchRepository,
         squad_repository: MatchSquadRepository,
+        clock_publisher=None,
     ):
         self.match_repository = match_repository
         self.squad_repository = squad_repository
+        self.clock_publisher = clock_publisher or MatchClockPublisher()
 
     @transaction.atomic
     def execute(self, match_id: UUID, *, started_at: datetime | None = None) -> None:
@@ -38,3 +41,6 @@ class StartMatchUseCase:
         match.start(started_at)
 
         self.match_repository.save(match)
+
+        snapshot = match.clock_snapshot()
+        transaction.on_commit(lambda: self.clock_publisher.publish_snapshot(match.id, snapshot))

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import TYPE_CHECKING
 
@@ -13,8 +13,15 @@ from modules.matches.constants import (
     EXTRA_TIME_FIRST_HALF_END_MINUTE,
     EXTRA_TIME_FIRST_HALF_START_MINUTE,
     EXTRA_TIME_SECOND_HALF_START_MINUTE,
+    FIRST_HALF_END_MINUTE,
     MAX_MATCH_MINUTE,
     SECOND_HALF_END_MINUTE,
+)
+from modules.matches.domain.match_clock import (
+    SECONDS_PER_MINUTE,
+    MatchClockSnapshot,
+    MatchClockStatus,
+    period_clock_values,
 )
 from modules.matches.domain.match_event import (
     MatchPeriod,
@@ -135,6 +142,12 @@ class Match(models.Model):
     )
     current_minute = models.PositiveSmallIntegerField(null=True, blank=True)
     current_added_minute = models.PositiveSmallIntegerField(default=0)
+    period_started_at = models.DateTimeField(null=True, blank=True)
+    period_ended_at = models.DateTimeField(null=True, blank=True)
+    announced_added_minutes = models.PositiveSmallIntegerField(default=0)
+    clock_version = models.PositiveIntegerField(default=0)
+    regulation_time_alerted_at = models.DateTimeField(null=True, blank=True)
+    period_deadline_alerted_at = models.DateTimeField(null=True, blank=True)
     scheduled_at = models.DateTimeField()
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -237,6 +250,169 @@ class Match(models.Model):
         self.current_minute = 1
         self.current_added_minute = 0
         self.started_at = started_at or timezone.now()
+        self._start_period_clock(self.started_at)
+
+    def start_period(self, period: MatchPeriod, started_at: datetime | None = None) -> None:
+        self._ensure_live()
+
+        allowed_previous_period = {
+            MatchPeriod.SECOND_HALF: MatchPeriod.HALFTIME,
+            MatchPeriod.EXTRA_TIME_FIRST_HALF: MatchPeriod.SECOND_HALF,
+            MatchPeriod.EXTRA_TIME_SECOND_HALF: MatchPeriod.EXTRA_TIME_HALFTIME,
+        }.get(period)
+        if allowed_previous_period is None or self.current_period != allowed_previous_period:
+            raise MatchErrors.InvalidPeriod
+        if self.period_ended_at is None:
+            raise MatchErrors.MatchPeriodNotClosed
+        if period == MatchPeriod.EXTRA_TIME_FIRST_HALF:
+            if self.current_minute != SECOND_HALF_END_MINUTE:
+                raise MatchErrors.InvalidExtraTimeState
+            if self.home_goal_count != self.away_goal_count:
+                raise MatchErrors.ExtraTimeRequiresTie
+
+        self.current_period = period
+        base_minute, _, _ = period_clock_values(period)
+        self.current_minute = base_minute + 1
+        self.current_added_minute = 0
+        self._start_period_clock(started_at or timezone.now())
+
+    def set_period_added_time(
+        self,
+        *,
+        expected_period: MatchPeriod,
+        minutes: int,
+    ) -> None:
+        self._ensure_period(expected_period)
+        if self.period_ended_at is not None:
+            raise MatchErrors.MatchClockAlreadyClosed
+        if not isinstance(minutes, int) or isinstance(minutes, bool) or minutes < 0:
+            raise MatchErrors.InvalidAddedMinute
+
+        self.announced_added_minutes = minutes
+        self.period_deadline_alerted_at = None
+        self.clock_version += 1
+
+    def end_period(
+        self,
+        *,
+        expected_period: MatchPeriod,
+        ended_at: datetime | None = None,
+        require_deadline: bool = True,
+    ) -> None:
+        self._ensure_period(expected_period)
+        if self.period_ended_at is not None:
+            raise MatchErrors.MatchClockAlreadyClosed
+
+        resolved_ended_at = ended_at or timezone.now()
+        self._initialize_period_clock_from_legacy_state(expected_period, resolved_ended_at)
+        if resolved_ended_at < self.period_started_at:
+            raise MatchErrors.InvalidClockTime
+
+        snapshot = self.clock_snapshot(resolved_ended_at)
+        if require_deadline and snapshot.remaining_seconds and snapshot.remaining_seconds > 0:
+            raise MatchErrors.MatchPeriodCannotEndYet
+        self.current_minute = snapshot.minute
+        self.current_added_minute = snapshot.added_minute
+        self.period_ended_at = resolved_ended_at
+        self.clock_version += 1
+
+        if expected_period == MatchPeriod.FIRST_HALF:
+            self.current_period = MatchPeriod.HALFTIME
+            self.current_minute = FIRST_HALF_END_MINUTE
+        elif expected_period == MatchPeriod.EXTRA_TIME_FIRST_HALF:
+            self.current_period = MatchPeriod.EXTRA_TIME_HALFTIME
+            self.current_minute = EXTRA_TIME_FIRST_HALF_END_MINUTE
+
+    def clock_snapshot(self, now: datetime | None = None) -> MatchClockSnapshot:
+        as_of = now or timezone.now()
+        period = self._active_clock_period()
+        if period is None or self.period_started_at is None:
+            return MatchClockSnapshot(
+                period=None,
+                status=MatchClockStatus.NOT_STARTED,
+                minute=None,
+                second=0,
+                added_minute=0,
+                elapsed_seconds=0,
+                remaining_seconds=None,
+                deadline_at=None,
+                announced_added_minutes=0,
+                version=self.clock_version,
+                as_of=as_of,
+            )
+
+        effective_now = self.period_ended_at or as_of
+        elapsed_seconds = max(0, int((effective_now - self.period_started_at).total_seconds()))
+        base_minute, regulation_end_minute, regulation_seconds = period_clock_values(period)
+        announced_seconds = self.announced_added_minutes * SECONDS_PER_MINUTE
+        deadline_seconds = regulation_seconds + announced_seconds
+
+        if elapsed_seconds < regulation_seconds:
+            minute = base_minute + elapsed_seconds // SECONDS_PER_MINUTE
+            added_minute = 0
+        else:
+            minute = regulation_end_minute
+            added_seconds = elapsed_seconds - regulation_seconds
+            added_minute = (added_seconds + SECONDS_PER_MINUTE - 1) // SECONDS_PER_MINUTE
+
+        if self.period_ended_at is not None:
+            status = MatchClockStatus.CLOSED
+        elif elapsed_seconds >= deadline_seconds:
+            status = MatchClockStatus.DEADLINE_REACHED
+        elif elapsed_seconds >= regulation_seconds:
+            status = MatchClockStatus.REGULATION_TIME_REACHED
+        else:
+            status = MatchClockStatus.RUNNING
+
+        return MatchClockSnapshot(
+            period=period,
+            status=status,
+            minute=minute,
+            second=elapsed_seconds % SECONDS_PER_MINUTE,
+            added_minute=added_minute,
+            elapsed_seconds=elapsed_seconds,
+            remaining_seconds=max(0, deadline_seconds - elapsed_seconds),
+            deadline_at=self.period_started_at + timedelta(seconds=deadline_seconds),
+            announced_added_minutes=self.announced_added_minutes,
+            version=self.clock_version,
+            as_of=as_of,
+        )
+
+    def _start_period_clock(self, started_at: datetime) -> None:
+        self.period_started_at = started_at
+        self.period_ended_at = None
+        self.announced_added_minutes = 0
+        self.regulation_time_alerted_at = None
+        self.period_deadline_alerted_at = None
+        self.clock_version += 1
+
+    def _initialize_period_clock_from_legacy_state(
+        self,
+        period: MatchPeriod,
+        now: datetime,
+    ) -> None:
+        if self.period_started_at is not None:
+            return
+
+        base_minute, _, regulation_seconds = period_clock_values(period)
+        if self.current_added_minute:
+            elapsed_seconds = regulation_seconds + self.current_added_minute * SECONDS_PER_MINUTE
+        else:
+            elapsed_seconds = max(0, (self.current_minute or base_minute) - base_minute)
+            elapsed_seconds *= SECONDS_PER_MINUTE
+        self.period_started_at = now - timedelta(seconds=elapsed_seconds)
+
+    def _active_clock_period(self) -> MatchPeriod | None:
+        if self.current_period in {MatchPeriod.HALFTIME, MatchPeriod.EXTRA_TIME_HALFTIME}:
+            previous = {
+                MatchPeriod.HALFTIME: MatchPeriod.FIRST_HALF,
+                MatchPeriod.EXTRA_TIME_HALFTIME: MatchPeriod.EXTRA_TIME_FIRST_HALF,
+            }
+            return previous[MatchPeriod(self.current_period)]
+        try:
+            return MatchPeriod(self.current_period)
+        except (TypeError, ValueError):
+            return None
 
     def ensure_ready_for_start(self, squad_players: list[MatchSquadPlayer]) -> None:
         if self.status != MatchStatus.SCHEDULED:
@@ -258,17 +434,13 @@ class Match(models.Model):
                 raise MatchErrors.InvalidStartingSquad
 
     def end_first_half(self) -> None:
-        self._ensure_period(MatchPeriod.FIRST_HALF)
-        if self.current_minute < 45:
-            self.current_minute = 45
-            self.current_added_minute = 0
-        self.current_period = MatchPeriod.HALFTIME
+        self.end_period(
+            expected_period=MatchPeriod.FIRST_HALF,
+            require_deadline=False,
+        )
 
     def start_second_half(self) -> None:
-        self._ensure_period(MatchPeriod.HALFTIME)
-        self.current_period = MatchPeriod.SECOND_HALF
-        self.current_minute = 46
-        self.current_added_minute = 0
+        self.start_period(MatchPeriod.SECOND_HALF)
 
     def update_clock(
         self,
@@ -288,6 +460,20 @@ class Match(models.Model):
             raise MatchErrors.ClockCannotGoBackwards
         self.current_minute = minute
         self.current_added_minute = added_minute
+        if self.period_started_at is not None and self.period_ended_at is None:
+            base_minute, regulation_end_minute, regulation_seconds = period_clock_values(
+                expected_period
+            )
+            if added_minute:
+                elapsed_seconds = regulation_seconds + added_minute * SECONDS_PER_MINUTE
+            else:
+                elapsed_seconds = max(0, minute - base_minute) * SECONDS_PER_MINUTE
+            self.period_started_at = timezone.now() - timedelta(seconds=elapsed_seconds)
+            self.announced_added_minutes = max(
+                self.announced_added_minutes,
+                added_minute,
+            )
+            self.clock_version += 1
 
     def advance_period(self, expected_period: MatchPeriod) -> None:
         self._ensure_live()
@@ -300,6 +486,10 @@ class Match(models.Model):
             self.start_second_half()
             return
         if expected_period == MatchPeriod.SECOND_HALF:
+            self.end_period(
+                expected_period=MatchPeriod.SECOND_HALF,
+                require_deadline=False,
+            )
             self.start_extra_time()
             return
         if expected_period == MatchPeriod.EXTRA_TIME_FIRST_HALF:
@@ -311,32 +501,16 @@ class Match(models.Model):
         raise MatchErrors.InvalidPeriod
 
     def start_extra_time(self) -> None:
-        self._ensure_period(MatchPeriod.SECOND_HALF)
-
-        if self.current_minute != SECOND_HALF_END_MINUTE:
-            raise MatchErrors.InvalidExtraTimeState
-
-        if self.home_goal_count != self.away_goal_count:
-            raise MatchErrors.ExtraTimeRequiresTie
-
-        self.current_period = MatchPeriod.EXTRA_TIME_FIRST_HALF
-        self.current_minute = EXTRA_TIME_FIRST_HALF_START_MINUTE
-        self.current_added_minute = 0
+        self.start_period(MatchPeriod.EXTRA_TIME_FIRST_HALF)
 
     def end_extra_time_first_half(self) -> None:
-        self._ensure_period(MatchPeriod.EXTRA_TIME_FIRST_HALF)
-
-        if self.current_minute < EXTRA_TIME_FIRST_HALF_END_MINUTE:
-            self.current_minute = EXTRA_TIME_FIRST_HALF_END_MINUTE
-            self.current_added_minute = 0
-
-        self.current_period = MatchPeriod.EXTRA_TIME_HALFTIME
+        self.end_period(
+            expected_period=MatchPeriod.EXTRA_TIME_FIRST_HALF,
+            require_deadline=False,
+        )
 
     def start_extra_time_second_half(self) -> None:
-        self._ensure_period(MatchPeriod.EXTRA_TIME_HALFTIME)
-        self.current_period = MatchPeriod.EXTRA_TIME_SECOND_HALF
-        self.current_minute = EXTRA_TIME_SECOND_HALF_START_MINUTE
-        self.current_added_minute = 0
+        self.start_period(MatchPeriod.EXTRA_TIME_SECOND_HALF)
 
     def finish(self, finished_at: datetime | None = None) -> None:
         if self.status != MatchStatus.LIVE:
@@ -350,6 +524,8 @@ class Match(models.Model):
         if self.started_at is None or resolved_finished_at < self.started_at:
             raise MatchErrors.InvalidFinishTime
         self.status = MatchStatus.FINISHED
+        self.period_ended_at = resolved_finished_at
+        self.clock_version += 1
         expected_final_minute = (
             MAX_MATCH_MINUTE
             if self.current_period == MatchPeriod.EXTRA_TIME_SECOND_HALF
@@ -753,9 +929,16 @@ class Match(models.Model):
         minute: int,
         added_minute: int,
     ) -> None:
+        current_minute = self.current_minute
+        current_added_minute = self.current_added_minute
+        if self.period_started_at is not None and self.period_ended_at is None:
+            snapshot = self.clock_snapshot()
+            current_minute = snapshot.minute
+            current_added_minute = snapshot.added_minute
+
         if period != self.current_period or (minute, added_minute) > (
-            self.current_minute,
-            self.current_added_minute,
+            current_minute,
+            current_added_minute,
         ):
             raise MatchErrors.EventAheadOfClock
 

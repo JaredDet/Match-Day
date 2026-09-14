@@ -58,6 +58,7 @@ def test_rescinding_red_card_reinstates_player():
 
     squad_player.reinstate.assert_called_once_with()
     squad_repository.save_all.assert_called_once_with([squad_player])
+    assert match.home_red_card_count == 0
 
 
 def test_rescinding_yellow_reverses_second_yellow_expulsion():
@@ -85,6 +86,7 @@ def test_rescinding_yellow_reverses_second_yellow_expulsion():
 
     squad_player.reinstate.assert_called_once_with()
     squad_repository.save_all.assert_called_once_with([squad_player])
+    assert match.home_yellow_card_count == 0
 
 
 def test_rejects_rescinding_card_twice():

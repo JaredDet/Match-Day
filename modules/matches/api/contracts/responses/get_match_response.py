@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchFormation, MatchStatus
+from modules.matches.domain.match_clock import MatchClockStatus
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
 from modules.matches.domain.match_substitution import SubstitutionReason
@@ -140,6 +141,20 @@ class MatchTeamDetailResponse(TeamDetailResponse):
     lineup = MatchSquadPlayerResponse(many=True)
 
 
+class MatchClockResponse(serializers.Serializer):
+    period = serializers.ChoiceField(choices=MatchPeriod.choices, allow_null=True)
+    status = serializers.ChoiceField(choices=MatchClockStatus.choices)
+    minute = serializers.IntegerField(allow_null=True)
+    second = serializers.IntegerField()
+    added_minute = serializers.IntegerField()
+    elapsed_seconds = serializers.IntegerField()
+    remaining_seconds = serializers.IntegerField(allow_null=True)
+    deadline_at = serializers.DateTimeField(allow_null=True)
+    announced_added_minutes = serializers.IntegerField()
+    version = serializers.IntegerField()
+    as_of = serializers.DateTimeField()
+
+
 class GetMatchResponse(serializers.Serializer):
     id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=MatchStatus.choices)
@@ -149,6 +164,7 @@ class GetMatchResponse(serializers.Serializer):
     )
     current_minute = serializers.IntegerField(allow_null=True)
     current_added_minute = serializers.IntegerField()
+    clock = MatchClockResponse()
     scheduled_at = serializers.DateTimeField()
     started_at = serializers.DateTimeField(allow_null=True)
     finished_at = serializers.DateTimeField(allow_null=True)

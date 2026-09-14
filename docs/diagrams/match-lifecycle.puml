@@ -5,20 +5,25 @@ title Matchday V5 - Ciclo de vida del partido
 Scheduled --> Scheduled : UpdateMatchDetails
 Scheduled --> Scheduled : SetMatchLineup\n(crea o reemplaza)
 Scheduled --> FirstHalf : StartMatch
-FirstHalf --> FirstHalf : RegisterGoal / RegisterCard
+FirstHalf --> FirstHalf : RegisterMatchEvent
 FirstHalf --> FirstHalf : DisallowGoal / RescindCard
-FirstHalf --> Halftime : EndFirstHalf
-Halftime --> SecondHalf : StartSecondHalf
-SecondHalf --> SecondHalf : RegisterGoal / RegisterCard
-SecondHalf --> SecondHalf : RegisterSubstitution
+FirstHalf --> Halftime : EndMatchPeriod
+Halftime --> SecondHalf : StartMatchPeriod
+SecondHalf --> SecondHalf : RegisterMatchEvent
 SecondHalf --> SecondHalf : DisallowGoal / RescindCard
-SecondHalf --> Finished : FinishMatch
-SecondHalf --> ExtraTimeFirstHalf : AdvancePeriod (empate)
-ExtraTimeFirstHalf --> ExtraTimeHalftime : AdvancePeriod
-ExtraTimeHalftime --> ExtraTimeSecondHalf : AdvancePeriod
-ExtraTimeSecondHalf --> Finished : FinishMatch
-SecondHalf --> Shootout : StartPenaltyShootout (empate)
-ExtraTimeSecondHalf --> Shootout : StartPenaltyShootout (empate)
+SecondHalf --> Finished : EndMatchPeriod + FinishMatch
+SecondHalf --> ExtraTimeFirstHalf : StartMatchPeriod (empate)
+ExtraTimeFirstHalf --> ExtraTimeHalftime : EndMatchPeriod
+ExtraTimeHalftime --> ExtraTimeSecondHalf : StartMatchPeriod
+ExtraTimeFirstHalf --> ExtraTimeFirstHalf : RegisterMatchEvent
+ExtraTimeSecondHalf --> ExtraTimeSecondHalf : RegisterMatchEvent
+ExtraTimeSecondHalf --> Finished : EndMatchPeriod + FinishMatch
+FirstHalf --> FirstHalf : SetMatchPeriodAddedTime
+SecondHalf --> SecondHalf : SetMatchPeriodAddedTime
+ExtraTimeFirstHalf --> ExtraTimeFirstHalf : SetMatchPeriodAddedTime
+ExtraTimeSecondHalf --> ExtraTimeSecondHalf : SetMatchPeriodAddedTime
+SecondHalf --> Shootout : EndMatchPeriod + StartPenaltyShootout (empate)
+ExtraTimeSecondHalf --> Shootout : EndMatchPeriod + StartPenaltyShootout (empate)
 Shootout --> Shootout : RegisterPenaltyShootoutKick
 Shootout --> Shootout : ReducePenaltyShootoutParticipants
 Shootout --> Finished : FinishPenaltyShootout
@@ -51,6 +56,12 @@ note right of SecondHalf
   se actualizan con cada evento.
   Las sustituciones actualizan quién
   se encuentra actualmente en cancha.
+end note
+
+note left of FirstHalf
+  MatchEvent incluye goles, tarjetas,
+  sustituciones, lesiones, VAR, penales,
+  tiros, faltas, córners y fueras de juego.
 end note
 
 note right of Finished

@@ -5,13 +5,12 @@ from uuid import UUID
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone
 
 from core.dependency_injector import injector_instance
-from modules.matches.application.commands.advance_match_period_use_case import (
-    AdvanceMatchPeriodUseCase,
-)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
+from modules.matches.application.commands.end_match_period_use_case import EndMatchPeriodUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.finish_penalty_shootout_use_case import (
     FinishPenaltyShootoutUseCase,
@@ -45,12 +44,10 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     LineupPlayerInput,
     SetMatchLineupUseCase,
 )
+from modules.matches.application.commands.start_match_period_use_case import StartMatchPeriodUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.commands.start_penalty_shootout_use_case import (
     StartPenaltyShootoutUseCase,
-)
-from modules.matches.application.commands.update_match_clock_use_case import (
-    UpdateMatchClockUseCase,
 )
 from modules.matches.application.commands.update_match_possession_use_case import (
     UpdateMatchPossessionUseCase,
@@ -372,8 +369,8 @@ class Command(BaseCommand):
         self.create_match = injector_instance.get(CreateMatchUseCase)
         self.set_lineup = injector_instance.get(SetMatchLineupUseCase)
         self.start_match = injector_instance.get(StartMatchUseCase)
-        self.advance_period = injector_instance.get(AdvanceMatchPeriodUseCase)
-        self.update_clock = injector_instance.get(UpdateMatchClockUseCase)
+        self.start_match_period = injector_instance.get(StartMatchPeriodUseCase)
+        self.end_match_period = injector_instance.get(EndMatchPeriodUseCase)
         self.register_goal = injector_instance.get(RegisterGoalUseCase)
         self.register_foul = injector_instance.get(RegisterFoulUseCase)
         self.register_corner_kick = injector_instance.get(RegisterCornerKickUseCase)
@@ -526,12 +523,16 @@ class Command(BaseCommand):
                     PenaltyShootoutIneligibilityReason.OPPONENT_REDUCTION,
                 }
             )
+        clock = match.clock_snapshot()
         return (
             match.status == expected_status
+            and (match.period_started_at is not None) == (fixture.score is not None)
+            and (match.period_ended_at is not None)
+            == (expected_status == MatchStatus.FINISHED or expected_period == MatchPeriod.HALFTIME)
             and match.home_head_coach_name == TEAM_HEAD_COACHES[fixture.home]
             and match.away_head_coach_name == TEAM_HEAD_COACHES[fixture.away]
             and match.current_period == expected_period
-            and match.current_minute == expected_minute
+            and clock.minute == expected_minute
             and match.home_possession_percentage == expected_possession
             and match.shots.count() == expected_stat_events
             and match.fouls.count() == (0 if fixture.score is None else expected_stat_events - 1)
@@ -584,12 +585,17 @@ class Command(BaseCommand):
         if fixture.score is None:
             return
 
-        self.start_match.execute(match_id, started_at=fixture.scheduled_at)
-        self.update_clock.execute(
-            match_id,
-            MatchPeriod.FIRST_HALF,
-            34 if fixture.target_period == MatchPeriod.FIRST_HALF else 45,
-        )
+        demo_now = timezone.now()
+        if fixture.target_period == MatchPeriod.FIRST_HALF:
+            first_half_started_at = demo_now - timedelta(minutes=34, seconds=30)
+        elif fixture.target_period == MatchPeriod.HALFTIME:
+            first_half_started_at = demo_now - timedelta(minutes=46)
+        elif fixture.target_period == MatchPeriod.SECOND_HALF:
+            first_half_started_at = demo_now - timedelta(minutes=75)
+        else:
+            first_half_started_at = fixture.scheduled_at
+
+        self.start_match.execute(match_id, started_at=first_half_started_at)
         self.update_possession.execute(
             match_id=match_id,
             home_percentage=50 + fixture.scheduled_at.day % 5,
@@ -650,14 +656,24 @@ class Command(BaseCommand):
                 minute=35,
             )
 
-        self.advance_period.execute(match_id, MatchPeriod.FIRST_HALF)
+        first_half_ended_at = first_half_started_at + timedelta(minutes=45)
+        self.end_match_period.execute(
+            match_id,
+            MatchPeriod.FIRST_HALF,
+            ended_at=first_half_ended_at,
+        )
         if fixture.target_period == MatchPeriod.HALFTIME:
             return
-        self.advance_period.execute(match_id, MatchPeriod.HALFTIME)
-        self.update_clock.execute(
+
+        second_half_started_at = (
+            demo_now - timedelta(minutes=27, seconds=30)
+            if fixture.target_period == MatchPeriod.SECOND_HALF
+            else first_half_ended_at + timedelta(minutes=15)
+        )
+        self.start_match_period.execute(
             match_id,
             MatchPeriod.SECOND_HALF,
-            72 if fixture.target_period == MatchPeriod.SECOND_HALF else 90,
+            started_at=second_half_started_at,
         )
         for index, minute in enumerate(home_goals):
             if minute <= 45:
@@ -695,14 +711,46 @@ class Command(BaseCommand):
         if fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR:
             self._add_penalty_injury_var_events(match_id, home_players, away_players)
 
-        finished_at = fixture.scheduled_at + timedelta(hours=1, minutes=52)
+        second_half_ended_at = second_half_started_at + timedelta(minutes=45)
+        self.end_match_period.execute(
+            match_id,
+            MatchPeriod.SECOND_HALF,
+            ended_at=second_half_ended_at,
+        )
+        finished_at = second_half_ended_at + timedelta(minutes=5)
 
         if fixture.has_extra_time:
-            self.advance_period.execute(match_id, MatchPeriod.SECOND_HALF)
-            self.update_clock.execute(match_id, MatchPeriod.EXTRA_TIME_FIRST_HALF, 105)
-            self.advance_period.execute(match_id, MatchPeriod.EXTRA_TIME_FIRST_HALF)
-            self.advance_period.execute(match_id, MatchPeriod.EXTRA_TIME_HALFTIME)
-            self.update_clock.execute(match_id, MatchPeriod.EXTRA_TIME_SECOND_HALF, 120)
+            extra_time_first_half_started_at = second_half_ended_at + timedelta(minutes=5)
+            self.start_match_period.execute(
+                match_id,
+                MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                started_at=extra_time_first_half_started_at,
+            )
+            extra_time_first_half_ended_at = extra_time_first_half_started_at + timedelta(
+                minutes=15
+            )
+            self.end_match_period.execute(
+                match_id,
+                MatchPeriod.EXTRA_TIME_FIRST_HALF,
+                ended_at=extra_time_first_half_ended_at,
+            )
+            extra_time_second_half_started_at = extra_time_first_half_ended_at + timedelta(
+                minutes=5
+            )
+            self.start_match_period.execute(
+                match_id,
+                MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                started_at=extra_time_second_half_started_at,
+            )
+            extra_time_second_half_ended_at = extra_time_second_half_started_at + timedelta(
+                minutes=15
+            )
+            self.end_match_period.execute(
+                match_id,
+                MatchPeriod.EXTRA_TIME_SECOND_HALF,
+                ended_at=extra_time_second_half_ended_at,
+            )
+            finished_at = extra_time_second_half_ended_at + timedelta(minutes=5)
 
         if fixture.shootout_score is not None:
             self._add_penalty_shootout(

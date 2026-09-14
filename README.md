@@ -98,13 +98,17 @@ implementación sigue la Regla 10 de las Reglas de Juego de IFAB.
 
 ## Diagramas
 
-Los diagramas PlantUML de la V5 se encuentran en `docs/diagrams`:
+Los diagramas PlantUML de la V5 se encuentran en `docs/diagrams`. Las vistas
+generales se complementan con diagramas pequeños por responsabilidad:
 
-- `domain-model.puml`: entidades, relaciones y reglas principales.
+- `domain-model.puml`: vista general y rutas hacia los modelos detallados.
 - `architecture.puml`: módulos y dependencias entre capas.
-- `use-cases.puml`: operaciones disponibles para administradores y espectadores.
-- `inputs-outputs.puml`: requests, casos de uso y respuestas de cada operación.
+- `use-cases.puml`: vista general y rutas hacia los casos de uso detallados.
+- `inputs-outputs.puml`: vista general de contratos de entrada y salida.
 - `match-lifecycle.puml`: estados y operaciones permitidas del partido.
+
+El índice [`docs/diagrams/README.md`](docs/diagrams/README.md) enlaza los
+diagramas detallados de dominio, casos de uso, API y el reloj en tiempo real.
 
 Pueden renderizarse con cualquier extensión o CLI compatible con PlantUML.
 
@@ -149,3 +153,30 @@ uv run pre-commit run --all-files --hook-stage pre-push
 ```
 
 GitHub Actions repite las comprobaciones en cada push y pull request.
+
+## Reloj en tiempo real
+
+Cada consulta de partidos devuelve un snapshot calculado con la hora del
+servidor. Para emitir correcciones y alertas por WebSocket, configura Redis:
+
+```env
+REDIS_URL=redis://localhost:6379/0
+```
+
+Ejecuta el servidor ASGI y el monitor en terminales separadas:
+
+```bash
+uv run python manage.py runserver
+uv run python manage.py run_match_clock_monitor
+```
+
+El monitor se ejecuta cada 30 segundos. Para una sola revisión operativa o de
+diagnóstico:
+
+```bash
+uv run python manage.py run_match_clock_monitor --once
+```
+
+Los clientes se conectan a `ws://HOST/ws/matches/{match_id}/clock/`. El diseño,
+el formato del snapshot y la estrategia de reconexión están documentados en
+[`docs/match-clock-design.md`](docs/match-clock-design.md).

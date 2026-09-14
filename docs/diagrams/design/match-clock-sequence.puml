@@ -1,0 +1,46 @@
+@startuml Matchday V5 Clock Sequence
+title Matchday V5 - Flujo del reloj oficial
+
+actor Operador
+participant MatchViewSet as API
+participant "Casos de uso\nde periodo" as UseCases
+participant Match
+database Database
+participant "Monitor (30 s)" as Monitor
+participant Redis
+participant MatchClockConsumer as WS
+actor Cliente
+
+== Inicio o cambio de periodo ==
+Operador -> API : iniciar / cerrar / añadir tiempo
+API -> UseCases : execute(match_id, datos)
+UseCases -> Database : lock Match
+UseCases -> Match : mutación con hora del servidor
+UseCases -> Database : save
+UseCases -> Redis : snapshot inmediato
+API --> Operador : 204
+
+== Lectura e interpolación ==
+Cliente -> API : GET /matches/{id}
+API -> Match : clock_snapshot(now)
+API --> Cliente : snapshot + version + as_of
+note right of Cliente
+  Avanza localmente cada segundo.
+  No se convierte en fuente de verdad.
+end note
+
+== Corrección periódica ==
+loop cada 30 segundos
+  Monitor -> Database : relojes activos
+  Monitor -> Match : clock_snapshot(now)
+  Monitor -> Database : marcar alerta nueva, si aplica
+  Monitor -> Redis : snapshot y alerta
+  Redis -> WS : group match.clock.{id}
+  WS --> Cliente : corrección oficial
+end
+
+note over Monitor, Cliente
+  Llegar al deadline solo avisa.
+  El operador cierra el periodo explícitamente.
+end note
+@enduml

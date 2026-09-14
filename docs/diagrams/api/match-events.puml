@@ -1,0 +1,30 @@
+@startuml Matchday Match Events API
+title Matchday V5 - Entradas y salidas de eventos
+
+left to right direction
+skinparam componentStyle rectangle
+
+artifact "player_id\nminute + added_minute?" as PlayerEventInput
+artifact "outcome + goalkeeper_id?" as ShotInput
+artifact "reason + decision\nreviewed_event_id?" as VarInput
+artifact "home_percentage" as PossessionInput
+
+component "POST /matches/{id}/goals\nPOST /matches/{id}/cards\nPOST /matches/{id}/injuries" as MainEvents
+component "POST /matches/{id}/fouls\nPOST /matches/{id}/corners\nPOST /matches/{id}/offsides" as StatEvents
+component "POST /matches/{id}/shots\nPOST /matches/{id}/penalty-attempts" as ShotEvents
+component "POST /matches/{id}/var-reviews" as VarEvents
+component "PATCH /matches/{id}/possession" as Possession
+artifact "201: event id" as EventId
+artifact "204 No Content" as Empty
+
+PlayerEventInput --> MainEvents
+MainEvents --> EventId
+PlayerEventInput --> StatEvents
+StatEvents --> EventId
+ShotInput --> ShotEvents
+ShotEvents --> EventId
+VarInput --> VarEvents
+VarEvents --> EventId
+PossessionInput --> Possession
+Possession --> Empty
+@enduml

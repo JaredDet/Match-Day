@@ -1,0 +1,40 @@
+@startuml Matchday Teams Domain
+title Matchday V5 - Dominio de equipos
+
+hide empty members
+skinparam classAttributeIconSize 0
+
+class Team {
+  +UUID id
+  +string name
+  +string head_coach_name
+  +UUID captain_id
+  --
+  +create(name): Team
+  +rename(name): void
+  +set_head_coach(name): void
+  +assign_captain(player): void
+}
+
+class Player {
+  +UUID id
+  +UUID team_id
+  +string name
+  +PlayerPosition preferred_position
+  +int preferred_shirt_number
+  --
+  +create(team_id, name, ...): Player
+  +rename(name): void
+}
+
+enum PlayerPosition
+
+Team "1" -- "0..*" Player : plantilla
+Team "0..1" --> "0..1" Player : capitán habitual
+Player --> PlayerPosition
+
+note bottom of Team
+  El capitán habitual debe pertenecer al equipo.
+  El partido puede elegir otro capitán titular.
+end note
+@enduml

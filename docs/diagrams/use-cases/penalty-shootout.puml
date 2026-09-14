@@ -1,0 +1,19 @@
+@startuml Matchday Penalty Shootout Use Cases
+title Matchday V5 - Casos de uso de tanda de penales
+
+left to right direction
+actor Operador
+
+usecase "Iniciar tanda" as Start
+usecase "Registrar lanzamiento" as Kick
+usecase "Reducir participantes" as Reduce
+usecase "Finalizar tanda" as Finish
+
+Operador --> Start
+Operador --> Kick
+Operador --> Reduce
+Operador --> Finish
+Kick ..> Start : tanda activa
+Reduce ..> Start : igualdad numérica
+Finish ..> Kick : ganador decidido
+@enduml

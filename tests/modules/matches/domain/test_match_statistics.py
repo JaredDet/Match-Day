@@ -1,7 +1,9 @@
 import pytest
 
+from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchStatus
 from modules.matches.domain.match_event import MatchPeriod
+from modules.matches.domain.penalty_attempt import PenaltyAttemptOutcome
 from modules.matches.domain.shot import ShotOutcome
 from modules.matches.errors import MatchErrors
 from modules.teams.domain.player import Player
@@ -52,6 +54,107 @@ def test_rejects_saved_shot_without_opponent_goalkeeper():
             outcome=ShotOutcome.SAVED,
             minute=13,
         )
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected_on_target", "expected_saves"),
+    [
+        (ShotOutcome.OFF_TARGET, 0, 0),
+        (ShotOutcome.BLOCKED, 0, 0),
+        (ShotOutcome.WOODWORK, 0, 0),
+        (ShotOutcome.SAVED, 1, 1),
+    ],
+)
+def test_updates_counters_for_every_shot_outcome(
+    outcome,
+    expected_on_target,
+    expected_saves,
+):
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+        current_minute=30,
+    )
+    shooter = Player.create(team_id=match.home_team_id, name="Delantero")
+    goalkeeper = Player.create(team_id=match.away_team_id, name="Arquero")
+
+    match.register_shot(
+        player=shooter,
+        goalkeeper=goalkeeper if outcome == ShotOutcome.SAVED else None,
+        outcome=outcome,
+        minute=20,
+    )
+
+    assert match.home_shot_count == 1
+    assert match.home_shot_on_target_count == expected_on_target
+    assert match.away_save_count == expected_saves
+
+
+def test_rejects_saved_shot_with_goalkeeper_from_shooters_team():
+    match = MatchMother.create(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+        current_minute=30,
+    )
+    shooter = Player.create(team_id=match.home_team_id, name="Delantero")
+    goalkeeper = Player.create(team_id=match.home_team_id, name="Arquero")
+
+    with pytest.raises(type(MatchErrors.InvalidShotGoalkeeper)):
+        match.register_shot(
+            player=shooter,
+            goalkeeper=goalkeeper,
+            outcome=ShotOutcome.SAVED,
+            minute=20,
+        )
+
+
+@pytest.mark.parametrize("goal_type", [GoalType.REGULAR, GoalType.PENALTY])
+def test_goal_counts_as_shot_on_target_and_disallowing_it_reverts_counters(goal_type):
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    player = Player.create(team_id=match.home_team_id, name="Delantero")
+
+    goal = match.register_goal(player=player, goal_type=goal_type, minute=60)
+
+    assert match.home_shot_count == 1
+    assert match.home_shot_on_target_count == 1
+
+    match.disallow_goal(goal)
+
+    assert match.home_shot_count == 0
+    assert match.home_shot_on_target_count == 0
+
+
+def test_own_goal_does_not_count_as_attacking_shot():
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    player = Player.create(team_id=match.home_team_id, name="Defensor")
+
+    match.register_goal(player=player, goal_type=GoalType.OWN_GOAL, minute=60)
+
+    assert match.home_shot_count == 0
+    assert match.away_shot_count == 0
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected_on_target", "expected_saves"),
+    [
+        (PenaltyAttemptOutcome.MISSED, 0, 0),
+        (PenaltyAttemptOutcome.HIT_POST, 0, 0),
+        (PenaltyAttemptOutcome.SAVED, 1, 1),
+    ],
+)
+def test_non_converted_penalty_updates_shot_statistics(
+    outcome,
+    expected_on_target,
+    expected_saves,
+):
+    match = MatchMother.create(status=MatchStatus.LIVE)
+    player = Player.create(team_id=match.home_team_id, name="Delantero")
+
+    match.register_penalty_attempt(player=player, outcome=outcome, minute=60)
+
+    assert match.home_shot_count == 1
+    assert match.home_shot_on_target_count == expected_on_target
+    assert match.away_save_count == expected_saves
 
 
 @pytest.mark.parametrize("percentage", [-1, 101, True])

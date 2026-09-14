@@ -6,6 +6,7 @@ from injector import inject
 
 from modules.matches.application.queries.team_detail import TeamDetail
 from modules.matches.domain.match import MatchStatus
+from modules.matches.domain.match_clock import MatchClockSnapshot
 from modules.matches.domain.match_event import MatchPeriod
 from modules.matches.infrastructure.query_repository.match_query_repository import (
     MatchQueryRepository,
@@ -19,6 +20,7 @@ class MatchSummary:
     current_period: MatchPeriod | None
     current_minute: int | None
     current_added_minute: int
+    clock: MatchClockSnapshot
     scheduled_at: datetime
     home_team: TeamDetail
     away_team: TeamDetail

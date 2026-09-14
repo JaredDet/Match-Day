@@ -46,6 +46,8 @@ def test_registers_card_and_updates_match_counter():
     assert card.player_name == "Defensor local"
     assert card.card_type is CardType.YELLOW
     assert match.home_card_count == 1
+    assert match.home_yellow_card_count == 1
+    assert match.home_red_card_count == 0
     assert match.away_card_count == 0
     match_repository.save.assert_called_once_with(match)
 
@@ -77,6 +79,8 @@ def test_red_card_sends_player_off_field():
 
     squad_player.send_off.assert_called_once_with(SentOffReason.DIRECT_RED)
     lineup_repository.save_all.assert_called_once_with([squad_player])
+    assert match.home_yellow_card_count == 0
+    assert match.home_red_card_count == 1
 
 
 def test_second_yellow_sends_player_off_field():
@@ -107,6 +111,8 @@ def test_second_yellow_sends_player_off_field():
 
     squad_player.send_off.assert_called_once_with(SentOffReason.SECOND_YELLOW)
     lineup_repository.save_all.assert_called_once_with([squad_player])
+    assert match.home_yellow_card_count == 1
+    assert match.home_red_card_count == 0
 
 
 def test_raises_not_found_without_persisting():

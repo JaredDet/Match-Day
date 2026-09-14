@@ -5,10 +5,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
-from modules.matches.api.contracts.requests.advance_match_period_request import (
-    AdvanceMatchPeriodRequest,
-)
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
+from modules.matches.api.contracts.requests.end_match_period_request import EndMatchPeriodRequest
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
 from modules.matches.api.contracts.requests.reduce_penalty_shootout_participants_request import (
     ReducePenaltyShootoutParticipantsRequest,
@@ -35,11 +33,14 @@ from modules.matches.api.contracts.requests.register_var_review_request import (
     RegisterVarReviewRequest,
 )
 from modules.matches.api.contracts.requests.set_match_lineup_request import SetMatchLineupRequest
+from modules.matches.api.contracts.requests.set_match_period_added_time_request import (
+    SetMatchPeriodAddedTimeRequest,
+)
+from modules.matches.api.contracts.requests.start_match_period_request import (
+    StartMatchPeriodRequest,
+)
 from modules.matches.api.contracts.requests.start_penalty_shootout_request import (
     StartPenaltyShootoutRequest,
-)
-from modules.matches.api.contracts.requests.update_match_clock_request import (
-    UpdateMatchClockRequest,
 )
 from modules.matches.api.contracts.requests.update_match_details_request import (
     UpdateMatchDetailsRequest,
@@ -49,11 +50,9 @@ from modules.matches.api.contracts.requests.update_match_possession_request impo
 )
 from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.api.contracts.responses.list_matches_response import ListMatchesResponse
-from modules.matches.application.commands.advance_match_period_use_case import (
-    AdvanceMatchPeriodUseCase,
-)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
+from modules.matches.application.commands.end_match_period_use_case import EndMatchPeriodUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.finish_penalty_shootout_use_case import (
     FinishPenaltyShootoutUseCase,
@@ -87,12 +86,13 @@ from modules.matches.application.commands.set_match_lineup_use_case import (
     LineupPlayerInput,
     SetMatchLineupUseCase,
 )
+from modules.matches.application.commands.set_match_period_added_time_use_case import (
+    SetMatchPeriodAddedTimeUseCase,
+)
+from modules.matches.application.commands.start_match_period_use_case import StartMatchPeriodUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.commands.start_penalty_shootout_use_case import (
     StartPenaltyShootoutUseCase,
-)
-from modules.matches.application.commands.update_match_clock_use_case import (
-    UpdateMatchClockUseCase,
 )
 from modules.matches.application.commands.update_match_details_use_case import (
     UpdateMatchDetailsUseCase,
@@ -211,30 +211,44 @@ class MatchViewSet(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
-        operation_id="matches_advance_period",
-        request=AdvanceMatchPeriodRequest,
+        operation_id="matches_start_period",
+        request=StartMatchPeriodRequest,
         responses={status.HTTP_204_NO_CONTENT: None},
     )
-    @action(detail=True, methods=["post"], url_path="advance-period")
-    def advance_period(self, request, pk=None):
-        request_contract = AdvanceMatchPeriodRequest(data=request.data)
+    @action(detail=True, methods=["post"], url_path="periods/start")
+    def start_period(self, request, pk=None):
+        request_contract = StartMatchPeriodRequest(data=request.data)
         request_contract.is_valid(raise_exception=True)
 
-        use_case = injector_instance.get(AdvanceMatchPeriodUseCase)
+        use_case = injector_instance.get(StartMatchPeriodUseCase)
         use_case.execute(match_id=pk, **request_contract.validated_data)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
-        operation_id="matches_update_clock",
-        request=UpdateMatchClockRequest,
+        operation_id="matches_end_period",
+        request=EndMatchPeriodRequest,
         responses={status.HTTP_204_NO_CONTENT: None},
     )
-    @action(detail=True, methods=["patch"], url_path="clock")
-    def update_clock(self, request, pk=None):
-        request_contract = UpdateMatchClockRequest(data=request.data)
+    @action(detail=True, methods=["post"], url_path="periods/end")
+    def end_period(self, request, pk=None):
+        request_contract = EndMatchPeriodRequest(data=request.data)
         request_contract.is_valid(raise_exception=True)
 
-        use_case = injector_instance.get(UpdateMatchClockUseCase)
+        use_case = injector_instance.get(EndMatchPeriodUseCase)
+        use_case.execute(match_id=pk, **request_contract.validated_data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        operation_id="matches_set_period_added_time",
+        request=SetMatchPeriodAddedTimeRequest,
+        responses={status.HTTP_204_NO_CONTENT: None},
+    )
+    @action(detail=True, methods=["patch"], url_path="periods/added-time")
+    def set_period_added_time(self, request, pk=None):
+        request_contract = SetMatchPeriodAddedTimeRequest(data=request.data)
+        request_contract.is_valid(raise_exception=True)
+
+        use_case = injector_instance.get(SetMatchPeriodAddedTimeUseCase)
         use_case.execute(match_id=pk, **request_contract.validated_data)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

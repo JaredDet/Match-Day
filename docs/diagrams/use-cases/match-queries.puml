@@ -1,0 +1,22 @@
+@startuml Matchday Match Query Use Cases
+title Matchday V5 - Consultas de partidos
+
+left to right direction
+actor Espectador
+
+usecase "Listar partidos\npor estado o fecha" as ListMatches
+usecase "Ver detalle del partido" as GetMatch
+usecase "Ver marcador y reloj" as Score
+usecase "Ver alineaciones" as Lineups
+usecase "Ver cronología" as Events
+usecase "Ver estadísticas" as Statistics
+usecase "Ver tanda de penales" as Shootout
+
+Espectador --> ListMatches
+Espectador --> GetMatch
+GetMatch ..> Score : incluye
+GetMatch ..> Lineups : incluye
+GetMatch ..> Events : incluye
+GetMatch ..> Statistics : incluye
+GetMatch ..> Shootout : cuando existe
+@enduml

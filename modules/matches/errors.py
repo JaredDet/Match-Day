@@ -7,6 +7,26 @@ from modules.matches.constants import (
 
 
 class MatchErrors:
+    MatchClockAlreadyClosed = AppException(
+        "match_clock_already_closed",
+        "El reloj del periodo ya se encuentra cerrado",
+        ErrorType.CONFLICT,
+    )
+    MatchPeriodNotClosed = AppException(
+        "match_period_not_closed",
+        "El periodo anterior debe cerrarse antes de iniciar el siguiente",
+        ErrorType.CONFLICT,
+    )
+    MatchPeriodCannotEndYet = AppException(
+        "match_period_cannot_end_yet",
+        "El periodo no puede cerrarse antes de alcanzar su tiempo anunciado",
+        ErrorType.CONFLICT,
+    )
+    InvalidClockTime = AppException(
+        "invalid_match_clock_time",
+        "El reloj no puede cerrarse antes de haber comenzado",
+        ErrorType.VALIDATION,
+    )
     InvalidShotOutcome = AppException(
         "invalid_shot_outcome",
         "El resultado del tiro no es válido",

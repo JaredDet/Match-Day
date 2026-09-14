@@ -1,0 +1,69 @@
+@startuml Matchday V5 Clock Domain
+title Matchday V5 - Dominio del reloj oficial
+
+hide empty members
+skinparam classAttributeIconSize 0
+
+enum MatchClockStatus {
+  not_started
+  running
+  regulation_time_reached
+  deadline_reached
+  closed
+}
+
+class Match {
+  +MatchPeriod current_period
+  +datetime period_started_at
+  +datetime period_ended_at
+  +int announced_added_minutes
+  +int clock_version
+  +datetime regulation_time_alerted_at
+  +datetime period_deadline_alerted_at
+  --
+  +start(now): void
+  +start_period(period, now): void
+  +set_period_added_time(period, minutes): void
+  +end_period(period, now): void
+  +clock_snapshot(now): MatchClockSnapshot
+}
+
+class MatchClockSnapshot <<value object>> {
+  +MatchPeriod period
+  +MatchClockStatus status
+  +int minute
+  +int second
+  +int added_minute
+  +int elapsed_seconds
+  +int remaining_seconds
+  +datetime deadline_at
+  +int announced_added_minutes
+  +int version
+  +datetime as_of
+}
+
+class SynchronizeMatchClocksUseCase <<background service>> {
+  +execute(): int
+}
+
+class MatchClockPublisher <<WebSocket>> {
+  +publish_snapshot(match_id, snapshot): void
+  +publish_alert(match_id, alert, snapshot): void
+}
+
+Match ..> MatchClockSnapshot : calcula
+MatchClockSnapshot --> MatchClockStatus
+SynchronizeMatchClocksUseCase ..> Match : revisa cada 30 segundos
+SynchronizeMatchClocksUseCase --> MatchClockPublisher
+
+note right of Match
+  No existe pausa ni contador persistido.
+  El deadline se deriva del inicio,
+  la duración del periodo y el añadido.
+end note
+
+note bottom of SynchronizeMatchClocksUseCase
+  Publica correcciones y alertas.
+  Nunca cambia el periodo automáticamente.
+end note
+@enduml

@@ -6,6 +6,7 @@ from uuid import UUID
 from injector import inject
 
 from modules.matches.domain.match import MatchFormation, MatchStatus
+from modules.matches.domain.match_clock import MatchClockSnapshot
 from modules.matches.domain.match_event import MatchPeriod, TeamSide
 from modules.matches.domain.match_squad_player import MatchSquadRole, SentOffReason
 from modules.matches.domain.match_substitution import SubstitutionReason
@@ -136,6 +137,7 @@ class MatchDetail:
     current_period: MatchPeriod | None
     current_minute: int | None
     current_added_minute: int
+    clock: MatchClockSnapshot
     scheduled_at: datetime
     started_at: datetime | None
     finished_at: datetime | None

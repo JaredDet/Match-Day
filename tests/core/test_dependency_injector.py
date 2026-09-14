@@ -2,11 +2,9 @@ import pytest
 from injector import UnsatisfiedRequirement
 
 from core.dependency_injector import injector_instance
-from modules.matches.application.commands.advance_match_period_use_case import (
-    AdvanceMatchPeriodUseCase,
-)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
+from modules.matches.application.commands.end_match_period_use_case import EndMatchPeriodUseCase
 from modules.matches.application.commands.finish_match_use_case import FinishMatchUseCase
 from modules.matches.application.commands.finish_penalty_shootout_use_case import (
     FinishPenaltyShootoutUseCase,
@@ -37,12 +35,16 @@ from modules.matches.application.commands.register_var_review_use_case import (
 )
 from modules.matches.application.commands.rescind_card_use_case import RescindCardUseCase
 from modules.matches.application.commands.set_match_lineup_use_case import SetMatchLineupUseCase
+from modules.matches.application.commands.set_match_period_added_time_use_case import (
+    SetMatchPeriodAddedTimeUseCase,
+)
+from modules.matches.application.commands.start_match_period_use_case import StartMatchPeriodUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
 from modules.matches.application.commands.start_penalty_shootout_use_case import (
     StartPenaltyShootoutUseCase,
 )
-from modules.matches.application.commands.update_match_clock_use_case import (
-    UpdateMatchClockUseCase,
+from modules.matches.application.commands.synchronize_match_clocks_use_case import (
+    SynchronizeMatchClocksUseCase,
 )
 from modules.matches.application.commands.update_match_possession_use_case import (
     UpdateMatchPossessionUseCase,
@@ -81,8 +83,10 @@ def test_rejects_unregistered_dependencies():
         CreateMatchUseCase,
         SetMatchLineupUseCase,
         StartMatchUseCase,
-        AdvanceMatchPeriodUseCase,
-        UpdateMatchClockUseCase,
+        StartMatchPeriodUseCase,
+        EndMatchPeriodUseCase,
+        SetMatchPeriodAddedTimeUseCase,
+        SynchronizeMatchClocksUseCase,
         UpdateMatchPossessionUseCase,
         RegisterGoalUseCase,
         RegisterFoulUseCase,

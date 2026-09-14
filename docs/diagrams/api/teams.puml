@@ -1,0 +1,21 @@
+@startuml Matchday Team API
+title Matchday V5 - Entradas y salidas de equipos
+
+left to right direction
+skinparam componentStyle rectangle
+
+component "POST /teams\nPATCH /teams/{id}" as TeamCommands
+component "POST /teams/{id}/players\nPOST /teams/{id}/squad\nPUT /teams/{id}/captain" as PlayerCommands
+component "GET /teams\nGET /teams/{id}" as TeamQueries
+component "GET /players\nGET /players/{id}" as PlayerQueries
+
+artifact "name\nhead_coach_name?" as TeamInput
+artifact "player name / position / dorsal" as PlayerInput
+artifact "TeamSummary / TeamDetail" as TeamOutput
+artifact "PlayerSummary / PlayerDetail" as PlayerOutput
+
+TeamInput --> TeamCommands
+PlayerInput --> PlayerCommands
+TeamQueries --> TeamOutput
+PlayerQueries --> PlayerOutput
+@enduml

@@ -27,7 +27,11 @@ package "matches" {
   component "Match Domain\nMatch + Events + Squad + Shootout" as MatchDomain
   component "Match Repositories" as MatchRepositories
   component "Match Query Repository" as MatchQueryRepository
+  component "Clock Monitor" as ClockMonitor
+  component "WebSocket Consumer" as ClockWs
 }
+
+queue "Redis Channel Layer" as Redis
 
 database "Django ORM\nSQLite / PostgreSQL" as Database
 
@@ -56,6 +60,10 @@ TeamRepositories --> Database
 TeamQueryRepositories --> Database
 MatchRepositories --> Database
 MatchQueryRepository --> Database
+ClockMonitor --> MatchRepositories
+ClockMonitor --> Redis : snapshot cada 30 s
+Redis --> ClockWs : corrección y alertas
+ClockWs --> MatchDomain : snapshot inicial
 
 note bottom of MatchQueryRepository
   Construye DTOs de lectura optimizados:

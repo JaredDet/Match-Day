@@ -1,0 +1,39 @@
+@startuml Matchday Match Lifecycle API
+title Matchday V5 - Entradas y salidas del ciclo del partido
+
+left to right direction
+skinparam componentStyle rectangle
+
+artifact "home_team_id + away_team_id\nscheduled_at + stadium? + referee?" as CreateInput
+component "POST /matches" as CreateApi
+artifact "201: match id" as MatchId
+
+artifact "formation + captain_id?\n11 starters + substitutes" as LineupInput
+component "PUT /matches/{id}/lineups/{side}" as LineupApi
+
+component "POST /matches/{id}/start" as StartApi
+component "POST /matches/{id}/periods/start" as StartPeriodApi
+artifact "period" as StartPeriodInput
+component "POST /matches/{id}/periods/end" as EndPeriodApi
+artifact "expected_period" as EndPeriodInput
+component "PATCH /matches/{id}/periods/added-time" as AddedTimeApi
+artifact "expected_period + minutes" as AddedTimeInput
+component "POST /matches/{id}/finish" as FinishApi
+component "WS /ws/matches/{id}/clock/" as ClockWs
+artifact "snapshot + alertas cada 30 s" as ClockOutput
+artifact "204 No Content" as Empty
+
+CreateInput --> CreateApi
+CreateApi --> MatchId
+LineupInput --> LineupApi
+LineupApi --> Empty
+StartApi --> Empty
+StartPeriodInput --> StartPeriodApi
+StartPeriodApi --> Empty
+EndPeriodInput --> EndPeriodApi
+EndPeriodApi --> Empty
+AddedTimeInput --> AddedTimeApi
+AddedTimeApi --> Empty
+FinishApi --> Empty
+ClockWs --> ClockOutput
+@enduml

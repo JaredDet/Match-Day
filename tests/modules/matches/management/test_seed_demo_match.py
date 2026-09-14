@@ -35,7 +35,6 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
         Match.objects.filter(
             status=MatchStatus.LIVE,
             current_period=MatchPeriod.FIRST_HALF,
-            current_minute=34,
         ).count()
         == 1
     )
@@ -51,10 +50,19 @@ def test_seeds_complete_demo_dataset_and_is_idempotent():
         Match.objects.filter(
             status=MatchStatus.LIVE,
             current_period=MatchPeriod.SECOND_HALF,
-            current_minute=72,
         ).count()
         == 1
     )
+    live_first_half = Match.objects.get(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.FIRST_HALF,
+    )
+    live_second_half = Match.objects.get(
+        status=MatchStatus.LIVE,
+        current_period=MatchPeriod.SECOND_HALF,
+    )
+    assert live_first_half.clock_snapshot().minute == 34
+    assert live_second_half.clock_snapshot().minute == 72
     assert Match.objects.filter(id=match.id).count() == 1
     assert match.status == MatchStatus.FINISHED
     assert match.home_team_name == "Atlético del Puerto"

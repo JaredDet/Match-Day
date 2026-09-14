@@ -1,0 +1,31 @@
+@startuml Matchday Team Use Cases
+title Matchday V5 - Casos de uso de equipos y jugadores
+
+left to right direction
+actor Administrador as Admin
+actor Espectador as Viewer
+
+rectangle Teams {
+  usecase "Crear equipo" as CreateTeam
+  usecase "Actualizar equipo" as UpdateTeam
+  usecase "Registrar jugador" as RegisterPlayer
+  usecase "Cargar nómina" as RegisterSquad
+  usecase "Asignar capitán habitual" as SetCaptain
+  usecase "Actualizar jugador" as UpdatePlayer
+  usecase "Listar equipos" as ListTeams
+  usecase "Ver equipo" as GetTeam
+  usecase "Listar jugadores" as ListPlayers
+  usecase "Ver jugador" as GetPlayer
+}
+
+Admin --> CreateTeam
+Admin --> UpdateTeam
+Admin --> RegisterPlayer
+Admin --> RegisterSquad
+Admin --> SetCaptain
+Admin --> UpdatePlayer
+Viewer --> ListTeams
+Viewer --> GetTeam
+Viewer --> ListPlayers
+Viewer --> GetPlayer
+@enduml

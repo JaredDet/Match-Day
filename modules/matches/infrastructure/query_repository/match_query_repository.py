@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from django.db.models import Case, IntegerField, Value, When
+from django.utils import timezone
 
 from modules.matches.application.queries.team_detail import MatchGoalPreview, TeamDetail
 from modules.matches.domain.card import Card, CardType
@@ -77,6 +78,11 @@ class MatchQueryRepository:
             )
         )
         goals_by_match = {row["id"]: {TeamSide.HOME: [], TeamSide.AWAY: []} for row in rows}
+        now = timezone.now()
+        clocks_by_match = {
+            match.id: match.clock_snapshot(now)
+            for match in Match.objects.filter(id__in=[row["id"] for row in rows])
+        }
         for goal in Goal.objects.filter(
             match_id__in=goals_by_match,
             disallowed_at__isnull=True,
@@ -100,8 +106,9 @@ class MatchQueryRepository:
                     if row["current_period"] is not None
                     else None
                 ),
-                current_minute=row["current_minute"],
-                current_added_minute=row["current_added_minute"],
+                current_minute=clocks_by_match[row["id"]].minute,
+                current_added_minute=clocks_by_match[row["id"]].added_minute,
+                clock=clocks_by_match[row["id"]],
                 scheduled_at=row["scheduled_at"],
                 home_team=TeamDetail(
                     id=row["home_team_id"],
@@ -140,8 +147,12 @@ class MatchQueryRepository:
             MatchTeamStatistics,
         )
 
+        match_model = Match.objects.filter(id=match_id).first()
+        if match_model is None:
+            return None
+
         match = (
-            Match.objects.filter(id=match_id)
+            Match.objects.filter(id=match_model.id)
             .values(
                 "id",
                 "status",
@@ -191,6 +202,7 @@ class MatchQueryRepository:
         penalty_shootout = self._get_penalty_shootout(match_id)
         home_lineup = tuple(player for player in lineup if player.team_side == TeamSide.HOME)
         away_lineup = tuple(player for player in lineup if player.team_side == TeamSide.AWAY)
+        clock = match_model.clock_snapshot()
         return MatchDetail(
             id=match["id"],
             status=MatchStatus(match["status"]),
@@ -199,8 +211,9 @@ class MatchQueryRepository:
                 if match["current_period"] is not None
                 else None
             ),
-            current_minute=match["current_minute"],
-            current_added_minute=match["current_added_minute"],
+            current_minute=clock.minute,
+            current_added_minute=clock.added_minute,
+            clock=clock,
             scheduled_at=match["scheduled_at"],
             started_at=match["started_at"],
             finished_at=match["finished_at"],
