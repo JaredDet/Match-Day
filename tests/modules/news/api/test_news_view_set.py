@@ -289,6 +289,58 @@ def test_lists_news():
     }
 
 
+def test_gets_news():
+    team = Team.objects.create(name="Atlético Bahía")
+    published_at = datetime(2026, 8, 20, 18, tzinfo=UTC)
+
+    news = News.objects.create(
+        team=team,
+        title="Noticia completa",
+        content={
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": "Contenido de la noticia",
+                }
+            ]
+        },
+        status=NewsStatus.PUBLISHED,
+        published_at=published_at,
+    )
+
+    response = APIClient().get(
+        reverse("news-detail", args=[str(news.id)]),
+    )
+
+    assert response.status_code == 200
+    assert response.data == {
+        "id": str(news.id),
+        "title": "Noticia completa",
+        "team_id": str(team.id),
+        "cover_image": None,
+        "content": {
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": "Contenido de la noticia",
+                }
+            ]
+        },
+        "status": "PUBLISHED",
+        "scheduled_at": None,
+        "published_at": "2026-08-20T18:00:00Z",
+    }
+
+
+def test_returns_not_found_when_getting_unknown_news():
+    response = APIClient().get(
+        reverse("news-detail", args=[str(UUID(int=0))]),
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "news_not_found"
+
+
 def test_filters_news_by_status():
     published = News.objects.create(
         title="Noticia publicada",

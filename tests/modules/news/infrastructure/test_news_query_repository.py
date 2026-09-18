@@ -65,6 +65,34 @@ def test_returns_all_news_fields():
     assert item.published_at == published_at
 
 
+def test_gets_all_news_fields():
+    team = Team.objects.create(name="Atlético Bahía")
+    published_at = datetime(2026, 8, 20, 18, tzinfo=UTC)
+
+    news = News.objects.create(
+        team=team,
+        title="Noticia completa",
+        content={"blocks": [{"type": "paragraph", "text": "Contenido"}]},
+        status=NewsStatus.PUBLISHED,
+        published_at=published_at,
+    )
+
+    result = NewsQueryRepository().get(news.id)
+
+    assert result.id == news.id
+    assert result.title == "Noticia completa"
+    assert result.team_id == team.id
+    assert result.cover_image is None
+    assert result.content == {"blocks": [{"type": "paragraph", "text": "Contenido"}]}
+    assert result.status == NewsStatus.PUBLISHED
+    assert result.scheduled_at is None
+    assert result.published_at == published_at
+
+
+def test_returns_none_when_getting_unknown_news():
+    assert NewsQueryRepository().get(News().id) is None
+
+
 def test_filters_news_by_status():
     published = News.objects.create(
         title="Noticia publicada",

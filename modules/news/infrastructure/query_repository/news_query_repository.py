@@ -7,10 +7,43 @@ from uuid import UUID
 from modules.news.domain.news import News, NewsStatus
 
 if TYPE_CHECKING:
+    from modules.news.application.queries.get_news_query import NewsDetail
     from modules.news.application.queries.list_news_query import NewsListItem
 
 
 class NewsQueryRepository:
+    def get(self, news_id: UUID) -> NewsDetail | None:
+        from modules.news.application.queries.get_news_query import NewsDetail
+
+        news = (
+            News.objects.filter(id=news_id)
+            .values(
+                "id",
+                "title",
+                "team_id",
+                "cover_image",
+                "content",
+                "status",
+                "scheduled_at",
+                "published_at",
+            )
+            .first()
+        )
+
+        if news is None:
+            return None
+
+        return NewsDetail(
+            id=news["id"],
+            title=news["title"],
+            team_id=news["team_id"],
+            cover_image=news["cover_image"] or None,
+            content=news["content"],
+            status=NewsStatus(news["status"]),
+            scheduled_at=news["scheduled_at"],
+            published_at=news["published_at"],
+        )
+
     def list(
         self,
         *,

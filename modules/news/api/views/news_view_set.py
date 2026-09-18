@@ -9,6 +9,7 @@ from modules.news.api.contracts.requests.create_news_request import CreateNewsRe
 from modules.news.api.contracts.requests.list_news_request import ListNewsRequest
 from modules.news.api.contracts.requests.schedule_news_request import ScheduleNewsRequest
 from modules.news.api.contracts.requests.update_news_request import UpdateNewsRequest
+from modules.news.api.contracts.responses.get_news_response import GetNewsResponse
 from modules.news.api.contracts.responses.list_news_response import ListNewsResponse
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
 from modules.news.application.commands.delete_news_use_case import DeleteNewsUseCase
@@ -16,6 +17,7 @@ from modules.news.application.commands.publish_news_use_case import PublishNewsU
 from modules.news.application.commands.schedule_news_use_case import ScheduleNewsUseCase
 from modules.news.application.commands.unschedule_news_use_case import UnscheduleNewsUseCase
 from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
+from modules.news.application.queries.get_news_query import GetNewsQuery
 from modules.news.application.queries.list_news_query import ListNewsQuery
 
 
@@ -54,6 +56,16 @@ class NewsViewSet(ViewSet):
         news = query.execute(**request_contract.validated_data)
 
         return Response(ListNewsResponse(news, many=True).data)
+
+    @extend_schema(
+        operation_id="news_get",
+        responses={status.HTTP_200_OK: GetNewsResponse},
+    )
+    def retrieve(self, request, pk=None):
+        query = injector_instance.get(GetNewsQuery)
+        news = query.execute(news_id=pk)
+
+        return Response(GetNewsResponse(news).data)
 
     @extend_schema(
         operation_id="news_update",
