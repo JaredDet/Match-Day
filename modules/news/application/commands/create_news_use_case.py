@@ -2,10 +2,10 @@ from uuid import UUID
 
 from django.db import transaction
 from injector import inject
-from matchday.modules.teams.errors import TeamErrors
 
 from modules.news.domain.news import News
 from modules.news.infrastructure.repository.news_repository import NewsRepository
+from modules.teams.errors import TeamErrors
 from modules.teams.infrastructure.repository.team_repository import TeamRepository
 
 

@@ -111,13 +111,6 @@ class News(models.Model):
             raise NewsErrors.InvalidTitle
         return normalized_title
 
-    @staticmethod
-    def _normalize_title(title: str) -> str:
-        normalized_title = normalize_whitespace(title)
-        if not normalized_title:
-            raise NewsErrors.InvalidTitle
-        return normalized_title
-
     class Meta:
         db_table = "news"
         ordering = ["-created_at", "-id"]
