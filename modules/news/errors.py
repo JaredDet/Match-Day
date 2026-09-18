@@ -7,8 +7,21 @@ class NewsErrors:
         "El título de la noticia es obligatorio",
         ErrorType.VALIDATION,
     )
-    TeamNotFound = AppException(
-        "team_not_found",
-        "Equipo no encontrado",
-        ErrorType.NOT_FOUND,
+
+    CannotSchedule = AppException(
+        "cannot_schedule_news",
+        "La noticia no puede ser programada en su estado actual",
+        ErrorType.VALIDATION,
+    )
+
+    NotScheduled = AppException(
+        "news_not_scheduled",
+        "La noticia no está programada",
+        ErrorType.VALIDATION,
+    )
+
+    AlreadyPublished = AppException(
+        "news_already_published",
+        "La noticia ya fue publicada",
+        ErrorType.VALIDATION,
     )
