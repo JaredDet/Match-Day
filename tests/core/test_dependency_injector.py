@@ -52,10 +52,13 @@ from modules.matches.application.commands.update_match_possession_use_case impor
 from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
+from modules.news.application.commands.delete_news_use_case import DeleteNewsUseCase
 from modules.news.application.commands.publish_news_use_case import PublishNewsUseCase
+from modules.news.application.commands.schedule_news_use_case import ScheduleNewsUseCase
 from modules.news.application.commands.unschedule_news_use_case import (
     UnscheduleNewsUseCase,
 )
+from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
@@ -117,8 +120,11 @@ def test_rejects_unregistered_dependencies():
         ListPlayersQuery,
         GetPlayerQuery,
         CreateNewsUseCase,
+        UpdateNewsUseCase,
+        ScheduleNewsUseCase,
         PublishNewsUseCase,
         UnscheduleNewsUseCase,
+        DeleteNewsUseCase,
     ],
 )
 def test_resolves_demo_dependencies(dependency):

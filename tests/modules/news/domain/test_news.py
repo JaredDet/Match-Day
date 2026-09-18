@@ -179,3 +179,67 @@ def test_rejects_invalid_news_title(title):
             title=title,
             content={"blocks": []},
         )
+
+
+def test_cannot_rename_scheduled_news():
+    news = News.create(
+        title="Título original",
+        content={"blocks": []},
+    )
+    news.schedule(datetime(2026, 9, 20, 15, 0, tzinfo=UTC))
+
+    with pytest.raises(type(NewsErrors.ScheduledNewsCannotBeEdited)):
+        news.rename("Título nuevo")
+
+
+def test_cannot_update_content_of_scheduled_news():
+    news = News.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+    news.schedule(datetime(2026, 9, 20, 15, 0, tzinfo=UTC))
+
+    with pytest.raises(type(NewsErrors.ScheduledNewsCannotBeEdited)):
+        news.update_content({"blocks": [{"type": "paragraph"}]})
+
+
+def test_cannot_update_cover_image_of_scheduled_news():
+    news = News.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+    news.schedule(datetime(2026, 9, 20, 15, 0, tzinfo=UTC))
+
+    with pytest.raises(type(NewsErrors.ScheduledNewsCannotBeEdited)):
+        news.update_cover_image("news/covers/new-cover.jpg")
+
+
+def test_draft_news_is_deletable():
+    news = News.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+
+    news.ensure_deletable()
+
+
+def test_cannot_delete_scheduled_news():
+    news = News.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+    news.schedule(datetime(2026, 9, 20, 15, 0, tzinfo=UTC))
+
+    with pytest.raises(type(NewsErrors.CannotDelete)):
+        news.ensure_deletable()
+
+
+def test_cannot_delete_published_news():
+    news = News.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+    news.publish(datetime(2026, 9, 20, 15, 0, tzinfo=UTC))
+
+    with pytest.raises(type(NewsErrors.CannotDelete)):
+        news.ensure_deletable()

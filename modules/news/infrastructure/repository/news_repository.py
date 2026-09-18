@@ -12,3 +12,6 @@ class NewsRepository:
 
     def save(self, news: News) -> None:
         news.save()
+
+    def delete(self, news: News) -> None:
+        news.delete()

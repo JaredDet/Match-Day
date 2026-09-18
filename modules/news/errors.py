@@ -30,3 +30,15 @@ class NewsErrors:
         "La noticia ya fue publicada",
         ErrorType.VALIDATION,
     )
+
+    ScheduledNewsCannotBeEdited = AppException(
+        "scheduled_news_cannot_be_edited",
+        "La noticia programada no puede ser editada",
+        ErrorType.VALIDATION,
+    )
+
+    CannotDelete = AppException(
+        "cannot_delete_news",
+        "La noticia solo puede eliminarse cuando está en borrador",
+        ErrorType.VALIDATION,
+    )

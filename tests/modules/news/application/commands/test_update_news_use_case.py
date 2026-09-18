@@ -1,0 +1,57 @@
+from unittest.mock import Mock
+from uuid import uuid4
+
+import pytest
+
+from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
+from modules.news.domain.news import News, NewsStatus
+from modules.news.errors import NewsErrors
+
+pytestmark = pytest.mark.django_db
+
+
+def test_updates_and_persists_news():
+    news_repository = Mock()
+
+    news = News.create(
+        title="Título anterior",
+        content={"blocks": []},
+    )
+    news_repository.get_for_update.return_value = news
+
+    use_case = UpdateNewsUseCase(news_repository)
+
+    use_case.execute(
+        news_id=news.id,
+        title="  Título   nuevo  ",
+        content={"blocks": [{"type": "paragraph", "text": "Contenido nuevo"}]},
+        cover_image="news/covers/new-cover.jpg",
+    )
+
+    assert news.title == "Título nuevo"
+    assert news.content == {"blocks": [{"type": "paragraph", "text": "Contenido nuevo"}]}
+    assert news.cover_image == "news/covers/new-cover.jpg"
+    assert news.status == NewsStatus.DRAFT
+
+    news_repository.get_for_update.assert_called_once_with(news.id)
+    news_repository.save.assert_called_once_with(news)
+
+
+def test_rejects_update_of_nonexistent_news():
+    news_repository = Mock()
+    news_repository.get_for_update.return_value = None
+
+    use_case = UpdateNewsUseCase(news_repository)
+
+    news_id = uuid4()
+
+    with pytest.raises(type(NewsErrors.NotFound)):
+        use_case.execute(
+            news_id=news_id,
+            title="Título nuevo",
+            content={"blocks": []},
+            cover_image=None,
+        )
+
+    news_repository.get_for_update.assert_called_once_with(news_id)
+    news_repository.save.assert_not_called()

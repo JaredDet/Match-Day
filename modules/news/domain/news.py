@@ -104,6 +104,13 @@ class News(models.Model):
         if self.status == NewsStatus.PUBLISHED:
             raise NewsErrors.AlreadyPublished
 
+        if self.status == NewsStatus.SCHEDULED:
+            raise NewsErrors.ScheduledNewsCannotBeEdited
+
+    def ensure_deletable(self) -> None:
+        if self.status != NewsStatus.DRAFT:
+            raise NewsErrors.CannotDelete
+
     @staticmethod
     def _normalize_title(title: str) -> str:
         normalized_title = normalize_whitespace(title)

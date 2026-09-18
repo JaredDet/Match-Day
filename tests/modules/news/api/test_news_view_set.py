@@ -126,3 +126,119 @@ def test_returns_not_found_when_unscheduling_unknown_news():
 
     assert response.status_code == 404
     assert response.data["code"] == "news_not_found"
+
+
+def test_updates_news():
+    news = News.objects.create(
+        title="Título anterior",
+        content={"blocks": []},
+    )
+
+    response = APIClient().patch(
+        reverse("news-detail", args=[str(news.id)]),
+        {
+            "title": "  Título   nuevo  ",
+            "content": {
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": "Contenido nuevo",
+                    }
+                ]
+            },
+            "cover_image": None,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+
+    news.refresh_from_db()
+
+    assert news.title == "Título nuevo"
+    assert news.content == {
+        "blocks": [
+            {
+                "type": "paragraph",
+                "text": "Contenido nuevo",
+            }
+        ]
+    }
+    assert not news.cover_image
+    assert news.status == NewsStatus.DRAFT
+
+
+def test_returns_not_found_when_updating_unknown_news():
+    response = APIClient().patch(
+        reverse("news-detail", args=[str(UUID(int=0))]),
+        {
+            "title": "Título nuevo",
+            "content": {"blocks": []},
+            "cover_image": None,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "news_not_found"
+
+
+def test_schedules_news():
+    news = News.objects.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+    scheduled_at = datetime(2026, 9, 20, 15, 0, tzinfo=UTC)
+
+    response = APIClient().post(
+        reverse("news-schedule", args=[str(news.id)]),
+        {
+            "scheduled_at": scheduled_at.isoformat(),
+        },
+        format="json",
+    )
+
+    assert response.status_code == 204
+
+    news.refresh_from_db()
+
+    assert news.status == NewsStatus.SCHEDULED
+    assert news.scheduled_at == scheduled_at
+
+
+def test_returns_not_found_when_scheduling_unknown_news():
+    scheduled_at = datetime(2026, 9, 20, 15, 0, tzinfo=UTC)
+
+    response = APIClient().post(
+        reverse("news-schedule", args=[str(UUID(int=0))]),
+        {
+            "scheduled_at": scheduled_at.isoformat(),
+        },
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "news_not_found"
+
+
+def test_deletes_news():
+    news = News.objects.create(
+        title="Noticia",
+        content={"blocks": []},
+    )
+
+    response = APIClient().delete(
+        reverse("news-detail", args=[str(news.id)]),
+    )
+
+    assert response.status_code == 204
+    assert not News.objects.filter(id=news.id).exists()
+
+
+def test_returns_not_found_when_deleting_unknown_news():
+    response = APIClient().delete(
+        reverse("news-detail", args=[str(UUID(int=0))]),
+    )
+
+    assert response.status_code == 404
+    assert response.data["code"] == "news_not_found"
