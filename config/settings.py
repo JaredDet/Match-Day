@@ -29,7 +29,8 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-development-only")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
-ALLOWED_HOSTS = [host for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host]
+ALLOWED_HOSTS = [host for host in os.getenv(
+    "DJANGO_ALLOWED_HOSTS", "").split(",") if host]
 
 
 # Application definition
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "modules.teams.apps.TeamsConfig",
     "modules.matches.apps.MatchesConfig",
+    "modules.news.apps.NewsConfig",
 ]
 
 MIDDLEWARE = [
@@ -88,7 +90,8 @@ if REDIS_URL:
         }
     }
 else:
-    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+    CHANNEL_LAYERS = {"default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
 # Database

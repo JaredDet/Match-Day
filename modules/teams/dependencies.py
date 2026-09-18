@@ -24,21 +24,33 @@ from modules.teams.infrastructure.repository.team_repository import TeamReposito
 
 class TeamsModule(injector.Module):
     def configure(self, binder: injector.Binder) -> None:
-        binder.bind(PlayerRepository, to=PlayerRepository, scope=injector.singleton)
-        binder.bind(TeamRepository, to=TeamRepository, scope=injector.singleton)
-        binder.bind(TeamQueryRepository, to=TeamQueryRepository, scope=injector.singleton)
-        binder.bind(PlayerQueryRepository, to=PlayerQueryRepository, scope=injector.singleton)
-        binder.bind(CreateTeamUseCase, to=CreateTeamUseCase, scope=injector.singleton)
-        binder.bind(UpdateTeamUseCase, to=UpdateTeamUseCase, scope=injector.singleton)
-        binder.bind(UpdatePlayerUseCase, to=UpdatePlayerUseCase, scope=injector.singleton)
-        binder.bind(SetTeamCaptainUseCase, to=SetTeamCaptainUseCase, scope=injector.singleton)
-        binder.bind(RegisterPlayerUseCase, to=RegisterPlayerUseCase, scope=injector.singleton)
+        binder.bind(PlayerRepository, to=PlayerRepository,
+                    scope=injector.singleton)
+        binder.bind(TeamRepository, to=TeamRepository,
+                    scope=injector.singleton)
+        binder.bind(TeamQueryRepository, to=TeamQueryRepository,
+                    scope=injector.singleton)
+        binder.bind(PlayerQueryRepository, to=PlayerQueryRepository,
+                    scope=injector.singleton)
+        binder.bind(CreateTeamUseCase, to=CreateTeamUseCase,
+                    scope=injector.singleton)
+        binder.bind(UpdateTeamUseCase, to=UpdateTeamUseCase,
+                    scope=injector.singleton)
+        binder.bind(UpdatePlayerUseCase, to=UpdatePlayerUseCase,
+                    scope=injector.singleton)
+        binder.bind(SetTeamCaptainUseCase, to=SetTeamCaptainUseCase,
+                    scope=injector.singleton)
+        binder.bind(RegisterPlayerUseCase, to=RegisterPlayerUseCase,
+                    scope=injector.singleton)
         binder.bind(
             RegisterTeamSquadUseCase,
             to=RegisterTeamSquadUseCase,
             scope=injector.singleton,
         )
-        binder.bind(ListTeamsQuery, to=ListTeamsQuery, scope=injector.singleton)
+        binder.bind(ListTeamsQuery, to=ListTeamsQuery,
+                    scope=injector.singleton)
         binder.bind(GetTeamQuery, to=GetTeamQuery, scope=injector.singleton)
-        binder.bind(ListPlayersQuery, to=ListPlayersQuery, scope=injector.singleton)
-        binder.bind(GetPlayerQuery, to=GetPlayerQuery, scope=injector.singleton)
+        binder.bind(ListPlayersQuery, to=ListPlayersQuery,
+                    scope=injector.singleton)
+        binder.bind(GetPlayerQuery, to=GetPlayerQuery,
+                    scope=injector.singleton)
