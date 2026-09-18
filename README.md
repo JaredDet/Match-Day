@@ -52,12 +52,17 @@ http://127.0.0.1:8000/api/docs/
 
 ## Datos de demostración
 
-Crea cuatro equipos ficticios, sus 64 jugadores y quince partidos: ocho
-finalizados, tres en vivo y cuatro programados. Los partidos demostrativos
-incluyen estadio, árbitro, directores técnicos, formaciones, alineaciones,
-capitanes habituales,
-goles, autogoles, asistencias, tarjetas, sustituciones, lesiones, penales, VAR,
-faltas, tiros de esquina, fueras de juego, tiros, atajadas y posesión:
+Crea cuatro equipos ficticios, sus 64 jugadores, quince partidos y siete
+noticias. Los partidos demostrativos incluyen ocho finalizados, tres en vivo y
+cuatro programados, además de estadio, árbitro, directores técnicos,
+formaciones, alineaciones, capitanes habituales, goles, autogoles, asistencias,
+tarjetas, sustituciones, lesiones, penales, VAR, faltas, tiros de esquina,
+fueras de juego, tiros, atajadas y posesión.
+
+Las noticias demostrativas incluyen noticias publicadas, programadas y en
+borrador, tanto asociadas a equipos como de carácter general.
+
+## Para crear los datos de partidos:
 
 ```bash
 uv run python manage.py seed_demo_match
@@ -75,13 +80,27 @@ uv run python manage.py show_demo_match
 
 `show_demo_match` requiere haber ejecutado primero `seed_demo_match`.
 
+## Para crear los datos de noticias:
+
+```bash
+uv run python manage.py seed_demo_news
+```
+
+El comando es idempotente: reutiliza las noticias que ya existan y crea las que
+falten.
+
 ## Recursos principales
 
 - `/api/matches`: partidos, alineaciones, marcador y eventos.
 - `/api/teams`: equipos, plantilla y capitán habitual.
 - `/api/players`: jugadores, apariciones, goles e historial reciente.
+- `/api/news`: creación, consulta, edición, programación, publicación y
+  eliminación de noticias.
 
-Al configurar una alineación, `captain_id` es opcional. Si se omite, se intenta
+Las noticias pueden ser generales o estar asociadas a un equipo. Su ciclo de
+vida contempla los estados DRAFT, SCHEDULED y PUBLISHED.
+
+Al configurar una alineación, captain_id es opcional. Si se omite, se intenta
 usar el capitán habitual. Si no forma parte de los once jugadores, la alineación
 queda sin capitán y se registra una advertencia para que el operador la revise;
 nunca se elige otro jugador automáticamente.

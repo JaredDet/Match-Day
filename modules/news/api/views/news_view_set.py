@@ -6,14 +6,17 @@ from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
 from modules.news.api.contracts.requests.create_news_request import CreateNewsRequest
+from modules.news.api.contracts.requests.list_news_request import ListNewsRequest
 from modules.news.api.contracts.requests.schedule_news_request import ScheduleNewsRequest
 from modules.news.api.contracts.requests.update_news_request import UpdateNewsRequest
+from modules.news.api.contracts.responses.list_news_response import ListNewsResponse
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
 from modules.news.application.commands.delete_news_use_case import DeleteNewsUseCase
 from modules.news.application.commands.publish_news_use_case import PublishNewsUseCase
 from modules.news.application.commands.schedule_news_use_case import ScheduleNewsUseCase
 from modules.news.application.commands.unschedule_news_use_case import UnscheduleNewsUseCase
 from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
+from modules.news.application.queries.list_news_query import ListNewsQuery
 
 
 class NewsViewSet(ViewSet):
@@ -37,6 +40,20 @@ class NewsViewSet(ViewSet):
         news_id = use_case.execute(**request_contract.validated_data)
 
         return Response({"id": str(news_id)}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id="news_list",
+        parameters=[ListNewsRequest],
+        responses={status.HTTP_200_OK: ListNewsResponse(many=True)},
+    )
+    def list(self, request):
+        request_contract = ListNewsRequest(data=request.query_params)
+        request_contract.is_valid(raise_exception=True)
+
+        query = injector_instance.get(ListNewsQuery)
+        news = query.execute(**request_contract.validated_data)
+
+        return Response(ListNewsResponse(news, many=True).data)
 
     @extend_schema(
         operation_id="news_update",

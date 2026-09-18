@@ -59,6 +59,7 @@ from modules.news.application.commands.unschedule_news_use_case import (
     UnscheduleNewsUseCase,
 )
 from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
+from modules.news.application.queries.list_news_query import ListNewsQuery
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
@@ -113,18 +114,19 @@ def test_rejects_unregistered_dependencies():
         RegisterPenaltyShootoutKickUseCase,
         ReducePenaltyShootoutParticipantsUseCase,
         FinishPenaltyShootoutUseCase,
-        ListMatchesQuery,
-        GetMatchQuery,
-        ListTeamsQuery,
-        GetTeamQuery,
-        ListPlayersQuery,
-        GetPlayerQuery,
         CreateNewsUseCase,
         UpdateNewsUseCase,
         ScheduleNewsUseCase,
         PublishNewsUseCase,
         UnscheduleNewsUseCase,
         DeleteNewsUseCase,
+        ListMatchesQuery,
+        GetMatchQuery,
+        ListTeamsQuery,
+        GetTeamQuery,
+        ListPlayersQuery,
+        GetPlayerQuery,
+        ListNewsQuery,
     ],
 )
 def test_resolves_demo_dependencies(dependency):

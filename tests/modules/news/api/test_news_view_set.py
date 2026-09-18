@@ -242,3 +242,146 @@ def test_returns_not_found_when_deleting_unknown_news():
 
     assert response.status_code == 404
     assert response.data["code"] == "news_not_found"
+
+
+def test_lists_news():
+    team = Team.objects.create(name="Atlético Bahía")
+
+    older = News.objects.create(
+        team=team,
+        title="Noticia antigua",
+        content={"blocks": [{"type": "paragraph", "text": "Contenido antiguo"}]},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 5, 18, tzinfo=UTC),
+    )
+    newer = News.objects.create(
+        team=team,
+        title="Noticia reciente",
+        content={"blocks": [{"type": "paragraph", "text": "Contenido reciente"}]},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
+    )
+
+    response = APIClient().get(reverse("news-list"))
+
+    assert response.status_code == 200
+    assert [news["id"] for news in response.data] == [
+        str(newer.id),
+        str(older.id),
+    ]
+
+    assert response.data[0] == {
+        "id": str(newer.id),
+        "title": "Noticia reciente",
+        "team_id": str(team.id),
+        "cover_image": None,
+        "content": {
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": "Contenido reciente",
+                }
+            ]
+        },
+        "status": "PUBLISHED",
+        "scheduled_at": None,
+        "published_at": "2026-08-20T18:00:00Z",
+    }
+
+
+def test_filters_news_by_status():
+    published = News.objects.create(
+        title="Noticia publicada",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
+    )
+    News.objects.create(
+        title="Noticia programada",
+        content={"blocks": []},
+        status=NewsStatus.SCHEDULED,
+        scheduled_at=datetime(2026, 9, 20, 18, tzinfo=UTC),
+    )
+    News.objects.create(
+        title="Noticia en borrador",
+        content={"blocks": []},
+        status=NewsStatus.DRAFT,
+    )
+
+    response = APIClient().get(
+        reverse("news-list"),
+        {"status": "PUBLISHED"},
+    )
+
+    assert response.status_code == 200
+    assert [news["id"] for news in response.data] == [str(published.id)]
+    assert response.data[0]["status"] == "PUBLISHED"
+
+
+def test_filters_news_by_team():
+    atletico = Team.objects.create(name="Atlético Bahía")
+    cordillera = Team.objects.create(name="Deportivo Cordillera")
+
+    atletico_news = News.objects.create(
+        team=atletico,
+        title="Noticias de Atlético",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
+    )
+    News.objects.create(
+        team=cordillera,
+        title="Noticias de Cordillera",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 21, 18, tzinfo=UTC),
+    )
+
+    response = APIClient().get(
+        reverse("news-list"),
+        {"team_id": str(atletico.id)},
+    )
+
+    assert response.status_code == 200
+    assert [news["id"] for news in response.data] == [str(atletico_news.id)]
+
+
+def test_filters_news_by_published_date_range():
+    News.objects.create(
+        title="Antes del rango",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 1, 18, tzinfo=UTC),
+    )
+    inside = News.objects.create(
+        title="Dentro del rango",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 8, 15, 18, tzinfo=UTC),
+    )
+    News.objects.create(
+        title="Después del rango",
+        content={"blocks": []},
+        status=NewsStatus.PUBLISHED,
+        published_at=datetime(2026, 9, 1, 18, tzinfo=UTC),
+    )
+
+    response = APIClient().get(
+        reverse("news-list"),
+        {
+            "published_from": "2026-08-10T00:00:00Z",
+            "published_to": "2026-08-20T23:59:00Z",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [news["id"] for news in response.data] == [str(inside.id)]
+
+
+def test_rejects_news_list_with_invalid_status():
+    response = APIClient().get(
+        reverse("news-list"),
+        {"status": "INVALID"},
+    )
+
+    assert response.status_code == 400
