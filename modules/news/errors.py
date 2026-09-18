@@ -42,3 +42,9 @@ class NewsErrors:
         "La noticia solo puede eliminarse cuando está en borrador",
         ErrorType.VALIDATION,
     )
+
+    InvalidContent = AppException(
+        "invalid_news_content",
+        "El contenido de la noticia no es válido",
+        ErrorType.VALIDATION,
+    )

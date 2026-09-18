@@ -20,11 +20,8 @@ def test_creates_news_through_injected_use_case():
             "title": "  Nueva   noticia  ",
             "team_id": str(team.id),
             "content": {
-                "blocks": [
-                    {
-                        "type": "paragraph",
-                        "text": "Contenido de la noticia",
-                    }
+                "children": [
+                    "Contenido de la noticia",
                 ]
             },
         },
@@ -37,11 +34,8 @@ def test_creates_news_through_injected_use_case():
     assert news.team == team
     assert news.title == "Nueva noticia"
     assert news.content == {
-        "blocks": [
-            {
-                "type": "paragraph",
-                "text": "Contenido de la noticia",
-            }
+        "children": [
+            "Contenido de la noticia",
         ]
     }
     assert news.status == NewsStatus.DRAFT
@@ -52,7 +46,9 @@ def test_creates_general_news_without_team():
         reverse("news-list"),
         {
             "title": "Noticia general",
-            "content": {"blocks": []},
+            "content": {
+                "children": [],
+            },
         },
         format="json",
     )
@@ -70,7 +66,9 @@ def test_rejects_news_with_unknown_team():
         {
             "title": "Nueva noticia",
             "team_id": str(UUID(int=0)),
-            "content": {"blocks": []},
+            "content": {
+                "children": [],
+            },
         },
         format="json",
     )
@@ -82,7 +80,9 @@ def test_rejects_news_with_unknown_team():
 def test_publishes_news():
     news = News.objects.create(
         title="Noticia",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
     )
 
     response = APIClient().post(reverse("news-publish", args=[str(news.id)]))
@@ -106,7 +106,9 @@ def test_returns_not_found_when_publishing_unknown_news():
 def test_unschedules_news():
     news = News.objects.create(
         title="Noticia",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.SCHEDULED,
         scheduled_at=datetime(2026, 9, 20, 15, 0, tzinfo=UTC),
     )
@@ -131,7 +133,9 @@ def test_returns_not_found_when_unscheduling_unknown_news():
 def test_updates_news():
     news = News.objects.create(
         title="Título anterior",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
     )
 
     response = APIClient().patch(
@@ -139,11 +143,8 @@ def test_updates_news():
         {
             "title": "  Título   nuevo  ",
             "content": {
-                "blocks": [
-                    {
-                        "type": "paragraph",
-                        "text": "Contenido nuevo",
-                    }
+                "children": [
+                    "Contenido nuevo",
                 ]
             },
             "cover_image": None,
@@ -157,11 +158,8 @@ def test_updates_news():
 
     assert news.title == "Título nuevo"
     assert news.content == {
-        "blocks": [
-            {
-                "type": "paragraph",
-                "text": "Contenido nuevo",
-            }
+        "children": [
+            "Contenido nuevo",
         ]
     }
     assert not news.cover_image
@@ -173,7 +171,9 @@ def test_returns_not_found_when_updating_unknown_news():
         reverse("news-detail", args=[str(UUID(int=0))]),
         {
             "title": "Título nuevo",
-            "content": {"blocks": []},
+            "content": {
+                "children": [],
+            },
             "cover_image": None,
         },
         format="json",
@@ -186,7 +186,9 @@ def test_returns_not_found_when_updating_unknown_news():
 def test_schedules_news():
     news = News.objects.create(
         title="Noticia",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
     )
     scheduled_at = datetime(2026, 9, 20, 15, 0, tzinfo=UTC)
 
@@ -224,7 +226,9 @@ def test_returns_not_found_when_scheduling_unknown_news():
 def test_deletes_news():
     news = News.objects.create(
         title="Noticia",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
     )
 
     response = APIClient().delete(
@@ -250,14 +254,22 @@ def test_lists_news():
     older = News.objects.create(
         team=team,
         title="Noticia antigua",
-        content={"blocks": [{"type": "paragraph", "text": "Contenido antiguo"}]},
+        content={
+            "children": [
+                "Contenido antiguo",
+            ]
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 5, 18, tzinfo=UTC),
     )
     newer = News.objects.create(
         team=team,
         title="Noticia reciente",
-        content={"blocks": [{"type": "paragraph", "text": "Contenido reciente"}]},
+        content={
+            "children": [
+                "Contenido reciente",
+            ]
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
     )
@@ -276,11 +288,8 @@ def test_lists_news():
         "team_id": str(team.id),
         "cover_image": None,
         "content": {
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": "Contenido reciente",
-                }
+            "children": [
+                "Contenido reciente",
             ]
         },
         "status": "PUBLISHED",
@@ -297,11 +306,8 @@ def test_gets_news():
         team=team,
         title="Noticia completa",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": "Contenido de la noticia",
-                }
+            "children": [
+                "Contenido de la noticia",
             ]
         },
         status=NewsStatus.PUBLISHED,
@@ -319,11 +325,8 @@ def test_gets_news():
         "team_id": str(team.id),
         "cover_image": None,
         "content": {
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": "Contenido de la noticia",
-                }
+            "children": [
+                "Contenido de la noticia",
             ]
         },
         "status": "PUBLISHED",
@@ -344,19 +347,25 @@ def test_returns_not_found_when_getting_unknown_news():
 def test_filters_news_by_status():
     published = News.objects.create(
         title="Noticia publicada",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
     )
     News.objects.create(
         title="Noticia programada",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.SCHEDULED,
         scheduled_at=datetime(2026, 9, 20, 18, tzinfo=UTC),
     )
     News.objects.create(
         title="Noticia en borrador",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.DRAFT,
     )
 
@@ -377,14 +386,18 @@ def test_filters_news_by_team():
     atletico_news = News.objects.create(
         team=atletico,
         title="Noticias de Atlético",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 20, 18, tzinfo=UTC),
     )
     News.objects.create(
         team=cordillera,
         title="Noticias de Cordillera",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 21, 18, tzinfo=UTC),
     )
@@ -401,19 +414,25 @@ def test_filters_news_by_team():
 def test_filters_news_by_published_date_range():
     News.objects.create(
         title="Antes del rango",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 1, 18, tzinfo=UTC),
     )
     inside = News.objects.create(
         title="Dentro del rango",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 8, 15, 18, tzinfo=UTC),
     )
     News.objects.create(
         title="Después del rango",
-        content={"blocks": []},
+        content={
+            "children": [],
+        },
         status=NewsStatus.PUBLISHED,
         published_at=datetime(2026, 9, 1, 18, tzinfo=UTC),
     )

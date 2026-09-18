@@ -3,14 +3,20 @@ from uuid import UUID
 from django.db import transaction
 from injector import inject
 
+from modules.news.application.news_content_parser import NewsContentParser
 from modules.news.errors import NewsErrors
 from modules.news.infrastructure.repository.news_repository import NewsRepository
 
 
 class UpdateNewsUseCase:
     @inject
-    def __init__(self, news_repository: NewsRepository):
+    def __init__(
+        self,
+        news_repository: NewsRepository,
+        news_content_parser: NewsContentParser,
+    ):
         self.news_repository = news_repository
+        self.news_content_parser = news_content_parser
 
     @transaction.atomic
     def execute(
@@ -25,6 +31,8 @@ class UpdateNewsUseCase:
 
         if news is None:
             raise NewsErrors.NotFound
+
+        content = self.news_content_parser.parse(content)
 
         news.rename(title)
         news.update_content(content)

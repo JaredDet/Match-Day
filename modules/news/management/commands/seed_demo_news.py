@@ -325,21 +325,11 @@ NEWS = (
     DemoNews(
         title="Atlético Bahía se prepara para una nueva jornada",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "Atlético Bahía continúa sus entrenamientos de cara a su "
-                        "próximo compromiso de liga."
-                    ),
-                },
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "El cuerpo técnico trabaja durante la semana para mantener "
-                        "el buen momento del equipo."
-                    ),
-                },
+            "children": [
+                "Atlético Bahía continúa sus entrenamientos de cara a su "
+                "próximo compromiso de liga.",
+                "El cuerpo técnico trabaja durante la semana para mantener "
+                "el <b>buen momento del equipo</b>.",
             ]
         },
         team=HOME_TEAM_NAME,
@@ -349,21 +339,11 @@ NEWS = (
     DemoNews(
         title="Deportivo Cordillera presenta su nueva plantilla",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "Deportivo Cordillera presentó oficialmente a los jugadores "
-                        "que formarán parte de su plantilla esta temporada."
-                    ),
-                },
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "El equipo comenzará su preparación con miras a los próximos "
-                        "partidos del campeonato."
-                    ),
-                },
+            "children": [
+                "Deportivo Cordillera presentó oficialmente a los jugadores "
+                "que formarán parte de su plantilla esta temporada.",
+                "El equipo comenzará su preparación con miras a los próximos "
+                "partidos del <i>campeonato</i>.",
             ]
         },
         team=AWAY_TEAM_NAME,
@@ -373,14 +353,9 @@ NEWS = (
     DemoNews(
         title="Unión del Valle anuncia su próximo partido",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "Unión del Valle ya tiene todo preparado para su próximo "
-                        "partido como local."
-                    ),
-                },
+            "children": [
+                "Unión del Valle ya tiene todo preparado para su próximo partido como local.",
+                "El encuentro será una jornada <b><i>especial</i></b> para sus hinchas.",
             ]
         },
         team=UNION_TEAM_NAME,
@@ -390,14 +365,9 @@ NEWS = (
     DemoNews(
         title="Sporting del Bosque prepara una jornada especial",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "El club prepara una jornada especial para sus hinchas "
-                        "durante el próximo fin de semana."
-                    ),
-                },
+            "children": [
+                "El club prepara una jornada especial para sus hinchas "
+                "durante el próximo fin de semana.",
             ]
         },
         team=SPORTING_TEAM_NAME,
@@ -407,14 +377,10 @@ NEWS = (
     DemoNews(
         title="Resultados y novedades de la jornada",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "Revisa las principales novedades de la fecha y los resultados "
-                        "de los encuentros disputados durante el fin de semana."
-                    ),
-                },
+            "children": [
+                "Revisa las principales novedades de la fecha y los resultados "
+                "de los encuentros disputados durante el fin de semana.",
+                "Consulta los <b>resultados destacados</b> y las novedades de cada encuentro.",
             ]
         },
         team=None,
@@ -424,14 +390,10 @@ NEWS = (
     DemoNews(
         title="Entrevista con el capitán de Atlético Bahía",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "El capitán de Atlético Bahía conversó sobre la preparación "
-                        "del equipo y los objetivos para la temporada."
-                    ),
-                },
+            "children": [
+                "El capitán de Atlético Bahía conversó sobre la preparación "
+                "del equipo y los objetivos para la temporada.",
+                "El jugador destacó la importancia de mantener el <i>trabajo colectivo</i>.",
             ]
         },
         team=HOME_TEAM_NAME,
@@ -440,14 +402,9 @@ NEWS = (
     DemoNews(
         title="Información institucional del campeonato",
         content={
-            "blocks": [
-                {
-                    "type": "paragraph",
-                    "text": (
-                        "La organización del campeonato informó novedades relacionadas "
-                        "con la programación de las próximas jornadas."
-                    ),
-                },
+            "children": [
+                "La organización del campeonato informó novedades relacionadas "
+                "con la programación de las próximas jornadas.",
             ]
         },
         team=None,
@@ -461,7 +418,7 @@ def find_demo_match() -> Match | None:
         scheduled_at=SCHEDULED_AT,
         stadium_name=STADIUM_NAME,
         home_team_name=HOME_TEAM_NAME,
-        away_team_name=AWAY_TEAM_NAME,
+        away_team_name=HOME_TEAM_NAME,
     ).first()
 
 
@@ -848,7 +805,6 @@ class Command(BaseCommand):
         )
 
         home_goals = [18 + index * 22 for index in range(fixture.score[0])]
-
         away_goals = [31 + index * 24 for index in range(fixture.score[1])]
 
         for index, minute in enumerate(home_goals):
