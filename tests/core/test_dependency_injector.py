@@ -54,6 +54,9 @@ from modules.matches.application.queries.list_matches_query import ListMatchesQu
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
 from modules.news.application.commands.delete_news_use_case import DeleteNewsUseCase
 from modules.news.application.commands.publish_news_use_case import PublishNewsUseCase
+from modules.news.application.commands.publish_scheduled_news_use_case import (
+    PublishScheduledNewsUseCase,
+)
 from modules.news.application.commands.schedule_news_use_case import ScheduleNewsUseCase
 from modules.news.application.commands.unschedule_news_use_case import (
     UnscheduleNewsUseCase,
@@ -121,6 +124,7 @@ def test_rejects_unregistered_dependencies():
         NewsContentParser,
         ScheduleNewsUseCase,
         PublishNewsUseCase,
+        PublishScheduledNewsUseCase,
         UnscheduleNewsUseCase,
         DeleteNewsUseCase,
         ListMatchesQuery,

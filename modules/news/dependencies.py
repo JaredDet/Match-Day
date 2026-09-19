@@ -3,6 +3,9 @@ import injector
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
 from modules.news.application.commands.delete_news_use_case import DeleteNewsUseCase
 from modules.news.application.commands.publish_news_use_case import PublishNewsUseCase
+from modules.news.application.commands.publish_scheduled_news_use_case import (
+    PublishScheduledNewsUseCase,
+)
 from modules.news.application.commands.schedule_news_use_case import ScheduleNewsUseCase
 from modules.news.application.commands.unschedule_news_use_case import UnscheduleNewsUseCase
 from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
@@ -28,3 +31,6 @@ class NewsModule(injector.Module):
         binder.bind(GetNewsQuery, to=GetNewsQuery, scope=injector.singleton)
         binder.bind(ListNewsQuery, to=ListNewsQuery, scope=injector.singleton)
         binder.bind(NewsContentParser, to=NewsContentParser, scope=injector.singleton)
+        binder.bind(
+            PublishScheduledNewsUseCase, to=PublishScheduledNewsUseCase, scope=injector.singleton
+        )
