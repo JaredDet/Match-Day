@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "modules.teams.apps.TeamsConfig",
     "modules.matches.apps.MatchesConfig",
     "modules.news.apps.NewsConfig",
+    "modules.tournaments.apps.TournamentsConfig",
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,36 @@
+@startuml TournamentAdvancement
+title Torneos - Generacion y avance automatico
+actor Administrador
+participant "Season API" as API
+participant "GenerateBracketUseCase" as Generate
+participant "Match / Shootout" as Match
+participant "on_commit" as Commit
+participant "AdvanceBracketUseCase" as Advance
+database "Repositorios / DB" as DB
+Administrador -> API : POST generate-bracket
+API -> Generate : datos validados
+Generate -> DB : bloquear temporada y validar inscritos / clasificados
+Generate -> DB : crear fases, origen y primera ronda (atomico)
+Generate --> API : phase_ids
+API --> Administrador : 201
+Match -> DB : guardar inicio / resultado / tanda
+Match -> Commit : registrar callback
+DB --> Commit : transaccion confirmada
+Commit -> Advance : temporada del partido
+Advance -> DB : bloquear temporada, consultar ronda y ganadores
+alt ronda completa y ganadores resueltos
+  Advance -> DB : crear partidos siguientes si no existen
+  Advance -> DB : semifinales: crear tercer puesto con perdedores
+  Advance -> DB : actualizar estados de fases
+else ronda pendiente o tanda no finalizada
+  Advance -> DB : conservar ronda, esperar resultados
+end
+note over Advance, DB
+  Repetir no duplica cruces.
+  Origen incompatible con cruces existentes: conflicto.
+end note
+Administrador -> API : POST advance-bracket (recuperacion)
+API -> Advance : mismo caso de uso
+Advance --> API : created_matches
+API --> Administrador : 200 o 409
+@enduml

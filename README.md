@@ -1,7 +1,7 @@
 # Matchday
 
 API para administrar y consultar partidos de fútbol, incluyendo equipos,
-jugadores, formaciones, alineaciones y una cronología completa de eventos.
+jugadores, formaciones, alineaciones, noticias, torneos y una cronología completa de eventos.
 
 ## Requisitos
 
@@ -96,9 +96,19 @@ falten.
 - `/api/players`: jugadores, apariciones, goles e historial reciente.
 - `/api/news`: creación, consulta, edición, programación, publicación y
   eliminación de noticias.
+- `/api/tournaments/`: torneos y temporadas por slug.
+- `/api/tournament-seasons/`: equipos inscritos, clasificación, cuadro y partidos de una edición.
+- `/api/tournament-phases/`, `/api/tournament-groups/`,
+  `/api/tournament-group-entries/`, `/api/tournament-fixtures/`: etapas, grupos,
+  inscripción por grupo y asociación con partidos existentes.
 
 Las noticias pueden ser generales o estar asociadas a un equipo. Su ciclo de
 vida contempla los estados DRAFT, SCHEDULED y PUBLISHED.
+
+El [índice de documentación](docs/README.md) reúne las guías de
+[noticias](docs/news.md), [torneos](docs/tournaments.md) y [testing](docs/testing.md).
+La publicación programada requiere ejecutar `publish_scheduled_news` aparte del
+servidor, o `publish_scheduled_news --once` desde un planificador.
 
 Al configurar una alineación, captain_id es opcional. Si se omite, se intenta
 usar el capitán habitual. Si no forma parte de los once jugadores, la alineación
@@ -117,7 +127,7 @@ implementación sigue la Regla 10 de las Reglas de Juego de IFAB.
 
 ## Diagramas
 
-Los diagramas PlantUML de la V5 se encuentran en `docs/diagrams`. Las vistas
+Los diagramas PlantUML se encuentran en `docs/diagrams`. Las vistas
 generales se complementan con diagramas pequeños por responsabilidad:
 
 - `domain-model.puml`: vista general y rutas hacia los modelos detallados.
@@ -138,6 +148,15 @@ Ejecuta toda la suite:
 ```bash
 uv run pytest
 ```
+
+Para comprobar noticias y torneos, incluidas las pruebas por capa:
+
+```bash
+uv run pytest tests/modules/news tests/modules/tournaments
+```
+
+La [guía de testing](docs/testing.md) detalla los escenarios cubiertos y los
+comandos para comprobar migraciones, OpenAPI y diagramas.
 
 Comprueba formato y reglas de Ruff:
 

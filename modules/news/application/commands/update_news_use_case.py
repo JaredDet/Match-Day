@@ -7,6 +7,8 @@ from modules.news.application.news_content_parser import NewsContentParser
 from modules.news.errors import NewsErrors
 from modules.news.infrastructure.repository.news_repository import NewsRepository
 
+_UNSET = object()
+
 
 class UpdateNewsUseCase:
     @inject
@@ -25,7 +27,7 @@ class UpdateNewsUseCase:
         news_id: UUID,
         title: str,
         content: dict,
-        cover_image: str | None,
+        cover_image: str | None = _UNSET,
     ) -> None:
         news = self.news_repository.get_for_update(news_id)
 
@@ -36,6 +38,8 @@ class UpdateNewsUseCase:
 
         news.rename(title)
         news.update_content(content)
-        news.update_cover_image(cover_image)
+
+        if cover_image is not _UNSET:
+            news.update_cover_image(cover_image)
 
         self.news_repository.save(news)

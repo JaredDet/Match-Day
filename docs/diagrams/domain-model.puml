@@ -1,5 +1,5 @@
 @startuml Matchday Domain Overview
-title Matchday V5 - Vista general del dominio
+title Matchday - Vista general del dominio
 
 skinparam componentStyle rectangle
 skinparam linetype ortho
@@ -36,4 +36,33 @@ end note
 note bottom of Shootout
   Ver domain/penalty-shootout.puml
 end note
+
+package news {
+  component News
+}
+package tournaments {
+  component Tournament
+  component Season
+  component Phase
+  component Group
+  component GroupEntry
+  component Fixture
+}
+News --> Team : equipo opcional
+Tournament --> Season
+Season --> Team : inscritos
+Season --> Phase
+Phase --> Group
+Group --> GroupEntry
+GroupEntry --> Team
+Phase --> Fixture
+Fixture --> Group : opcional
+Fixture --> MatchCore : Match existente (OneToOne)
+note bottom of News
+  Ver domain/news.puml y news-lifecycle.puml
+end note
+note bottom of Tournament
+  Ver domain/tournaments.puml
+end note
+
 @enduml

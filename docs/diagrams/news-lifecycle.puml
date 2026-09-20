@@ -1,0 +1,19 @@
+@startuml NewsLifecycle
+title Noticias - Ciclo de vida
+[*] --> DRAFT : crear
+DRAFT --> DRAFT : editar
+DRAFT --> SCHEDULED : programar / scheduled_at
+SCHEDULED --> DRAFT : cancelar / limpiar scheduled_at
+DRAFT --> PUBLISHED : publicar ahora
+SCHEDULED --> PUBLISHED : publicar ahora o monitor si vencida
+DRAFT --> [*] : eliminar
+note right of PUBLISHED
+  published_at = momento de publicacion
+  scheduled_at = null
+  Solo consulta; sin retorno a borrador.
+end note
+note left of SCHEDULED
+  No permite editar ni eliminar.
+  Monitor independiente del servidor web.
+end note
+@enduml

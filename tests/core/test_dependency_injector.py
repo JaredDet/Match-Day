@@ -76,6 +76,56 @@ from modules.teams.application.queries.get_player_query import GetPlayerQuery
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_players_query import ListPlayersQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
+from modules.tournaments.application.commands.add_season_team_use_case import AddSeasonTeamUseCase
+from modules.tournaments.application.commands.advance_bracket_use_case import AdvanceBracketUseCase
+from modules.tournaments.application.commands.create_fixture_use_case import CreateFixtureUseCase
+from modules.tournaments.application.commands.create_group_entry_use_case import (
+    CreateGroupEntryUseCase,
+)
+from modules.tournaments.application.commands.create_group_use_case import CreateGroupUseCase
+from modules.tournaments.application.commands.create_phase_use_case import CreatePhaseUseCase
+from modules.tournaments.application.commands.create_season_use_case import CreateSeasonUseCase
+from modules.tournaments.application.commands.create_tournament_use_case import (
+    CreateTournamentUseCase,
+)
+from modules.tournaments.application.commands.delete_fixture_use_case import DeleteFixtureUseCase
+from modules.tournaments.application.commands.delete_group_entry_use_case import (
+    DeleteGroupEntryUseCase,
+)
+from modules.tournaments.application.commands.delete_group_use_case import DeleteGroupUseCase
+from modules.tournaments.application.commands.delete_phase_use_case import DeletePhaseUseCase
+from modules.tournaments.application.commands.generate_bracket_use_case import (
+    GenerateBracketUseCase,
+)
+from modules.tournaments.application.commands.remove_season_team_use_case import (
+    RemoveSeasonTeamUseCase,
+)
+from modules.tournaments.application.commands.set_group_tie_break_use_case import (
+    SetGroupTieBreakUseCase,
+)
+from modules.tournaments.application.commands.set_phase_status_use_case import SetPhaseStatusUseCase
+from modules.tournaments.application.commands.update_fixture_use_case import UpdateFixtureUseCase
+from modules.tournaments.application.commands.update_group_use_case import UpdateGroupUseCase
+from modules.tournaments.application.commands.update_phase_use_case import UpdatePhaseUseCase
+from modules.tournaments.application.queries.get_fixture_query import GetFixtureQuery
+from modules.tournaments.application.queries.get_group_entry_query import GetGroupEntryQuery
+from modules.tournaments.application.queries.get_group_query import GetGroupQuery
+from modules.tournaments.application.queries.get_phase_query import GetPhaseQuery
+from modules.tournaments.application.queries.get_season_bracket_query import GetSeasonBracketQuery
+from modules.tournaments.application.queries.get_season_query import GetSeasonQuery
+from modules.tournaments.application.queries.get_season_standings_query import (
+    GetSeasonStandingsQuery,
+)
+from modules.tournaments.application.queries.get_tournament_query import GetTournamentQuery
+from modules.tournaments.application.queries.list_fixtures_query import ListFixturesQuery
+from modules.tournaments.application.queries.list_group_entries_query import ListGroupEntriesQuery
+from modules.tournaments.application.queries.list_groups_query import ListGroupsQuery
+from modules.tournaments.application.queries.list_phases_query import ListPhasesQuery
+from modules.tournaments.application.queries.list_season_fixtures_query import (
+    ListSeasonFixturesQuery,
+)
+from modules.tournaments.application.queries.list_seasons_query import ListSeasonsQuery
+from modules.tournaments.application.queries.list_tournaments_query import ListTournamentsQuery
 
 
 def test_rejects_unregistered_dependencies():
@@ -135,6 +185,40 @@ def test_rejects_unregistered_dependencies():
         GetPlayerQuery,
         ListNewsQuery,
         GetNewsQuery,
+        CreateTournamentUseCase,
+        AddSeasonTeamUseCase,
+        RemoveSeasonTeamUseCase,
+        UpdatePhaseUseCase,
+        UpdateGroupUseCase,
+        UpdateFixtureUseCase,
+        DeletePhaseUseCase,
+        DeleteGroupUseCase,
+        DeleteFixtureUseCase,
+        DeleteGroupEntryUseCase,
+        SetGroupTieBreakUseCase,
+        GenerateBracketUseCase,
+        AdvanceBracketUseCase,
+        CreateSeasonUseCase,
+        CreatePhaseUseCase,
+        CreateGroupUseCase,
+        CreateGroupEntryUseCase,
+        CreateFixtureUseCase,
+        SetPhaseStatusUseCase,
+        ListTournamentsQuery,
+        GetTournamentQuery,
+        ListSeasonsQuery,
+        GetSeasonQuery,
+        ListPhasesQuery,
+        GetPhaseQuery,
+        ListGroupsQuery,
+        GetGroupQuery,
+        ListGroupEntriesQuery,
+        GetGroupEntryQuery,
+        ListFixturesQuery,
+        GetFixtureQuery,
+        GetSeasonStandingsQuery,
+        GetSeasonBracketQuery,
+        ListSeasonFixturesQuery,
     ],
 )
 def test_resolves_demo_dependencies(dependency):

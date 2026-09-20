@@ -1,0 +1,35 @@
+@startuml NewsDomain
+title Noticias - Dominio
+hide empty members
+class Team <<teams>>
+class News {
+  id: UUID
+  team_id: UUID?
+  title: string
+  content: JSON
+  cover_image: ImageField?
+  status: NewsStatus
+  scheduled_at: datetime?
+  published_at: datetime?
+  create()
+  rename()
+  update_content()
+  update_cover_image()
+  schedule()
+  unschedule()
+  publish()
+  ensure_deletable()
+}
+enum NewsStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+Team "0..1" <-- "0..*" News : team / PROTECT
+News --> NewsStatus
+note bottom of News
+  Edicion y borrado solo en DRAFT.
+  NewsContentParser valida children y etiquetas b/i.
+  No hay relacion directa con Match o Tournament.
+end note
+@enduml

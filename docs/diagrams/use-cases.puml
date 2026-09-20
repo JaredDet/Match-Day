@@ -1,5 +1,5 @@
 @startuml Matchday Use Case Overview
-title Matchday V5 - Vista general de casos de uso
+title Matchday - Vista general de casos de uso
 
 left to right direction
 actor Administrador
@@ -35,4 +35,28 @@ end note
 note bottom of Queries
   Ver use-cases/match-queries.puml
 end note
+
+actor Editor
+actor "Monitor de noticias" as NewsMonitor
+rectangle "Noticias y torneos" {
+  usecase "Administrar noticias" as NewsWrite
+  usecase "Consultar noticias" as NewsRead
+  usecase "Publicar noticias vencidas" as NewsDue
+  usecase "Administrar torneos, temporadas,
+fases, grupos y fixtures" as TournamentWrite
+  usecase "Consultar clasificacion,
+cuadro y partidos" as TournamentRead
+}
+Editor --> NewsWrite
+Espectador --> NewsRead
+NewsMonitor --> NewsDue
+Administrador --> TournamentWrite
+Espectador --> TournamentRead
+note bottom of NewsWrite
+  Ver use-cases/news.puml
+end note
+note bottom of TournamentWrite
+  Ver use-cases/tournaments.puml
+end note
+
 @enduml

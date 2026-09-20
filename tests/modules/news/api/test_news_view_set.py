@@ -11,6 +11,26 @@ from modules.teams.domain.team import Team
 pytestmark = pytest.mark.django_db
 
 
+@pytest.mark.parametrize("remove_cover", [False, True])
+def test_update_preserves_omitted_cover_and_clears_explicit_null(remove_cover):
+    news = News.objects.create(
+        title="Original", content={"children": []}, cover_image="news/covers/original.jpg"
+    )
+    payload = {"title": "Actualizada", "content": {"children": ["Texto"]}}
+
+    if remove_cover:
+        payload["cover_image"] = None
+
+    response = APIClient().patch(reverse("news-detail", args=[news.id]), payload, format="json")
+
+    assert response.status_code == 204
+
+    news.refresh_from_db()
+
+    assert news.title == "Actualizada"
+    assert (news.cover_image.name or None) == (None if remove_cover else "news/covers/original.jpg")
+
+
 def test_creates_news_through_injected_use_case():
     team = Team.objects.create(name="Colo-Colo")
 

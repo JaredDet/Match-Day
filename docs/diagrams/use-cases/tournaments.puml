@@ -1,0 +1,48 @@
+@startuml TournamentsUseCases
+title Torneos - Casos de uso
+left to right direction
+actor Administrador
+actor Espectador
+actor "Partido / tanda confirmados" as Completion
+rectangle Tournaments {
+  usecase "Crear torneo" as Tournament
+  usecase "Crear temporada con equipos" as Season
+  usecase "Inscribir / retirar equipos" as Members
+  usecase "Editar / eliminar estructura" as Edit
+  usecase "Registrar desempate final" as TieBreak
+  usecase "Generar cuadro eliminatorio" as Generate
+  usecase "Avanzar rondas y tercer puesto" as Advance
+  usecase "Crear fases ordenadas" as Phase
+  usecase "Crear grupos" as Group
+  usecase "Inscribir equipo en grupo" as Entry
+  usecase "Asociar Match a fase/grupo" as Fixture
+  usecase "Cambiar estado de fase" as Status
+  usecase "Listar / consultar estructura" as Read
+  usecase "Consultar partidos de temporada" as Matches
+  usecase "Consultar clasificacion" as Standings
+  usecase "Consultar cuadro y tercer puesto" as Bracket
+}
+Administrador --> Tournament
+Administrador --> Season
+Administrador --> Members
+Administrador --> Edit
+Administrador --> TieBreak
+Administrador --> Generate
+Administrador --> Advance : reintentar
+Completion --> Advance : despues del commit
+Administrador --> Phase
+Administrador --> Group
+Administrador --> Entry
+Administrador --> Fixture
+Administrador --> Status
+Administrador --> Read
+Espectador --> Read
+Espectador --> Matches
+Espectador --> Standings
+Espectador --> Bracket
+note bottom of Fixture
+  Match se crea con la API de partidos.
+  Cuadros generados: asignacion y avance automaticos.
+  Estructura iniciada o con dependencias: protegida.
+end note
+@enduml

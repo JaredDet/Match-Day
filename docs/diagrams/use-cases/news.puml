@@ -1,0 +1,31 @@
+@startuml NewsUseCases
+title Noticias - Casos de uso
+left to right direction
+actor Editor
+actor Lector
+actor "Monitor / planificador" as Monitor
+rectangle News {
+  usecase "Crear borrador" as Create
+  usecase "Editar borrador" as Update
+  usecase "Eliminar borrador" as Delete
+  usecase "Programar" as Schedule
+  usecase "Cancelar programacion" as Unschedule
+  usecase "Publicar ahora" as Publish
+  usecase "Publicar noticias vencidas" as Due
+  usecase "Consultar / filtrar noticias" as Read
+}
+Editor --> Create
+Editor --> Update
+Editor --> Delete
+Editor --> Schedule
+Editor --> Unschedule
+Editor --> Publish
+Editor --> Read
+Lector --> Read
+Monitor --> Due
+note bottom of Read
+  status, team_id, published_from, published_to.
+  Sin filtro se consultan todos los estados.
+  Actores funcionales; no representan permisos implementados.
+end note
+@enduml

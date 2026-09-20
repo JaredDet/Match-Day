@@ -1,0 +1,64 @@
+@startuml TournamentsDomain
+title Torneos - Ediciones, grupos y partidos
+hide empty members
+class Tournament {
+  id: UUID
+  slug: string (unique)
+  name: string
+  country: string
+  category: string
+  max_teams_per_group: integer = 4
+}
+class Season {
+  id: UUID
+  name: string
+}
+class Phase {
+  id: UUID
+  name: string
+  kind: groups | knockout | third_place
+  order: integer
+  status: scheduled | live | finished
+  qualifying_teams: integer
+  matchdays: integer
+  generated: boolean
+  source_phase_id: UUID?
+  scheduled_at: datetime?
+  expected_matches: integer?
+}
+class Group {
+  id: UUID
+  name: string
+  tie_break_order: UUID[]
+}
+class GroupEntry {
+  id: UUID
+  phase_id: UUID
+  team_id: UUID
+}
+class Fixture {
+  id: UUID
+  position: integer
+  matchday: integer
+}
+class Team <<teams>>
+class Match <<matches>>
+Tournament "1" -- "0..*" Season
+Season "0..*" -- "0..*" Team : inscritos
+Season "1" -- "0..*" Phase
+Phase "0..1" <-- "0..*" Phase : origen de ganadores / perdedores
+Phase "1" -- "0..*" Group
+Group "1" -- "0..*" GroupEntry
+Phase "1" -- "0..*" GroupEntry : unicidad por equipo/fase
+Team "1" -- "0..*" GroupEntry
+Phase "1" -- "0..*" Fixture
+Group "0..1" -- "0..*" Fixture
+Match "1" -- "0..1" Fixture : OneToOne / PROTECT
+note bottom of Fixture
+  Grupos: ambos equipos inscritos en el grupo.
+  Eliminatorias: equipos inscritos en la temporada.
+  Posicion unica por fase; jornada entre 1 y matchdays.
+  Tercer puesto: una fase y un partido en posicion 1.
+  Marcador y penales se consultan en Match.
+end note
+@enduml
