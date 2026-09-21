@@ -218,3 +218,18 @@ uv run python manage.py run_match_clock_monitor --once
 Los clientes se conectan a `ws://HOST/ws/matches/{match_id}/clock/`. El diseño,
 el formato del snapshot y la estrategia de reconexión están documentados en
 [`docs/match-clock-design.md`](docs/match-clock-design.md).
+
+## Recomendaciones por comportamiento
+
+El backend registra visitas de detalle mediante encabezados en los GET existentes.
+El tiempo activo llega como acumulado con tipo e ID de contenido en pings POST.
+Un proceso independiente calcula los perfiles y las recomendaciones:
+
+```sh
+uv run python manage.py migrate recommendations
+uv run python manage.py run_recommendations_worker
+```
+
+Contrato, CSRF, cookies, envio final con sendBeacon y limites en
+[docs/recommendations.md](docs/recommendations.md). La demo del frontend permanece
+sin conectar a estos endpoints.

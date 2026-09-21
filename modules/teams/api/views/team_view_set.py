@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
+from modules.recommendations.api.schema import NAVIGATION_PARAMETERS
 from modules.teams.api.contracts.requests.create_team_request import CreateTeamRequest
 from modules.teams.api.contracts.requests.list_teams_request import ListTeamsRequest
 from modules.teams.api.contracts.requests.register_player_request import RegisterPlayerRequest
@@ -68,6 +69,7 @@ class TeamViewSet(ViewSet):
 
     @extend_schema(
         operation_id="teams_retrieve",
+        parameters=NAVIGATION_PARAMETERS,
         responses={status.HTTP_200_OK: GetTeamResponse},
     )
     def retrieve(self, request, pk=None):

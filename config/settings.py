@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "modules.matches.apps.MatchesConfig",
     "modules.news.apps.NewsConfig",
     "modules.tournaments.apps.TournamentsConfig",
+    "modules.recommendations.apps.RecommendationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "modules.recommendations.api.navigation_middleware.NavigationMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

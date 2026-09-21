@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/", include("modules.news.api.urls")),
     path("api/", include("modules.teams.api.urls")),
     path("api/", include("modules.tournaments.api.urls")),
+    path("api/", include("modules.recommendations.api.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path(
         "api/docs/",

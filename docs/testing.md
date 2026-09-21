@@ -7,6 +7,7 @@ contra la base de desarrollo para comprobar regresiones.
 ```sh
 uv run pytest
 uv run pytest tests/modules/news tests/modules/tournaments
+uv run pytest tests/modules/recommendations
 uv run pytest tests/core/test_dependency_injector.py
 ```
 
@@ -32,6 +33,9 @@ Unicode y ausencia del cuerpo completo en el listado.
 | Tournaments / gestión | altas/bajas idempotentes, dependencias, edición validada, eliminación que conserva Match y bloqueos con partidos iniciados |
 | Tournaments / generación | 2–64 participantes, rollback, clasificados de grupos, empates pendientes, avance tras commit, penales, final y tercer puesto, reintentos y correcciones conflictivas |
 | Tournaments / desempates | mini-tabla de enfrentamientos directos, disciplina, empate sin resolver y orden manual como último criterio |
+| Recommendations / dominio | recencia, afinidad por relaciones, descubrimiento y tiempo acumulado |
+| Recommendations / API | GET elegibles, cookies firmadas, CSRF, contexto de ping, aislamiento, duplicados y beacon multipart |
+| Recommendations / aplicacion | perfiles, snapshots, limites diarios, borrado, retencion, candidatos en lotes y worker --once |
 | Core / inyector | resolución de comandos y consultas de todos los módulos |
 
 Para ejecutar una capa concreta:

@@ -1,0 +1,53 @@
+@startuml RecommendationsDomain
+title Recomendaciones - modelo
+class Visitor {
+  id: UUID
+  last_seen_at
+  activity_version
+  processed_version
+  next_refresh_at
+}
+class NavigationActivity {
+  navigation_id: UUID
+  content_kind
+  content_id: UUID
+  occurred_at
+  counts_as_visit
+  active_seconds
+  accumulate_active_time()
+}
+class ContentReference <<value object>> {
+  kind
+  id: UUID
+}
+class InterestProfile {
+  team_weights
+  tournament_weights
+  computed_at
+}
+class RecommendationSnapshot {
+  sections: referencias + puntuacion + motivo
+  generated_at
+  expires_at
+}
+class RecommendationPolicy {
+  profile()
+  recommend()
+}
+Visitor "1" *-- "0..*" NavigationActivity
+Visitor "1" *-- "0..1" InterestProfile
+Visitor "0..1" -- "0..1" RecommendationSnapshot
+NavigationActivity --> ContentReference
+RecommendationSnapshot --> ContentReference
+RecommendationPolicy --> InterestProfile
+RecommendationPolicy --> RecommendationSnapshot
+note bottom of ContentReference
+  Se resuelve contra equipos, jugadores,
+  noticias publicadas, partidos y torneos.
+  No duplica entidades deportivas.
+end note
+note bottom of RecommendationSnapshot
+  Existe tambien un snapshot general,
+  sin visitante, para el inicio sin historial.
+end note
+@enduml

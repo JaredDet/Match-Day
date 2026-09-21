@@ -1,0 +1,27 @@
+@startuml RecommendationsUseCases
+title Recomendaciones - casos de uso
+left to right direction
+actor "Navegador del visitante" as Browser
+actor "Servicio en segundo plano" as Worker
+rectangle Recommendations {
+  usecase "Registrar visita\nGET de detalle" as Visit
+  usecase "Acumular tiempo activo\nPOST heartbeat" as Heartbeat
+  usecase "Consultar recomendaciones" as Read
+  usecase "Borrar historial" as Clear
+  usecase "Procesar lote pendiente" as Batch
+  usecase "Calcular perfil y recomendaciones" as Generate
+  usecase "Depurar actividad antigua" as Purge
+}
+Browser --> Visit
+Browser --> Heartbeat
+Browser --> Read
+Browser --> Clear
+Worker --> Batch
+Batch ..> Generate : <<include>>
+Batch ..> Purge : <<include>>
+note bottom of Visit
+  Solo detalle visible indicado por encabezados,
+  GET 200, entidad existente y elegible.
+  Sin preferencias explicitas.
+end note
+@enduml

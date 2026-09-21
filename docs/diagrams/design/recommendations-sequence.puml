@@ -1,0 +1,32 @@
+@startuml RecommendationsSequence
+title Recomendaciones - visita, ping y procesamiento
+actor Navegador
+participant "API de contenido" as API
+participant "NavigationMiddleware" as Middleware
+participant "Casos de uso" as Application
+database "Actividad / Perfiles / Snapshots" as DB
+participant "Worker independiente" as Worker
+Navegador -> API: GET detalle + X-Navigation-Id + detail-view
+API --> Middleware: respuesta 200
+Middleware -> Application: RecordNavigationUseCase
+Application -> DB: visitante y actividad (transaccion)
+Middleware --> Navegador: contenido + cookie firmada + cookie CSRF
+loop cada 15 s activos (contrato del navegador)
+  Navegador -> Application: POST heartbeat + UUID visita + tipo/ID contenido + total + CSRF
+  Application -> DB: bloquear visitante, acumular maximo monotono
+  Application --> Navegador: 204
+end
+Navegador -> Application: al ocultar/salir: ultimo heartbeat (best effort)
+loop cada 60 s
+  Worker -> Application: ProcessRecommendationsUseCase
+  Application -> DB: purgar y seleccionar lote pendiente
+  Application -> DB: bloquear visitante, calcular y guardar perfil/snapshot
+end
+Navegador -> Application: GET /api/recommendations/
+Application -> DB: snapshot vigente personal o general
+Application --> Navegador: noticias, partidos, torneos, descubrimiento
+note right of Application
+  Revalida referencias y noticias publicadas.
+  GET no calcula el perfil personal.
+end note
+@enduml

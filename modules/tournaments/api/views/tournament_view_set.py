@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
+from modules.recommendations.api.schema import NAVIGATION_PARAMETERS
 from modules.tournaments.api.contracts.requests.create_tournament_request import (
     CreateTournamentRequest,
 )
@@ -57,6 +58,7 @@ class TournamentViewSet(ViewSet):
 
     @extend_schema(
         operation_id="tournaments_retrieve",
+        parameters=NAVIGATION_PARAMETERS,
         responses={status.HTTP_200_OK: GetTournamentResponse},
     )
     def retrieve(self, request, slug=None):

@@ -52,4 +52,14 @@ note bottom of TournamentApi
   Ver api/tournaments.puml
 end note
 
+
+component "Recommendations API" as RecApi
+artifact "GET navigation headers / POST heartbeat context / visitor cookie" as RecInput
+artifact "news / matches / tournaments / discovery + reasons" as RecOutput
+RecInput --> RecApi
+RecApi --> RecOutput
+note bottom of RecApi
+  Ver api/recommendations.puml
+end note
+
 @enduml

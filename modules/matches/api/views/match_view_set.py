@@ -104,6 +104,7 @@ from modules.matches.application.queries.get_match_query import GetMatchQuery
 from modules.matches.application.queries.list_matches_query import ListMatchesQuery
 from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
+from modules.recommendations.api.schema import NAVIGATION_PARAMETERS
 
 
 class MatchViewSet(ViewSet):
@@ -143,6 +144,7 @@ class MatchViewSet(ViewSet):
 
     @extend_schema(
         operation_id="matches_retrieve",
+        parameters=NAVIGATION_PARAMETERS,
         responses={status.HTTP_200_OK: GetMatchResponse},
     )
     def retrieve(self, request, pk=None):

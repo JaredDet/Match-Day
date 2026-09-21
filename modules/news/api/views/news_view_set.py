@@ -19,6 +19,7 @@ from modules.news.application.commands.unschedule_news_use_case import Unschedul
 from modules.news.application.commands.update_news_use_case import UpdateNewsUseCase
 from modules.news.application.queries.get_news_query import GetNewsQuery
 from modules.news.application.queries.list_news_query import ListNewsQuery
+from modules.recommendations.api.schema import NAVIGATION_PARAMETERS
 
 
 class NewsViewSet(ViewSet):
@@ -59,6 +60,7 @@ class NewsViewSet(ViewSet):
 
     @extend_schema(
         operation_id="news_get",
+        parameters=NAVIGATION_PARAMETERS,
         responses={status.HTTP_200_OK: GetNewsResponse},
     )
     def retrieve(self, request, pk=None):

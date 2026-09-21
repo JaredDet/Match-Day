@@ -55,3 +55,11 @@ incluyen equipos, partidos, noticias y torneos.
 
 - [Generación y avance](design/tournament-advancement.puml): creación transaccional,
   resultados confirmados, siguiente ronda, tercer puesto y reintentos.
+
+## Recomendaciones
+
+- [Dominio](domain/recommendations.puml): visitante, actividad, perfil y snapshot.
+- [Casos de uso](use-cases/recommendations.puml): API frente a procesamiento en segundo plano.
+- [Entradas y salidas](api/recommendations.puml): GET de visita, ping contextual, consulta y borrado.
+- [Secuencia](design/recommendations-sequence.puml): visita, pings y worker.
+- [Contrato y operacion](../recommendations.md).

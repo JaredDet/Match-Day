@@ -65,4 +65,18 @@ note bottom of Tournament
   Ver domain/tournaments.puml
 end note
 
+
+package recommendations {
+  component "Visitor / NavigationActivity" as Navigation
+  component "InterestProfile / RecommendationSnapshot" as Recommendations
+  component "ContentReference / RecommendationPolicy" as RecommendationPolicy
+}
+Navigation --> RecommendationPolicy
+RecommendationPolicy --> Recommendations
+RecommendationPolicy ..> Team
+RecommendationPolicy ..> Player
+RecommendationPolicy ..> News
+RecommendationPolicy ..> MatchCore
+RecommendationPolicy ..> Tournament
+
 @enduml

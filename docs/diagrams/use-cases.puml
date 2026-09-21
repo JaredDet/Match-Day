@@ -59,4 +59,16 @@ note bottom of TournamentWrite
   Ver use-cases/tournaments.puml
 end note
 
+
+actor "Worker de recomendaciones" as RecWorker
+usecase "Registrar visitas y tiempo activo" as RecActivity
+usecase "Calcular perfiles y recomendaciones" as RecGenerate
+usecase "Consultar recomendaciones / borrar historial" as RecRead
+Espectador --> RecActivity
+Espectador --> RecRead
+RecWorker --> RecGenerate
+note bottom of RecRead
+  Ver use-cases/recommendations.puml
+end note
+
 @enduml

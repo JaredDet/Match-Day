@@ -124,4 +124,24 @@ note bottom of TournamentCompletion
   Solo cuadros generados.
   Reintento explicito idempotente via advance-bracket.
 end note
+
+package "recommendations" {
+  component "NavigationMiddleware / GET details" as RecCapture
+  component "Recommendations API / Contracts" as RecApi
+  component "Recommendation Commands / Queries" as RecApp
+  component "RecommendationPolicy / Visitor / Activity / Profile / Snapshot" as RecDomain
+  component "Navigation and Recommendation Repositories" as RecRepo
+  component "Content Query Repository" as RecContent
+  component "Recommendations Worker" as RecWorker
+}
+RecCapture --> RecApp : register visit
+RecApi --> RecApp : heartbeat / read / clear
+RecWorker --> RecApp : process pending batch / purge
+RecApp --> RecDomain
+RecApp --> RecRepo
+RecApp --> RecContent
+RecRepo --> Database
+RecContent --> Database : existing sports content / public news
+Injector --> RecApp
+
 @enduml

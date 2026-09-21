@@ -2,6 +2,7 @@
 
 - [Noticias](news.md): contenido, endpoints, estados, portadas y publicación programada.
 - [Torneos](tournaments.md): temporadas, inscripción de equipos, fases, grupos y partidos.
+- [Recomendaciones](recommendations.md): visitas en GET, tiempo activo, perfiles y worker.
 - [Testing](testing.md): pruebas por módulo y capa, regresiones y verificaciones.
 - [Diagramas](diagrams/README.md): arquitectura, dominio, casos de uso y contratos API.
 - [Reloj de partidos](match-clock-design.md): snapshots, monitor y WebSocket.
