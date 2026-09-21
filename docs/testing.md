@@ -12,6 +12,11 @@ uv run pytest tests/core/test_dependency_injector.py
 
 ## Cobertura funcional
 
+Noticias distingue listado (`preview`, primer párrafo no vacío, texto plano de
+hasta 200 caracteres) y detalle (`content` completo). Las pruebas cubren formato,
+entidades HTML, espacios, contenido vacío, límite exacto, recorte con elipsis,
+Unicode y ausencia del cuerpo completo en el listado.
+
 | Módulo / capa | Comprobaciones |
 | --- | --- |
 | News / dominio | normalización, borrador, programación, cancelación, publicación y restricciones de edición/borrado |
@@ -24,9 +29,9 @@ uv run pytest tests/core/test_dependency_injector.py
 | Tournaments / infraestructura | conflictos de slug y recuperación de transacción; DTOs inmutables, lectura de penales y serialización sin consultas extra |
 | Tournaments / API | ciclo de creación por inyector, grupos, fixtures, final y tercer puesto, fechas/temporadas aisladas, duplicados y errores 400/404/409 |
 | Tournaments / clasificación | solo finalizados, victorias locales y visitantes, empates, puntos, actualización de resultados y clasificación al cerrar fase |
-| Tournaments / gesti?n | altas/bajas idempotentes, dependencias, edici?n validada, eliminaci?n que conserva Match y bloqueos con partidos iniciados |
-| Tournaments / generaci?n | 2?64 participantes, rollback, clasificados de grupos, empates pendientes, avance tras commit, penales, final y tercer puesto, reintentos y correcciones conflictivas |
-| Tournaments / desempates | mini-tabla de enfrentamientos directos, disciplina, empate sin resolver y orden manual como ?ltimo criterio |
+| Tournaments / gestión | altas/bajas idempotentes, dependencias, edición validada, eliminación que conserva Match y bloqueos con partidos iniciados |
+| Tournaments / generación | 2–64 participantes, rollback, clasificados de grupos, empates pendientes, avance tras commit, penales, final y tercer puesto, reintentos y correcciones conflictivas |
+| Tournaments / desempates | mini-tabla de enfrentamientos directos, disciplina, empate sin resolver y orden manual como último criterio |
 | Core / inyector | resolución de comandos y consultas de todos los módulos |
 
 Para ejecutar una capa concreta:

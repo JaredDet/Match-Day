@@ -26,6 +26,8 @@ Monitor --> Due
 note bottom of Read
   status, team_id, published_from, published_to.
   Sin filtro se consultan todos los estados.
+  Listado: preview de texto plano (hasta 200 caracteres).
+  Detalle: content completo con todos los párrafos.
   Actores funcionales; no representan permisos implementados.
 end note
 @enduml

@@ -53,5 +53,5 @@ incluyen equipos, partidos, noticias y torneos.
 
 ## Avance de torneos
 
-- [Generaci?n y avance](design/tournament-advancement.puml): creaci?n transaccional,
+- [Generación y avance](design/tournament-advancement.puml): creación transaccional,
   resultados confirmados, siguiente ronda, tercer puesto y reintentos.

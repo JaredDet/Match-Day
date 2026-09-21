@@ -8,8 +8,8 @@ component "POST /news/{id}/schedule/" as Schedule
 component "POST /news/{id}/publish/
 POST /news/{id}/unschedule/
 DELETE /news/{id}/" as Actions
-component "GET /news/
-GET /news/{id}/" as Read
+component "GET /news/" as List
+component "GET /news/{id}/" as Read
 artifact "title, content
 team_id?, cover_image?" as CreateInput
 artifact "title, content
@@ -21,13 +21,17 @@ artifact "201: {id}" as Created
 artifact "204: sin cuerpo" as Changed
 artifact "id, title, team_id, cover_image, content
 status, scheduled_at, published_at" as Output
+artifact "id, title, team_id, cover_image, preview
+status, scheduled_at, published_at
+preview: texto plano, primer párrafo, máximo 200 caracteres" as PreviewOutput
 CreateInput --> Create
 UpdateInput --> Update
 ScheduleInput --> Schedule
-Filters --> Read
+Filters --> List
 Create --> Created
 Update --> Changed
 Schedule --> Changed
 Actions --> Changed
 Read --> Output
+List --> PreviewOutput
 @enduml

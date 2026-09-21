@@ -307,11 +307,7 @@ def test_lists_news():
         "title": "Noticia reciente",
         "team_id": str(team.id),
         "cover_image": None,
-        "content": {
-            "children": [
-                "Contenido reciente",
-            ]
-        },
+        "preview": "Contenido reciente",
         "status": "PUBLISHED",
         "scheduled_at": None,
         "published_at": "2026-08-20T18:00:00Z",
@@ -476,3 +472,19 @@ def test_rejects_news_list_with_invalid_status():
     )
 
     assert response.status_code == 400
+
+
+def test_list_preview_is_bounded_and_detail_preserves_full_content():
+    content = {"children": ["<b>" + "a" * 250 + "</b>", "Second paragraph"]}
+    news = News.objects.create(title="Preview", content=content)
+    client = APIClient()
+
+    listing = client.get(reverse("news-list"))
+    detail = client.get(reverse("news-detail", args=[str(news.id)]))
+
+    assert listing.status_code == 200
+    assert listing.data[0]["preview"] == "a" * 199 + "\u2026"
+    assert "content" not in listing.data[0]
+    assert detail.status_code == 200
+    assert detail.data["content"] == content
+    assert "preview" not in detail.data

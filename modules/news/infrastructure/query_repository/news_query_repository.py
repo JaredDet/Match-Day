@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from modules.news.domain.news import News, NewsStatus
+from modules.news.domain.news_preview import news_preview
 
 if TYPE_CHECKING:
     from modules.news.application.queries.get_news_query import NewsDetail
@@ -85,7 +86,7 @@ class NewsQueryRepository:
                 title=row["title"],
                 team_id=row["team_id"],
                 cover_image=row["cover_image"] or None,
-                content=row["content"],
+                preview=news_preview(row["content"]),
                 status=NewsStatus(row["status"]),
                 scheduled_at=row["scheduled_at"],
                 published_at=row["published_at"],

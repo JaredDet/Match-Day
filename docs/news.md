@@ -55,8 +55,18 @@ filtro incluyen los tres estados; para una lista de publicaciones usar
 permisos por rol configurados en el ViewSet; los actores de los diagramas describen
 responsabilidades funcionales.
 
-Las respuestas incluyen `id`, `title`, `team_id`, `cover_image`, `content`, `status`,
-`scheduled_at` y `published_at`. Los errores usan `code` y `message`: validaciones
+Ambas respuestas incluyen `id`, `title`, `team_id`, `cover_image`, `status`,
+`scheduled_at` y `published_at`. El listado devuelve `preview` en lugar de `content`:
+texto plano del primer párrafo no vacío, sin etiquetas `<b>`/`<i>`, con entidades HTML
+decodificadas y espacios normalizados. Su máximo es `NEWS_PREVIEW_MAX_LENGTH = 200`
+caracteres, incluida la elipsis `…` si se recorta. Si no hay texto, devuelve `""`.
+El detalle mantiene `content` completo, incluidos todos los párrafos y su formato.
+La preview se calcula al consultar y no modifica el contenido almacenado.
+Este cambio de contrato requiere que los consumidores del listado usen `preview`;
+no necesita migración de base de datos. La extracción aún lee el JSON almacenado,
+pero el cuerpo completo no se incluye en la respuesta del listado.
+
+Los errores usan `code` y `message`: validaciones
 400 y entidades inexistentes 404. Los errores de contrato añaden `details`.
 
 ## Ciclo de vida

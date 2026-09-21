@@ -38,14 +38,14 @@ def test_lists_news_ordered_by_published_at():
     ]
 
 
-def test_returns_all_news_fields():
+def test_returns_preview_without_full_content():
     team = Team.objects.create(name="Atlético Bahía")
     published_at = datetime(2026, 8, 20, 18, tzinfo=UTC)
 
     news = News.objects.create(
         team=team,
         title="Noticia completa",
-        content={"blocks": [{"type": "paragraph", "text": "Contenido"}]},
+        content={"children": ["<b>Contenido</b>", "Segundo parrafo"]},
         status=NewsStatus.PUBLISHED,
         published_at=published_at,
     )
@@ -59,7 +59,8 @@ def test_returns_all_news_fields():
     assert item.title == "Noticia completa"
     assert item.team_id == team.id
     assert item.cover_image is None
-    assert item.content == {"blocks": [{"type": "paragraph", "text": "Contenido"}]}
+    assert item.preview == "Contenido"
+    assert not hasattr(item, "content")
     assert item.status == NewsStatus.PUBLISHED
     assert item.scheduled_at is None
     assert item.published_at == published_at
