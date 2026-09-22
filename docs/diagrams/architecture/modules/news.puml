@@ -1,0 +1,35 @@
+@startuml MatchdayNewsComponents
+!include <C4/C4_Component>
+
+title Matchday - C4 nivel 3: módulo News
+
+Container_Boundary(news, "Módulo News") {
+  Component(api, "API y contratos", "DRF", "Expone edición, publicación y consulta.")
+  Component(commands, "Comandos", "Casos de uso", "Gestiona borradores, programación y publicación.")
+  Component(queries, "Consultas", "Queries / DTOs", "Entrega previews y noticias completas.")
+  Component(parser, "Analizador de contenido", "Servicio", "Normaliza y valida el contenido editorial.")
+  Component(domain, "Dominio", "News / NewsPreview", "Reglas del ciclo editorial.")
+  Component(repository, "Repositorio", "Django ORM", "Persiste noticias.")
+  Component(queryRepository, "Repositorio de consulta", "Django ORM", "Proyecta listados y detalles.")
+  Component(monitor, "Monitor de publicación", "Proceso independiente", "Publica noticias programadas vencidas.")
+}
+
+Component_Ext(teams, "Módulo Teams", "Resuelve el equipo opcional")
+Component_Ext(core, "Core", "Inyección, errores y texto")
+ContainerDb_Ext(database, "Base de datos", "SQLite / PostgreSQL")
+
+Rel(api, core, "Resuelve dependencias y errores")
+Rel(api, commands, "Ejecuta")
+Rel(api, queries, "Consulta")
+Rel(commands, parser, "Procesa contenido")
+Rel(commands, domain, "Aplica reglas")
+Rel(commands, repository, "Persiste")
+Rel(commands, teams, "Valida equipo")
+Rel(queries, queryRepository, "Lee")
+Rel(repository, database, "Lee y escribe")
+Rel(queryRepository, database, "Lee")
+Rel(monitor, commands, "Publica vencidas")
+Rel(monitor, repository, "Obtiene próxima fecha")
+
+SHOW_LEGEND()
+@enduml

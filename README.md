@@ -127,17 +127,18 @@ implementación sigue la Regla 10 de las Reglas de Juego de IFAB.
 
 ## Diagramas
 
-Los diagramas PlantUML se encuentran en `docs/diagrams`. Las vistas
-generales se complementan con diagramas pequeños por responsabilidad:
+Los diagramas PlantUML se encuentran en `docs/diagrams` y están separados por
+nivel de arquitectura y módulo:
 
-- `domain-model.puml`: vista general y rutas hacia los modelos detallados.
-- `architecture.puml`: módulos y dependencias entre capas.
-- `use-cases.puml`: vista general y rutas hacia los casos de uso detallados.
-- `inputs-outputs.puml`: vista general de contratos de entrada y salida.
+- `architecture.puml`: contexto del sistema (C4 nivel 1).
+- `architecture/containers.puml`: aplicaciones y almacenes (C4 nivel 2).
+- `architecture/modules/*.puml`: componentes internos por módulo (C4 nivel 3).
+- `domain/*.puml`: un modelo de dominio por módulo.
+- `use-cases/*.puml`: un diagrama de casos de uso por módulo.
 - `match-lifecycle.puml`: estados y operaciones permitidas del partido.
 
 El índice [`docs/diagrams/README.md`](docs/diagrams/README.md) enlaza los
-diagramas detallados de dominio, casos de uso, API y el reloj en tiempo real.
+diagramas de dominio, casos de uso y los flujos complejos.
 
 Pueden renderizarse con cualquier extensión o CLI compatible con PlantUML.
 

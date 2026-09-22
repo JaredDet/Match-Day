@@ -222,6 +222,5 @@ uv run pytest tests/modules/tournaments
 
 Ver [testing](testing.md), [dominio](diagrams/domain/tournaments.puml),
 [casos de uso](diagrams/use-cases/tournaments.puml),
-[API](diagrams/api/tournaments.puml) y
 [secuencia de avance](diagrams/design/tournament-advancement.puml).
 Los contratos tambión estón en `/api/docs/`.

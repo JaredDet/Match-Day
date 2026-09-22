@@ -1,0 +1,133 @@
+@startuml MatchdayMatchesDomain
+title Matchday - Dominio de partidos
+
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+class Match {
+  +UUID home_team_id
+  +UUID away_team_id
+  +MatchStatus status
+  +MatchPeriod current_period
+  +MatchFormation home_formation
+  +MatchFormation away_formation
+  +datetime scheduled_at
+  +datetime started_at
+  +datetime finished_at
+  +int announced_added_minutes
+  +int clock_version
+  --
+  +start(...)
+  +start_period(...)
+  +end_period(...)
+  +clock_snapshot(...)
+  +finish(...)
+}
+
+class MatchSquadPlayer {
+  +UUID player_id
+  +TeamSide team_side
+  +int shirt_number
+  +MatchSquadRole role
+  +bool is_on_field
+  +bool is_sent_off
+  +bool is_captain
+}
+
+abstract class TimedMatchEvent {
+  +UUID id
+  +TeamSide team_side
+  +MatchPeriod period
+  +int minute
+  +int added_minute
+}
+
+class Goal
+class Card
+class MatchSubstitution
+class PenaltyAttempt
+class Shot
+class Injury
+class Foul
+class CornerKick
+class Offside
+class VarReview
+
+class MatchTeamStatistics {
+  +int goals
+  +int yellow_cards
+  +int red_cards
+  +int shots
+  +int shots_on_target
+  +int saves
+  +int fouls
+  +int corners
+  +int offsides
+  +decimal possession_percentage
+}
+
+class PenaltyShootout {
+  +PenaltyShootoutStatus status
+  +TeamSide starting_team_side
+  +int home_score
+  +int away_score
+  +TeamSide winner_team_side
+  --
+  +next_team_side()
+  +record_kick(...)
+  +finish(...)
+}
+
+class PenaltyShootoutKick {
+  +UUID player_id
+  +TeamSide team_side
+  +int sequence_number
+  +PenaltyKickOutcome outcome
+}
+
+class PenaltyShootoutParticipant {
+  +UUID player_id
+  +TeamSide team_side
+  +bool is_eligible
+  +IneligibilityReason reason
+}
+
+Match "1" *-- "22..*" MatchSquadPlayer : convocatoria
+Match "1" *-- "0..*" TimedMatchEvent : cronología
+Match "1" *-- "2" MatchTeamStatistics : snapshots
+Match "1" *-- "0..1" PenaltyShootout
+
+Goal --|> TimedMatchEvent
+Card --|> TimedMatchEvent
+MatchSubstitution --|> TimedMatchEvent
+PenaltyAttempt --|> TimedMatchEvent
+Shot --|> TimedMatchEvent
+Injury --|> TimedMatchEvent
+Foul --|> TimedMatchEvent
+CornerKick --|> TimedMatchEvent
+Offside --|> TimedMatchEvent
+VarReview --|> TimedMatchEvent
+
+PenaltyShootout "1" *-- "0..*" PenaltyShootoutKick
+PenaltyShootout "1" *-- "1..*" PenaltyShootoutParticipant
+
+note bottom of Match
+  Conserva snapshots de equipos y entrenadores.
+  El reloj deriva del inicio del periodo.
+  Requiere 11 titulares por equipo y permite
+  como máximo un capitán titular por lado.
+end note
+
+note bottom of TimedMatchEvent
+  Cada tipo tiene su propia tabla. La consulta
+  los reúne en una cronología única y actualiza
+  los snapshots estadísticos correspondientes.
+end note
+
+note bottom of PenaltyShootout
+  Aplica cinco lanzamientos iniciales, victoria
+  matemática, muerte súbita e igualdad numérica
+  de participantes según la Regla 10.
+end note
+@enduml

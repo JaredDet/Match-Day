@@ -1,0 +1,43 @@
+@startuml MatchdayRecommendationsComponents
+!include <C4/C4_Component>
+
+title Matchday - C4 nivel 3: módulo Recommendations
+
+Container_Boundary(recommendations, "Módulo Recommendations") {
+  Component(middleware, "Captura de navegación", "Django middleware", "Registra GET de detalles elegibles.")
+  Component(api, "API y contratos", "DRF", "Recibe heartbeats, consulta recomendaciones y borra historial.")
+  Component(activity, "Actividad", "Casos de uso", "Registra visitas y acumula tiempo activo.")
+  Component(generation, "Generación", "Casos de uso", "Procesa pendientes y crea perfiles y snapshots.")
+  Component(read, "Consulta", "Query", "Entrega un snapshot vigente personal o general.")
+  Component(domain, "Dominio", "Visitor / Activity / Profile / Snapshot", "Políticas individuales y colaborativas.")
+  Component(repositories, "Repositorios", "Django ORM", "Persiste navegación y recomendaciones.")
+  Component(contentQueries, "Consultas de contenido", "Django ORM", "Resuelve contenido deportivo existente.")
+  Component(similarQueries, "Visitantes similares", "Django ORM", "Obtiene actividad reciente para similitud coseno.")
+  Component(worker, "Worker", "Proceso independiente", "Procesa lotes y depura actividad antigua.")
+}
+
+Component_Ext(content, "Módulos deportivos", "Teams / Matches / News / Tournaments")
+Component_Ext(core, "Core", "Inyección y errores")
+ContainerDb_Ext(database, "Base de datos", "SQLite / PostgreSQL")
+
+Rel(middleware, core, "Resuelve dependencias")
+Rel(middleware, activity, "Registra visita")
+Rel(api, core, "Resuelve dependencias y errores")
+Rel(api, activity, "Registra heartbeat")
+Rel(api, read, "Consulta")
+Rel(api, repositories, "Borra historial")
+Rel(activity, domain, "Aplica políticas")
+Rel(activity, repositories, "Persiste")
+Rel(generation, domain, "Calcula perfil y puntuación")
+Rel(generation, repositories, "Lee actividad y guarda snapshot")
+Rel(generation, contentQueries, "Busca candidatos")
+Rel(generation, similarQueries, "Busca vecinos")
+Rel(read, repositories, "Lee snapshot")
+Rel(contentQueries, content, "Revalida referencias")
+Rel(repositories, database, "Lee y escribe")
+Rel(contentQueries, database, "Lee")
+Rel(similarQueries, database, "Lee")
+Rel(worker, generation, "Procesa lote")
+
+SHOW_LEGEND()
+@enduml

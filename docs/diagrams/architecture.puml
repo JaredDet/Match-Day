@@ -1,147 +1,27 @@
-@startuml Matchday Architecture
-title Matchday - Arquitectura modular
+@startuml MatchdaySystemContext
+!include <C4/C4_Context>
 
-skinparam componentStyle rectangle
-skinparam linetype ortho
+title Matchday - C4 nivel 1: contexto del sistema
 
-package "core" {
-  component "Dependency Injector" as Injector
-  component "Exception Handler" as Exceptions
-  component "Shared API Fields" as ApiFields
-  component "Text Utilities" as TextUtils
-}
+LAYOUT_LEFT_RIGHT()
 
-package "teams" {
-  component "Team and Player API\nViewSets + Contracts" as TeamApi
-  component "Team Commands" as TeamCommands
-  component "Team and Player Queries" as TeamQueries
-  component "Team Domain\nTeam + Player" as TeamDomain
-  component "Team Repositories" as TeamRepositories
-  component "Team Query Repositories" as TeamQueryRepositories
-}
+Person(visitor, "Visitante", "Consulta contenido deportivo y recibe recomendaciones anónimas.")
+Person(editor, "Editor", "Crea y publica noticias.")
+Person(admin, "Administrador", "Gestiona equipos, partidos y torneos.")
 
-package "matches" {
-  component "Match API\nViewSet + Contracts" as MatchApi
-  component "Match Commands" as MatchCommands
-  component "Match Queries" as MatchQueries
-  component "Match Domain\nMatch + Events + Squad + Shootout" as MatchDomain
-  component "Match Repositories" as MatchRepositories
-  component "Match Query Repository" as MatchQueryRepository
-  component "Clock Monitor" as ClockMonitor
-  component "WebSocket Consumer" as ClockWs
-}
+System(matchday, "Matchday", "Publica información deportiva, gestiona competiciones y recomienda contenido según la navegación.")
+System_Ext(media, "Almacenamiento multimedia", "Conserva escudos, fotografías y portadas.")
 
-queue "Redis Channel Layer" as Redis
+Rel(visitor, matchday, "Consulta partidos, equipos, noticias, torneos y recomendaciones", "HTTPS / WebSocket")
+Rel(editor, matchday, "Administra noticias", "HTTPS")
+Rel(admin, matchday, "Administra la competición", "HTTPS")
+Rel(matchday, media, "Lee y escribe archivos multimedia")
 
-database "Django ORM\nSQLite / PostgreSQL" as Database
+SHOW_LEGEND()
 
-TeamApi --> Injector
-MatchApi --> Injector
-Injector --> TeamCommands
-Injector --> TeamQueries
-Injector --> MatchCommands
-Injector --> MatchQueries
-
-TeamApi --> Exceptions
-MatchApi --> Exceptions
-TeamApi --> ApiFields
-MatchApi --> ApiFields
-
-TeamCommands --> TeamDomain
-TeamCommands --> TeamRepositories
-TeamQueries --> TeamQueryRepositories
-MatchCommands --> MatchDomain
-MatchCommands --> MatchRepositories
-MatchCommands --> TeamRepositories : jugadores / equipos
-MatchQueries --> MatchQueryRepository
-
-TeamDomain --> TextUtils
-TeamRepositories --> Database
-TeamQueryRepositories --> Database
-MatchRepositories --> Database
-MatchQueryRepository --> Database
-ClockMonitor --> MatchRepositories
-ClockMonitor --> Redis : snapshot cada 30 s
-Redis --> ClockWs : corrección y alertas
-ClockWs --> MatchDomain : snapshot inicial
-
-note bottom of MatchQueryRepository
-  Construye DTOs de lectura optimizados:
-  ListMatches y GetMatch.
+note right of matchday
+  El nivel de contenedores está en
+  architecture/containers.puml.
 end note
-
-note bottom of TeamQueryRepositories
-  Construye DTOs para List/Get de
-  equipos y jugadores, con estadísticas.
-end note
-
-package "news" {
-  component "News API / Contracts" as NewsApi
-  component "News Commands / ContentParser" as NewsCommands
-  component "News Queries / DTOs" as NewsQueries
-  component "News Domain" as NewsDomain
-  component "News Repository" as NewsRepository
-  component "News Query Repository" as NewsQueryRepository
-  component "Scheduled News Monitor" as NewsMonitor
-}
-package "tournaments" {
-  component "Tournament API / Contracts" as TournamentApi
-  component "Tournament Commands" as TournamentCommands
-  component "Tournament Queries / DTOs" as TournamentQueries
-  component "Tournament Domain" as TournamentDomain
-  component "Tournament Repositories" as TournamentRepositories
-  component "Tournament Query Repositories" as TournamentQueryRepositories
-}
-NewsApi --> Injector
-TournamentApi --> Injector
-Injector --> NewsCommands
-Injector --> NewsQueries
-Injector --> TournamentCommands
-Injector --> TournamentQueries
-NewsApi --> Exceptions
-TournamentApi --> Exceptions
-NewsCommands --> NewsDomain
-NewsCommands --> NewsRepository
-NewsCommands --> TeamRepositories
-NewsQueries --> NewsQueryRepository
-NewsMonitor --> NewsCommands : publicar vencidas
-NewsMonitor --> NewsRepository : proxima fecha
-NewsRepository --> Database
-NewsQueryRepository --> Database
-TournamentCommands --> TournamentDomain
-TournamentCommands --> TournamentRepositories
-TournamentCommands --> TeamRepositories
-TournamentCommands --> MatchRepositories : asociar Match
-TournamentQueries --> TournamentQueryRepositories
-TournamentRepositories --> Database
-TournamentQueryRepositories --> Database
-
-component "Match / Shootout post_save
-transaction.on_commit" as TournamentCompletion
-TournamentCompletion --> TournamentCommands : AdvanceBracketUseCase
-TournamentCommands --> MatchDomain : crear siguiente Match
-note bottom of TournamentCompletion
-  Solo cuadros generados.
-  Reintento explicito idempotente via advance-bracket.
-end note
-
-package "recommendations" {
-  component "NavigationMiddleware / GET details" as RecCapture
-  component "Recommendations API / Contracts" as RecApi
-  component "Recommendation Commands / Queries" as RecApp
-  component "RecommendationPolicy / Visitor / Activity / Profile / Snapshot" as RecDomain
-  component "Navigation and Recommendation Repositories" as RecRepo
-  component "Content Query Repository" as RecContent
-  component "Recommendations Worker" as RecWorker
-}
-RecCapture --> RecApp : register visit
-RecApi --> RecApp : heartbeat / read / clear
-RecWorker --> RecApp : process pending batch / purge
-RecApp --> RecDomain
-RecApp --> RecRepo
-RecApp --> RecContent
-RecRepo --> Database
-RecContent --> Database : existing sports content / public news
-Injector --> RecApp
 
 @enduml

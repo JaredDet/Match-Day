@@ -1,0 +1,63 @@
+@startuml MatchdayMatchesUseCases
+title Matchday - Casos de uso de partidos
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor Operador
+actor Espectador
+actor "Monitor del reloj" as Monitor
+
+rectangle Matches {
+  package "Ciclo del partido" {
+    usecase "Crear y actualizar partido" as Configure
+    usecase "Configurar alineaciones" as Lineup
+    usecase "Iniciar partido o periodo" as Start
+    usecase "Anunciar tiempo añadido" as AddedTime
+    usecase "Cerrar periodo o partido" as Finish
+  }
+
+  package "Cronología y estadísticas" {
+    usecase "Registrar eventos" as Events
+    usecase "Corregir goles o tarjetas" as Correct
+    usecase "Actualizar posesión" as Possession
+  }
+
+  package "Tanda de penales" {
+    usecase "Iniciar tanda" as StartShootout
+    usecase "Registrar lanzamiento" as Kick
+    usecase "Reducir participantes" as Reduce
+    usecase "Finalizar tanda" as FinishShootout
+  }
+
+  package "Consulta" {
+    usecase "Listar partidos" as List
+    usecase "Ver detalle, reloj, alineaciones,
+cronología, estadísticas y tanda" as Detail
+  }
+
+  usecase "Sincronizar reloj" as Sync
+}
+
+Operador --> Configure
+Operador --> Lineup
+Operador --> Start
+Operador --> AddedTime
+Operador --> Finish
+Operador --> Events
+Operador --> Correct
+Operador --> Possession
+Operador --> StartShootout
+Operador --> Kick
+Operador --> Reduce
+Operador --> FinishShootout
+Espectador --> List
+Espectador --> Detail
+Monitor --> Sync
+
+Start ..> Lineup : requiere formación y 11 titulares
+Correct ..> Events : revierte efectos derivados
+Kick ..> StartShootout : requiere tanda activa
+FinishShootout ..> Kick : requiere ganador decidido
+Sync ..> Finish : avisa; no cierra automáticamente
+@enduml

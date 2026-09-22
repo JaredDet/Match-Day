@@ -1,0 +1,37 @@
+@startuml MatchdayMatchesComponents
+!include <C4/C4_Component>
+
+title Matchday - C4 nivel 3: módulo Matches
+
+Container_Boundary(matches, "Módulo Matches") {
+  Component(api, "API y contratos", "DRF", "Configura partidos y registra eventos.")
+  Component(websocket, "Consumer del reloj", "Django Channels", "Entrega snapshots, correcciones y alertas.")
+  Component(commands, "Comandos", "Casos de uso", "Controla ciclo, planteles, eventos y penales.")
+  Component(queries, "Consultas", "Queries / DTOs", "Construye listados y detalles.")
+  Component(domain, "Dominio", "Match / Events / Squad / Shootout", "Reglas y estado del partido.")
+  Component(repositories, "Repositorios", "Django ORM", "Persiste el agregado.")
+  Component(queryRepository, "Repositorio de consulta", "Django ORM", "Proyecta lecturas optimizadas.")
+  Component(clock, "Monitor del reloj", "Proceso independiente", "Sincroniza el reloj y publica snapshots.")
+}
+
+Component_Ext(teams, "Módulo Teams", "Valida jugadores y equipos")
+Component_Ext(core, "Core", "Inyección y errores")
+ContainerDb_Ext(database, "Base de datos", "SQLite / PostgreSQL")
+ContainerQueue_Ext(redis, "Redis", "Channel layer")
+
+Rel(api, core, "Resuelve dependencias y errores")
+Rel(api, commands, "Ejecuta")
+Rel(api, queries, "Consulta")
+Rel(commands, domain, "Aplica reglas")
+Rel(commands, repositories, "Persiste")
+Rel(commands, teams, "Consulta planteles")
+Rel(queries, queryRepository, "Lee")
+Rel(repositories, database, "Lee y escribe")
+Rel(queryRepository, database, "Lee")
+Rel(clock, repositories, "Sincroniza")
+Rel(clock, redis, "Publica snapshots")
+Rel(redis, websocket, "Entrega eventos")
+Rel(websocket, domain, "Construye snapshot inicial")
+
+SHOW_LEGEND()
+@enduml

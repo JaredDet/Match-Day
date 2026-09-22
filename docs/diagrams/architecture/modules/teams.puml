@@ -1,0 +1,28 @@
+@startuml MatchdayTeamsComponents
+!include <C4/C4_Component>
+
+title Matchday - C4 nivel 3: módulo Teams
+
+Container_Boundary(teams, "Módulo Teams") {
+  Component(api, "API y contratos", "DRF", "Expone equipos y jugadores.")
+  Component(commands, "Comandos", "Casos de uso", "Crea y modifica equipos y jugadores.")
+  Component(queries, "Consultas", "Queries / DTOs", "Construye lecturas con estadísticas.")
+  Component(domain, "Dominio", "Team / Player", "Reglas de equipos, planteles y capitanía.")
+  Component(repositories, "Repositorios", "Django ORM", "Persiste agregados.")
+  Component(queryRepositories, "Repositorios de consulta", "Django ORM", "Proyecta DTOs optimizados.")
+}
+
+Component_Ext(core, "Core", "Inyección, errores y campos compartidos")
+ContainerDb_Ext(database, "Base de datos", "SQLite / PostgreSQL")
+
+Rel(api, core, "Resuelve dependencias y errores")
+Rel(api, commands, "Ejecuta")
+Rel(api, queries, "Consulta")
+Rel(commands, domain, "Aplica reglas")
+Rel(commands, repositories, "Persiste")
+Rel(queries, queryRepositories, "Lee")
+Rel(repositories, database, "Lee y escribe")
+Rel(queryRepositories, database, "Lee")
+
+SHOW_LEGEND()
+@enduml

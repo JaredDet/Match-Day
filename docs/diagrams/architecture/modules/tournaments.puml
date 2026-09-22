@@ -1,0 +1,37 @@
+@startuml MatchdayTournamentsComponents
+!include <C4/C4_Component>
+
+title Matchday - C4 nivel 3: módulo Tournaments
+
+Container_Boundary(tournaments, "Módulo Tournaments") {
+  Component(api, "API y contratos", "DRF", "Expone torneos, temporadas, fases, grupos y fixtures.")
+  Component(commands, "Comandos", "Casos de uso", "Configura estructuras, inscripciones y cuadros.")
+  Component(advance, "Avance de cuadro", "Caso de uso idempotente", "Crea el siguiente partido tras confirmar resultados.")
+  Component(queries, "Consultas", "Queries / DTOs", "Construye clasificación, cuadro y fixtures.")
+  Component(domain, "Dominio", "Tournament / Season / Phase / Group / Fixture", "Reglas de competición y desempate.")
+  Component(repositories, "Repositorios", "Django ORM", "Persiste agregados.")
+  Component(queryRepositories, "Repositorios de consulta", "Django ORM", "Proyecta lecturas optimizadas.")
+  Component(signals, "Integración de resultados", "post_save / transaction.on_commit", "Dispara el avance de cuadros generados.")
+}
+
+Component_Ext(teams, "Módulo Teams", "Equipos inscritos")
+Component_Ext(matches, "Módulo Matches", "Partidos y resultados")
+Component_Ext(core, "Core", "Inyección y errores")
+ContainerDb_Ext(database, "Base de datos", "SQLite / PostgreSQL")
+
+Rel(api, core, "Resuelve dependencias y errores")
+Rel(api, commands, "Ejecuta")
+Rel(api, queries, "Consulta")
+Rel(commands, domain, "Aplica reglas")
+Rel(commands, repositories, "Persiste")
+Rel(commands, teams, "Valida inscripciones")
+Rel(commands, matches, "Asocia y crea partidos")
+Rel(queries, queryRepositories, "Lee")
+Rel(repositories, database, "Lee y escribe")
+Rel(queryRepositories, database, "Lee")
+Rel(matches, signals, "Confirma resultado")
+Rel(signals, advance, "Ejecuta después del commit")
+Rel(advance, commands, "Reutiliza operaciones")
+
+SHOW_LEGEND()
+@enduml

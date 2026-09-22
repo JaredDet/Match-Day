@@ -111,5 +111,6 @@ Los errores del modo continuo se registran y se reintenta en cinco minutos;
 ## Verificación y diagramas
 
 Ver [testing](testing.md), [dominio](diagrams/domain/news.puml),
-[estados](diagrams/news-lifecycle.puml), [casos de uso](diagrams/use-cases/news.puml)
-y [contratos](diagrams/api/news.puml).
+[estados](diagrams/news-lifecycle.puml) y
+[casos de uso](diagrams/use-cases/news.puml). Los contratos HTTP están descritos
+en este documento y en OpenAPI.

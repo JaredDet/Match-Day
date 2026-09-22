@@ -1,0 +1,38 @@
+@startuml MatchdayContainers
+!include <C4/C4_Container>
+
+title Matchday - C4 nivel 2: contenedores
+LAYOUT_LEFT_RIGHT()
+
+Person(visitor, "Visitante")
+Person(editor, "Editor")
+Person(admin, "Administrador")
+
+System_Boundary(matchday, "Matchday") {
+  Container(web, "Aplicación web", "React / TypeScript", "Presenta las pantallas y registra navegación y tiempo activo.")
+  Container(api, "API y tiempo real", "Django / DRF / Channels", "Expone HTTP y WebSocket y coordina los módulos.")
+  ContainerDb(database, "Base de datos", "SQLite / PostgreSQL", "Guarda contenido, competición, actividad y recomendaciones.")
+  ContainerQueue(redis, "Canal de tiempo real", "Redis", "Distribuye correcciones y alertas del reloj.")
+  Container(worker, "Procesos independientes", "Django management commands", "Sincroniza relojes, publica noticias y genera recomendaciones.")
+}
+
+System_Ext(media, "Almacenamiento multimedia", "Escudos, fotografías y portadas.")
+
+Rel(visitor, web, "Navega")
+Rel(editor, web, "Edita contenido")
+Rel(admin, web, "Gestiona la competición")
+Rel(web, api, "Consume endpoints", "HTTPS / JSON")
+Rel(web, api, "Recibe el reloj", "WebSocket")
+Rel(api, database, "Lee y escribe", "Django ORM")
+Rel(api, redis, "Publica y consume eventos")
+Rel(api, media, "Lee y escribe archivos")
+Rel(worker, database, "Lee y escribe", "Django ORM")
+Rel(worker, redis, "Publica snapshots")
+
+SHOW_LEGEND()
+
+note bottom of api
+  Los componentes están separados por módulo en
+  architecture/modules/.
+end note
+@enduml
