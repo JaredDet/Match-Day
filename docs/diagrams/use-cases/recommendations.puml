@@ -24,4 +24,6 @@ note bottom of Visit
   GET 200, entidad existente y elegible.
   Sin preferencias explicitas.
 end note
+usecase "Comparar visitantes similares" as Similar
+Generate ..> Similar : <<include>>
 @enduml

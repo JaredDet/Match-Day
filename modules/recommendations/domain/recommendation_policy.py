@@ -19,32 +19,42 @@ class InterestWeights:
 
 class RecommendationPolicy:
     @staticmethod
-    def profile(activities, contents: dict[str, RecommendationContent], now: datetime):
-        teams, tournaments = defaultdict(float), defaultdict(float)
-        seen = set()
+    def content_weights(activities, now: datetime) -> dict[str, float]:
+        weights = defaultdict(float)
         daily_active_seconds = defaultdict(int)
-        for activity in activities:
+        for activity in sorted(
+            activities, key=lambda item: (item.occurred_at, str(item.id)), reverse=True
+        ):
             key = f"{activity.content_kind}:{activity.content_id}"
-            content = contents.get(key)
-            if content is None:
-                continue
             age_days = max(0, (now - activity.occurred_at).total_seconds() / 86400)
             daily_key = (key, activity.occurred_at.date())
             remaining = MAX_ACTIVE_SECONDS_PER_CONTENT_DAY - daily_active_seconds[daily_key]
             active_seconds = min(activity.active_seconds, max(0, remaining))
             daily_active_seconds[daily_key] += active_seconds
-            weight = (int(activity.counts_as_visit) + active_seconds / 60) * (
+            weights[key] += (int(activity.counts_as_visit) + active_seconds / 60) * (
                 0.5 ** (age_days / INTEREST_HALF_LIFE_DAYS)
             )
-            seen.add(key)
+        return dict(weights)
+
+    @staticmethod
+    def profile(activities, contents: dict[str, RecommendationContent], now: datetime):
+        teams, tournaments = defaultdict(float), defaultdict(float)
+        weights = RecommendationPolicy.content_weights(activities, now)
+        for key, weight in weights.items():
+            content = contents.get(key)
+            if content is None:
+                continue
             for team_id in content.team_ids:
                 teams[str(team_id)] += weight / len(content.team_ids)
             for tournament_id in content.tournament_ids:
                 tournaments[str(tournament_id)] += weight
-        return InterestWeights(dict(teams), dict(tournaments), frozenset(seen))
+        return InterestWeights(
+            dict(teams), dict(tournaments), frozenset(weights.keys() & contents.keys())
+        )
 
     @staticmethod
-    def recommend(contents, profile: InterestWeights, now: datetime) -> dict:
+    def recommend(contents, profile: InterestWeights, now: datetime, collaborative=None) -> dict:
+        collaborative = collaborative or {}
         ranked = []
         for content in contents:
             if content.reference.kind == ContentKind.PLAYER:
@@ -65,12 +75,20 @@ class RecommendationPolicy:
                 )
             elif content.live:
                 reason = "live_match"
+            bonus = (
+                collaborative.get(content.reference.key, 0)
+                if content.reference.key not in profile.seen
+                else 0
+            )
+            if bonus:
+                reason = "similar_visitors"
             ranked.append(
                 {
                     "kind": content.reference.kind,
                     "id": str(content.reference.id),
-                    "score": round(affinity + freshness + int(content.live), 6),
+                    "score": round(affinity + freshness + int(content.live) + bonus, 6),
                     "affinity": affinity,
+                    "collaborative": bonus,
                     "reason": reason,
                     "key": content.reference.key,
                 }
@@ -91,9 +109,12 @@ class RecommendationPolicy:
             for item in ranked
             if item["key"] not in displayed and item["key"] not in profile.seen
         ]
-        discoveries.sort(key=lambda item: (item["affinity"], -item["score"], item["key"]))
+        discoveries.sort(
+            key=lambda item: (-item["collaborative"], item["affinity"], -item["score"], item["key"])
+        )
         sections["discovery"] = [
-            {**item, "reason": "discovery"} for item in discoveries[:SECTION_SIZE]
+            {**item, "reason": "similar_visitors" if item["collaborative"] else "discovery"}
+            for item in discoveries[:SECTION_SIZE]
         ]
         return {
             section: [

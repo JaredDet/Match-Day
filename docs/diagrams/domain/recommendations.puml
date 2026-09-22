@@ -50,4 +50,9 @@ note bottom of RecommendationSnapshot
   Existe tambien un snapshot general,
   sin visitante, para el inicio sin historial.
 end note
+class CollaborativePolicy {
+  recommend(target, peers)
+}
+CollaborativePolicy --> NavigationActivity : vectores de comportamiento
+CollaborativePolicy --> RecommendationPolicy : refuerzo para contenido nuevo
 @enduml

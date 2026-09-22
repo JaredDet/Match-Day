@@ -20,6 +20,8 @@ note right of Read
   personalized, generated_at, expires_at
   news, matches, tournaments, discovery
   Elemento: kind, id, title, endpoint, preview, score, reason
+  reason incluye similar_visitors
+  Sin identidades ni historiales de vecinos
   private, no-store
 end note
 rectangle "DELETE /api/recommendations/history/" as Clear

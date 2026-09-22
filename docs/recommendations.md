@@ -2,7 +2,7 @@
 
 El módulo `recommendations` obtiene intereses de navegación, sin seguir equipos,
 marcar intereses ni completar formularios. Funciona con visitantes anónimos. No
-hay vinculación con cuentas ni recomendaciones colaborativas entre usuarios todavía.
+hay vinculación con cuentas; se comparan visitantes anónimos con patrones similares.
 El frontend demo conserva su funcionamiento local; este cambio no lo conecta a la API.
 
 ## Modelo y separación
@@ -168,7 +168,7 @@ aportan interés a un torneo cuando tienen un fixture real asociado.
 Se combinan afinidad por equipo, afinidad por torneo con factor 0,7, cercanía de
 la fecha y un refuerzo para partidos en juego. Se seleccionan hasta cuatro
 elementos por sección. Descubrimiento evita repetir las otras secciones y el
-contenido visitado, y da preferencia a menor afinidad. No usa otros usuarios.
+contenido visitado, y da preferencia a menor afinidad. Incluye descubrimiento colaborativo a partir de visitantes similares.
 Los candidatos se acotan a doscientos por consulta de categoría (recientes,
 próximos, en vivo o relacionados); los intereses principales también entran en
 las consultas para no limitarse al contenido reciente general.
@@ -191,7 +191,7 @@ las consultas para no limitarse al contenido reciente general.
 
 Cada elemento contiene `kind`, `id`, `title`, `endpoint`, `preview`, `score` y
 `reason`. Motivos: `team_interest`, `tournament_interest`, `recent_content`,
-`live_match`, `discovery`. `endpoint` apunta al detalle del backend. Si aún no
+`live_match`, `discovery`, `similar_visitors`. `endpoint` apunta al detalle del backend. Si aún no
 hay snapshot personal válido, se utiliza el general. Antes de la primera
 ejecución del worker se consulta contenido general acotado, sin crear un perfil
 ni registrar una visita a «Para ti». En ese caso las fechas son null.
@@ -213,3 +213,33 @@ Se comprueban los cinco detalles GET, prefetch/HEAD/errores, cookies, aislamient
 CSRF, multipart para beacon, idempotencia, límites de tiempo, recencia, lotes,
 retención, snapshots, referencias desaparecidas y noticias no públicas. Las
 pruebas de worker usan una base de pruebas, no la base de desarrollo.
+
+## Descubrimiento colaborativo
+
+El worker compara vectores de contenido consultado, ponderados con las mismas
+reglas de visitas, tiempo activo y recencia que el perfil individual. Usa
+similitud coseno: aumentar todas las visitas de un vecino por igual no aumenta
+su influencia. No utiliza preferencias declaradas ni necesita cuentas.
+
+- Considera hasta 200 visitantes recientes distintos del destinatario y las
+  100 actividades más recientes de cada uno, dentro de los treinta días.
+- Exige dos contenidos compartidos con peso positivo y similitud de al menos 0,2.
+- Selecciona hasta veinte vecinos. Cada contenido nuevo necesita respaldo de al
+  menos dos visitantes distintos; recargas de uno solo no sustituyen ese requisito.
+- Aporta un refuerzo acotado a dos puntos para contenido no visitado, que también
+  entra al conjunto de candidatos aunque no aparezca en el catálogo reciente.
+- El motivo `similar_visitors` indica ese respaldo. No devuelve IDs de vecinos,
+  similitudes individuales ni historiales. La sección discovery prioriza estas
+  sugerencias y no repite tarjetas de las otras secciones.
+- Si no alcanza los umbrales, mantiene las recomendaciones individuales y el
+  descubrimiento general. El primer visitante no recibe motivos colaborativos ficticios.
+
+El cálculo usa actividad vigente y contenido todavía elegible, no depende del
+orden de generación de perfiles ni recicla recomendaciones anteriores como señal.
+Borrar un visitante lo excluye de futuros cálculos. Los resultados agregados ya
+calculados para otros visitantes se renuevan en el ciclo del worker; pueden
+conservar temporalmente una sugerencia anterior hasta su renovación o caducidad.
+
+El muestreo acotado prioriza visitantes recientes; no es una búsqueda exhaustiva
+de toda la población. Con mayor volumen convendrá indexar vecinos o precalcular
+vectores. Esta versión no requiere tablas ni migraciones adicionales.

@@ -20,6 +20,8 @@ Navegador -> Application: al ocultar/salir: ultimo heartbeat (best effort)
 loop cada 60 s
   Worker -> Application: ProcessRecommendationsUseCase
   Application -> DB: purgar y seleccionar lote pendiente
+  Application -> DB: leer actividad reciente de otros visitantes (lote acotado)
+  Application -> Application: similitud coseno, vecinos y respaldo minimo
   Application -> DB: bloquear visitante, calcular y guardar perfil/snapshot
 end
 Navegador -> Application: GET /api/recommendations/

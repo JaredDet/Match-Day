@@ -81,3 +81,7 @@ java -jar plantuml.jar -tsvg "docs/diagrams/**/*.puml"
 
 Los comandos requieren disponer del JAR de PlantUML; las fuentes `.puml` son los
 artefactos mantenidos en el repositorio.
+
+Las pruebas de recomendaciones incluyen vecinos similares, respaldo de dos
+visitantes, fallback sin historial, normalizacion de pesos, borrado de vecinos,
+noticias no publicadas y limites por visitante en las consultas en lote.

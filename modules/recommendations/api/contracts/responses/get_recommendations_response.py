@@ -12,6 +12,7 @@ class RecommendationItemResponse(serializers.Serializer):
     score = serializers.FloatField()
     reason = serializers.ChoiceField(
         choices=[
+            "similar_visitors",
             "team_interest",
             "tournament_interest",
             "recent_content",

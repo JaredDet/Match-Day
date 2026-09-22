@@ -18,6 +18,9 @@ from modules.recommendations.application.commands.record_active_time_use_case im
 from modules.recommendations.application.commands.record_navigation_use_case import (
     RecordNavigationUseCase,
 )
+from modules.recommendations.application.queries.get_collaborative_candidates_query import (
+    GetCollaborativeCandidatesQuery,
+)
 from modules.recommendations.application.queries.get_recommendations_query import (
     GetRecommendationsQuery,
 )
@@ -26,6 +29,9 @@ from modules.recommendations.infrastructure.query_repository.content_query_repos
 )
 from modules.recommendations.infrastructure.query_repository.recommendation_query_repository import (
     RecommendationQueryRepository,
+)
+from modules.recommendations.infrastructure.query_repository.similar_visitors_query_repository import (
+    SimilarVisitorsQueryRepository,
 )
 from modules.recommendations.infrastructure.repository.navigation_repository import (
     NavigationRepository,
@@ -37,6 +43,16 @@ from modules.recommendations.infrastructure.repository.recommendation_repository
 
 class RecommendationsModule(injector.Module):
     def configure(self, binder: injector.Binder) -> None:
+        binder.bind(
+            GetCollaborativeCandidatesQuery,
+            to=GetCollaborativeCandidatesQuery,
+            scope=injector.singleton,
+        )
+        binder.bind(
+            SimilarVisitorsQueryRepository,
+            to=SimilarVisitorsQueryRepository,
+            scope=injector.singleton,
+        )
         binder.bind(
             RecommendationQueryRepository,
             to=RecommendationQueryRepository,

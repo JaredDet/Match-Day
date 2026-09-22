@@ -4,6 +4,9 @@ from django.db import transaction
 from django.utils import timezone
 from injector import inject
 
+from modules.recommendations.application.queries.get_collaborative_candidates_query import (
+    GetCollaborativeCandidatesQuery,
+)
 from modules.recommendations.constants import SNAPSHOT_MAX_AGE_MINUTES, SNAPSHOT_REFRESH_MINUTES
 from modules.recommendations.domain.content_reference import ContentReference
 from modules.recommendations.domain.recommendation_policy import (
@@ -28,16 +31,19 @@ class GenerateRecommendationsUseCase:
         navigation_repository: NavigationRepository,
         recommendation_repository: RecommendationRepository,
         content_query_repository: ContentQueryRepository,
+        collaborative_candidates_query: GetCollaborativeCandidatesQuery,
     ):
         self.navigation_repository = navigation_repository
         self.recommendation_repository = recommendation_repository
         self.content_query_repository = content_query_repository
+        self.collaborative_candidates_query = collaborative_candidates_query
 
     @transaction.atomic
     def execute(self, *, visitor_id=None, now=None):
         now = now or timezone.now()
         profile = InterestWeights({}, {}, frozenset())
         visitor = None
+        bonuses, collaborative_contents = {}, ()
         if visitor_id is not None:
             visitor = self.navigation_repository.lock_visitor(visitor_id)
             if visitor is None:
@@ -51,8 +57,12 @@ class GenerateRecommendationsUseCase:
             )
             profile = RecommendationPolicy.profile(activities, contents, now)
             self.recommendation_repository.save_profile(visitor_id, profile, now)
+            bonuses, collaborative_contents = self.collaborative_candidates_query.execute(
+                visitor_id=visitor_id, activities=activities, now=now
+            )
         contents = self.content_query_repository.candidates(profile, now)
-        sections = RecommendationPolicy.recommend(contents, profile, now)
+        contents = {item.reference.key: item for item in (*contents, *collaborative_contents)}
+        sections = RecommendationPolicy.recommend(contents.values(), profile, now, bonuses)
         self.recommendation_repository.save_snapshot(
             visitor_id, sections, now, now + timedelta(minutes=SNAPSHOT_MAX_AGE_MINUTES)
         )
