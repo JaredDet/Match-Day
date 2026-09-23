@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from core.dependency_injector import injector_instance
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
@@ -25,6 +26,17 @@ UNION_TEAM_NAME = "Unión del Valle"
 
 
 SPORTING_TEAM_NAME = "Sporting del Bosque"
+
+
+DEMO_REFERENCE = timezone.now().replace(hour=12, minute=0, second=0, microsecond=0)
+
+
+TEAM_HEAD_COACHES = {
+    HOME_TEAM_NAME: "Carlos Medina",
+    AWAY_TEAM_NAME: "Rafael Contreras",
+    UNION_TEAM_NAME: "Miguel Salinas",
+    SPORTING_TEAM_NAME: "Fernando Lagos",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +62,7 @@ NEWS = (
         },
         team=HOME_TEAM_NAME,
         status=NewsStatus.PUBLISHED,
-        published_at=datetime(2026, 8, 5, 18, tzinfo=UTC),
+        published_at=DEMO_REFERENCE - timedelta(days=14),
     ),
     DemoNews(
         title="Deportivo Cordillera presenta su nueva plantilla",
@@ -64,7 +76,7 @@ NEWS = (
         },
         team=AWAY_TEAM_NAME,
         status=NewsStatus.PUBLISHED,
-        published_at=datetime(2026, 8, 8, 15, tzinfo=UTC),
+        published_at=DEMO_REFERENCE - timedelta(days=10),
     ),
     DemoNews(
         title="Unión del Valle anuncia su próximo partido",
@@ -76,7 +88,7 @@ NEWS = (
         },
         team=UNION_TEAM_NAME,
         status=NewsStatus.SCHEDULED,
-        scheduled_at=datetime(2026, 9, 25, 20, tzinfo=UTC),
+        scheduled_at=DEMO_REFERENCE + timedelta(days=2, hours=8),
     ),
     DemoNews(
         title="Sporting del Bosque prepara una jornada especial",
@@ -88,7 +100,7 @@ NEWS = (
         },
         team=SPORTING_TEAM_NAME,
         status=NewsStatus.SCHEDULED,
-        scheduled_at=datetime(2026, 9, 27, 16, tzinfo=UTC),
+        scheduled_at=DEMO_REFERENCE + timedelta(days=4, hours=4),
     ),
     DemoNews(
         title="Resultados y novedades de la jornada",
@@ -101,7 +113,7 @@ NEWS = (
         },
         team=None,
         status=NewsStatus.PUBLISHED,
-        published_at=datetime(2026, 8, 20, 12, tzinfo=UTC),
+        published_at=DEMO_REFERENCE - timedelta(days=3),
     ),
     DemoNews(
         title="Entrevista con el capitán de Atlético Bahía",
@@ -155,7 +167,14 @@ class Command(BaseCommand):
                     name = HOME_TEAM_CURRENT_NAME
 
                 team = Team.objects.filter(name__in=aliases).first()
-                team_id = team.id if team else create_team.execute(name=name)
+                team_id = (
+                    team.id
+                    if team
+                    else create_team.execute(
+                        name=name,
+                        head_coach_name=TEAM_HEAD_COACHES[item.team],
+                    )
+                )
 
             news_id = create_news.execute(title=item.title, content=item.content, team_id=team_id)
 

@@ -7,6 +7,7 @@ dependencies = [
     "channels-redis>=4.3.0",
     "daphne>=4.2.3",
     "django>=5.2.17",
+    "django-cors-headers>=4.7.0",
     "djangorestframework>=3.18.0",
     "drf-spectacular>=0.30.0",
     "injector>=0.24.0",

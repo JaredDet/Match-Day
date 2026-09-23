@@ -3,6 +3,11 @@ from core.exceptions import AppException, ErrorType
 
 
 class TeamErrors:
+    InvalidHeadCoach = AppException(
+        "invalid_team_head_coach",
+        "El director técnico del equipo es obligatorio",
+        ErrorType.VALIDATION,
+    )
     InvalidPlayerPosition = AppException(
         "invalid_player_position",
         "La posición preferida del jugador no es válida",

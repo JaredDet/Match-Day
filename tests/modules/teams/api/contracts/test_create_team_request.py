@@ -19,3 +19,14 @@ def test_rejects_missing_or_blank_team_name(data):
 
     assert not request.is_valid()
     assert "name" in request.errors
+
+
+@pytest.mark.parametrize("head_coach_name", [None, "", " "])
+def test_rejects_missing_or_blank_head_coach(head_coach_name):
+    data = {"name": "Colo-Colo"}
+    if head_coach_name is not None:
+        data["head_coach_name"] = head_coach_name
+    request = CreateTeamRequest(data=data)
+
+    assert not request.is_valid()
+    assert "head_coach_name" in request.errors

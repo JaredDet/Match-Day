@@ -118,7 +118,7 @@ def test_rejects_duplicate_team_name_case_insensitively():
 
     response = APIClient().post(
         reverse("teams-list"),
-        {"name": "colo-colo"},
+        {"name": "colo-colo", "head_coach_name": "Técnico"},
         format="json",
     )
 

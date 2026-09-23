@@ -46,5 +46,7 @@ def test_news_seed_runs_without_match_demo():
 
     assert News.objects.count() == 7
     assert Team.objects.count() == 4
+    assert not Team.objects.filter(head_coach_name__isnull=True).exists()
+    assert not Team.objects.filter(head_coach_name="").exists()
     assert not Match.objects.exists()
     assert not Player.objects.exists()

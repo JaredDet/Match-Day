@@ -34,6 +34,16 @@ def test_rejects_existing_team_name():
     use_case = CreateTeamUseCase(repository)
 
     with pytest.raises(type(TeamErrors.AlreadyExists)):
+        use_case.execute(name="Colo-Colo", head_coach_name="Técnico")
+
+    repository.save.assert_not_called()
+
+
+def test_rejects_team_without_head_coach():
+    repository = Mock()
+    use_case = CreateTeamUseCase(repository)
+
+    with pytest.raises(type(TeamErrors.InvalidHeadCoach)):
         use_case.execute(name="Colo-Colo")
 
     repository.save.assert_not_called()

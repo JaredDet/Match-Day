@@ -360,6 +360,19 @@ def test_returns_not_found_when_getting_unknown_news():
     assert response.data["code"] == "news_not_found"
 
 
+def test_gets_absolute_news_cover_url():
+    news = News.objects.create(
+        title="Noticia con portada",
+        cover_image="news/covers/portada.webp",
+        content={"children": ["Contenido"]},
+    )
+
+    response = APIClient().get(reverse("news-detail", args=[str(news.id)]))
+
+    assert response.status_code == 200
+    assert response.data["cover_image"] == ("http://testserver/media/news/covers/portada.webp")
+
+
 def test_filters_news_by_status():
     published = News.objects.create(
         title="Noticia publicada",

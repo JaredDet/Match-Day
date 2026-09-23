@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
@@ -83,7 +83,8 @@ HOME_TEAM_CURRENT_NAME = "Atlético Bahía"
 AWAY_TEAM_NAME = "Deportivo Cordillera"
 UNION_TEAM_NAME = "Unión del Valle"
 SPORTING_TEAM_NAME = "Sporting del Bosque"
-SCHEDULED_AT = datetime(2026, 8, 30, 20, tzinfo=UTC)
+DEMO_REFERENCE = timezone.now().replace(hour=20, minute=0, second=0, microsecond=0)
+SCHEDULED_AT = DEMO_REFERENCE - timedelta(days=3)
 STADIUM_NAME = "Estadio del Horizonte"
 
 TEAM_HEAD_COACHES = {
@@ -190,7 +191,7 @@ class DemoFixture:
 SHOOTOUT_FIXTURE = DemoFixture(
     UNION_TEAM_NAME,
     SPORTING_TEAM_NAME,
-    datetime(2026, 7, 27, 18, tzinfo=UTC),
+    DEMO_REFERENCE - timedelta(days=21, hours=2),
     "Estadio del Valle",
     (2, 2),
     shootout_score=(4, 3),
@@ -202,7 +203,7 @@ FIXTURES = (
     DemoFixture(
         HOME_TEAM_NAME,
         SPORTING_TEAM_NAME,
-        datetime(2026, 7, 13, 18, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=35, hours=2),
         "Estadio del Horizonte",
         (2, 1),
         event_showcase=DemoEventShowcase.OWN_GOAL_AND_ASSIST,
@@ -210,7 +211,7 @@ FIXTURES = (
     DemoFixture(
         AWAY_TEAM_NAME,
         UNION_TEAM_NAME,
-        datetime(2026, 7, 16, 20, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=32),
         "Estadio Cordillera",
         (1, 0),
         event_showcase=DemoEventShowcase.PENALTY_INJURY_VAR,
@@ -218,7 +219,7 @@ FIXTURES = (
     DemoFixture(
         AWAY_TEAM_NAME,
         HOME_TEAM_NAME,
-        datetime(2026, 7, 20, 20, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=28),
         "Estadio Cordillera",
         (0, 1),
     ),
@@ -226,21 +227,21 @@ FIXTURES = (
     DemoFixture(
         HOME_TEAM_NAME,
         UNION_TEAM_NAME,
-        datetime(2026, 8, 3, 20, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=17),
         "Estadio del Horizonte",
         (3, 0),
     ),
     DemoFixture(
         SPORTING_TEAM_NAME,
         AWAY_TEAM_NAME,
-        datetime(2026, 8, 10, 17, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=10, hours=3),
         "Parque del Bosque",
         (1, 2),
     ),
     DemoFixture(
         AWAY_TEAM_NAME,
         UNION_TEAM_NAME,
-        datetime(2026, 8, 17, 20, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(days=6),
         "Estadio Cordillera",
         (2, 1),
     ),
@@ -248,7 +249,7 @@ FIXTURES = (
     DemoFixture(
         HOME_TEAM_NAME,
         UNION_TEAM_NAME,
-        datetime(2026, 8, 31, 15, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(hours=5),
         "Estadio del Horizonte",
         (1, 0),
         MatchPeriod.FIRST_HALF,
@@ -256,7 +257,7 @@ FIXTURES = (
     DemoFixture(
         AWAY_TEAM_NAME,
         SPORTING_TEAM_NAME,
-        datetime(2026, 8, 31, 16, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(hours=4),
         "Estadio Cordillera",
         (0, 1),
         MatchPeriod.HALFTIME,
@@ -264,7 +265,7 @@ FIXTURES = (
     DemoFixture(
         UNION_TEAM_NAME,
         AWAY_TEAM_NAME,
-        datetime(2026, 8, 31, 17, tzinfo=UTC),
+        DEMO_REFERENCE - timedelta(hours=3),
         "Estadio del Valle",
         (1, 1),
         MatchPeriod.SECOND_HALF,
@@ -272,28 +273,28 @@ FIXTURES = (
     DemoFixture(
         UNION_TEAM_NAME,
         HOME_TEAM_NAME,
-        datetime(2026, 9, 6, 20, tzinfo=UTC),
+        DEMO_REFERENCE + timedelta(days=1),
         "Estadio del Valle",
         None,
     ),
     DemoFixture(
         AWAY_TEAM_NAME,
         SPORTING_TEAM_NAME,
-        datetime(2026, 9, 7, 18, tzinfo=UTC),
+        DEMO_REFERENCE + timedelta(days=2, hours=-2),
         "Estadio Cordillera",
         None,
     ),
     DemoFixture(
         HOME_TEAM_NAME,
         SPORTING_TEAM_NAME,
-        datetime(2026, 9, 13, 20, tzinfo=UTC),
+        DEMO_REFERENCE + timedelta(days=7),
         "Estadio del Horizonte",
         None,
     ),
     DemoFixture(
         UNION_TEAM_NAME,
         AWAY_TEAM_NAME,
-        datetime(2026, 9, 14, 19, tzinfo=UTC),
+        DEMO_REFERENCE + timedelta(days=8, hours=-1),
         "Estadio del Valle",
         None,
     ),

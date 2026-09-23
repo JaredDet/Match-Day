@@ -56,7 +56,7 @@ class NewsViewSet(ViewSet):
         query = injector_instance.get(ListNewsQuery)
         news = query.execute(**request_contract.validated_data)
 
-        return Response(ListNewsResponse(news, many=True).data)
+        return Response(ListNewsResponse(news, many=True, context={"request": request}).data)
 
     @extend_schema(
         operation_id="news_get",
@@ -67,7 +67,7 @@ class NewsViewSet(ViewSet):
         query = injector_instance.get(GetNewsQuery)
         news = query.execute(news_id=pk)
 
-        return Response(GetNewsResponse(news).data)
+        return Response(GetNewsResponse(news, context={"request": request}).data)
 
     @extend_schema(
         operation_id="news_update",

@@ -15,6 +15,9 @@ class CreateTeamUseCase:
 
     @transaction.atomic
     def execute(self, *, name: str, head_coach_name: str | None = None) -> UUID:
+        if not head_coach_name or not head_coach_name.strip():
+            raise TeamErrors.InvalidHeadCoach
+
         team = Team.create(name=name, head_coach_name=head_coach_name)
 
         if self.team_repository.exists_by_name(team.name):

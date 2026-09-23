@@ -32,6 +32,12 @@ La plantilla activa `DEBUG` y permite `localhost` y `127.0.0.1`. En producción
 deben configurarse una clave secreta, los hosts permitidos y
 `DJANGO_DEBUG=false`.
 
+Para conectar el frontend Nuxt desde otro origen, configura sus orígenes en
+`DJANGO_CORS_ALLOWED_ORIGINS` y `DJANGO_CSRF_TRUSTED_ORIGINS`. Las peticiones
+que usen las cookies anónimas de recomendaciones deben enviar credenciales. En
+desarrollo, Django sirve las portadas de noticias desde `/media/`; en producción
+esa ruta debe publicarla el servidor web o el almacenamiento de archivos.
+
 Aplica las migraciones:
 
 ```bash
