@@ -58,8 +58,9 @@ http://127.0.0.1:8000/api/docs/
 
 ## Datos de demostración
 
-Crea cuatro equipos ficticios, sus 64 jugadores, quince partidos y siete
-noticias. Los partidos demostrativos incluyen ocho finalizados, tres en vivo y
+Crea cuatro equipos ficticios con escudos, sus 64 jugadores, quince partidos,
+siete noticias con portada y una Copa Matchday completa. Los partidos
+demostrativos incluyen ocho finalizados, tres en vivo y
 cuatro programados, además de estadio, árbitro, directores técnicos,
 formaciones, alineaciones, capitanes habituales, goles, autogoles, asistencias,
 tarjetas, sustituciones, lesiones, penales, VAR, faltas, tiros de esquina,
@@ -67,6 +68,14 @@ fueras de juego, tiros, atajadas y posesión.
 
 Las noticias demostrativas incluyen noticias publicadas, programadas y en
 borrador, tanto asociadas a equipos como de carácter general.
+
+Para preparar partidos, equipos, recursos visuales, temporada, grupos y
+eliminatorias en una sola ejecución:
+
+```bash
+uv run python manage.py seed_demo_tournament
+uv run python manage.py seed_demo_news
+```
 
 ## Para crear los datos de partidos:
 

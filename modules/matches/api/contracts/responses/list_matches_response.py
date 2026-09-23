@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.media_url_field import MediaUrlField
 from modules.matches.api.contracts.responses.get_match_response import MatchClockResponse
 from modules.matches.domain.goal import GoalType
 from modules.matches.domain.match import MatchFormation, MatchStatus
@@ -28,6 +29,7 @@ class MatchGoalPreviewResponse(serializers.Serializer):
 class MatchTeamPreviewResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    crest = MediaUrlField(allow_null=True)
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
     score = serializers.IntegerField()
     penalty_score = serializers.IntegerField(allow_null=True)

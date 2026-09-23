@@ -69,6 +69,8 @@ class MatchQueryRepository:
                 "away_team_id",
                 "home_team_name",
                 "away_team_name",
+                "home_team__crest",
+                "away_team__crest",
                 "home_goal_count",
                 "away_goal_count",
                 "penalty_shootout__home_score",
@@ -113,6 +115,7 @@ class MatchQueryRepository:
                 home_team=TeamDetail(
                     id=row["home_team_id"],
                     name=row["home_team_name"],
+                    crest=row["home_team__crest"] or None,
                     team_side=TeamSide.HOME,
                     score=row["home_goal_count"],
                     penalty_score=row["penalty_shootout__home_score"],
@@ -126,6 +129,7 @@ class MatchQueryRepository:
                 away_team=TeamDetail(
                     id=row["away_team_id"],
                     name=row["away_team_name"],
+                    crest=row["away_team__crest"] or None,
                     team_side=TeamSide.AWAY,
                     score=row["away_goal_count"],
                     penalty_score=row["penalty_shootout__away_score"],
@@ -170,6 +174,8 @@ class MatchQueryRepository:
                 "away_team_id",
                 "home_team_name",
                 "away_team_name",
+                "home_team__crest",
+                "away_team__crest",
                 "home_head_coach_name",
                 "away_head_coach_name",
                 "home_goal_count",
@@ -222,6 +228,7 @@ class MatchQueryRepository:
             home_team=MatchTeamDetail(
                 id=match["home_team_id"],
                 name=match["home_team_name"],
+                crest=match["home_team__crest"] or None,
                 head_coach_name=match["home_head_coach_name"],
                 team_side=TeamSide.HOME,
                 goals=match["home_goal_count"],
@@ -247,6 +254,7 @@ class MatchQueryRepository:
             away_team=MatchTeamDetail(
                 id=match["away_team_id"],
                 name=match["away_team_name"],
+                crest=match["away_team__crest"] or None,
                 head_coach_name=match["away_head_coach_name"],
                 team_side=TeamSide.AWAY,
                 goals=match["away_goal_count"],

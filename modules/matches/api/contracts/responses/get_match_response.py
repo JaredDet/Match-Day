@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.media_url_field import MediaUrlField
 from modules.matches.application.queries.get_match_query import MatchEventType
 from modules.matches.domain.match import MatchFormation, MatchStatus
 from modules.matches.domain.match_clock import MatchClockStatus
@@ -104,6 +105,7 @@ class PenaltyShootoutResponse(serializers.Serializer):
 class TeamDetailResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    crest = MediaUrlField(allow_null=True)
     head_coach_name = serializers.CharField(allow_null=True)
     team_side = serializers.ChoiceField(choices=TeamSide.choices)
     goals = serializers.IntegerField()

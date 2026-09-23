@@ -121,6 +121,7 @@ class MatchTeamStatistics:
 class MatchTeamDetail:
     id: UUID
     name: str
+    crest: str | None
     head_coach_name: str | None
     team_side: TeamSide
     goals: int

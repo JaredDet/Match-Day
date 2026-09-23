@@ -140,7 +140,7 @@ class MatchViewSet(ViewSet):
 
         query = injector_instance.get(ListMatchesQuery)
         matches = query.execute(**request_contract.validated_data)
-        return Response(ListMatchesResponse(matches, many=True).data)
+        return Response(ListMatchesResponse(matches, many=True, context={"request": request}).data)
 
     @extend_schema(
         operation_id="matches_retrieve",
@@ -150,7 +150,7 @@ class MatchViewSet(ViewSet):
     def retrieve(self, request, pk=None):
         query = injector_instance.get(GetMatchQuery)
         match = query.execute(pk)
-        return Response(GetMatchResponse(match).data)
+        return Response(GetMatchResponse(match, context={"request": request}).data)
 
     @extend_schema(
         operation_id="matches_update_details",

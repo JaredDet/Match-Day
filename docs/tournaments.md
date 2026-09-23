@@ -1,7 +1,12 @@
 # Torneos y fases
 
 El módulo `modules.tournaments` administra torneos, temporadas, equipos inscritos,
-fases, grupos y cuadros eliminatorios. La UI continúa usando sus datos demo.
+fases, grupos y cuadros eliminatorios. La UI consume estos recursos mediante la API.
+
+`seed_demo_tournament` crea de forma idempotente la Copa Matchday, su temporada
+actual, cuatro equipos con escudos, un grupo, semifinales, final, tercer puesto y
+sus fixtures asociados a los partidos demo. Las fechas proceden del seed relativo
+de partidos y los archivos WebP se guardan mediante el almacenamiento configurado.
 
 Sigue las convenciones del backend: entidades y reglas en `domain`, comandos y
 consultas en `application`, repositorios de escritura y lectura en `infrastructure`,

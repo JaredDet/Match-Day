@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from core.demo_images import demo_image
 from core.dependency_injector import injector_instance
 from modules.news.application.commands.create_news_use_case import CreateNewsUseCase
 from modules.news.application.commands.publish_news_use_case import PublishNewsUseCase
@@ -186,7 +187,18 @@ class Command(BaseCommand):
                     )
                 )
 
-            news_id = create_news.execute(title=item.title, content=item.content, team_id=team_id)
+            cover = demo_image(
+                title=item.title,
+                colors=("#173520", "#789c48") if team_id else ("#2b3150", "#7f69a8"),
+                size=(1280, 720),
+            )
+            cover.name = f"{item.title.lower().replace(' ', '-')[:60]}.webp"
+            news_id = create_news.execute(
+                title=item.title,
+                content=item.content,
+                team_id=team_id,
+                cover_image=cover,
+            )
 
             if item.status == NewsStatus.SCHEDULED:
                 schedule_news.execute(news_id=news_id, scheduled_at=item.scheduled_at)

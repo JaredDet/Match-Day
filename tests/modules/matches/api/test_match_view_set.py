@@ -545,6 +545,7 @@ def test_gets_match_detail_with_unified_event_timeline():
     assert response.data["home_team"] == {
         "id": str(match.home_team_id),
         "name": "Colo-Colo",
+        "crest": None,
         "team_side": TeamSide.HOME,
         "goals": 1,
         "formation": None,
@@ -573,6 +574,7 @@ def test_gets_match_detail_with_unified_event_timeline():
         ],
     }
     assert response.data["away_team"] == {
+        "crest": None,
         "id": str(match.away_team_id),
         "name": "Universidad de Chile",
         "team_side": TeamSide.AWAY,
@@ -792,6 +794,7 @@ def test_lists_matches_filtered_by_status_and_date():
             "home_team": {
                 "id": str(included.home_team_id),
                 "name": "Equipo Local",
+                "crest": None,
                 "team_side": TeamSide.HOME,
                 "score": 0,
                 "formation": None,
@@ -800,6 +803,7 @@ def test_lists_matches_filtered_by_status_and_date():
             "away_team": {
                 "id": str(included.away_team_id),
                 "name": "Equipo Visitante",
+                "crest": None,
                 "team_side": TeamSide.AWAY,
                 "score": 0,
                 "formation": None,

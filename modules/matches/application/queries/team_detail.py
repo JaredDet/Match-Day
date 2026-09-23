@@ -19,6 +19,7 @@ class MatchGoalPreview:
 class TeamDetail:
     id: UUID
     name: str
+    crest: str | None
     team_side: TeamSide
     score: int
     penalty_score: int | None
