@@ -36,6 +36,10 @@ class TeamNextMatch:
 class TeamSummary:
     id: UUID
     name: str
+    crest: str | None
+    city: str | None
+    stadium_name: str | None
+    founded_year: int | None
     last_match: TeamLastMatch | None
     next_match: TeamNextMatch | None
 

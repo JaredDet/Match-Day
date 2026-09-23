@@ -33,3 +33,4 @@ class RecommendationContent:
     tournament_ids: tuple[UUID, ...] = ()
     date: datetime | None = None
     live: bool = False
+    image: str | None = None

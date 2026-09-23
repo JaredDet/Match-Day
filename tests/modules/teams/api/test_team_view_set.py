@@ -35,6 +35,10 @@ def test_lists_teams_with_last_result_and_next_match():
         {
             "id": str(home_team.id),
             "name": "Atlético Bahía",
+            "crest": None,
+            "city": None,
+            "stadium_name": None,
+            "founded_year": None,
             "last_match": {
                 "match_id": str(finished.id),
                 "opponent_name": "Deportivo Cordillera",
@@ -48,7 +52,13 @@ def test_lists_teams_with_last_result_and_next_match():
 
 
 def test_gets_team_detail_with_statistics_and_current_players():
-    home_team = Team.objects.create(name="Atlético Bahía")
+    home_team = Team.objects.create(
+        name="Atlético Bahía",
+        crest="teams/crests/atletico.webp",
+        city="Valparaíso",
+        stadium_name="Estadio del Horizonte",
+        founded_year=1932,
+    )
     home_team.head_coach_name = "Carlos Medina"
     home_team.save()
     away_team = Team.objects.create(name="Deportivo Cordillera")
@@ -70,6 +80,10 @@ def test_gets_team_detail_with_statistics_and_current_players():
     assert response.status_code == 200
     assert response.data["id"] == str(home_team.id)
     assert response.data["head_coach_name"] == "Carlos Medina"
+    assert response.data["crest"] == "http://testserver/media/teams/crests/atletico.webp"
+    assert response.data["city"] == "Valparaíso"
+    assert response.data["stadium_name"] == "Estadio del Horizonte"
+    assert response.data["founded_year"] == 1932
     assert response.data["statistics"] == {
         "matches_played": 1,
         "wins": 1,
@@ -103,6 +117,9 @@ def test_creates_team_through_injected_use_case():
         {
             "name": "  Colo-Colo  ",
             "head_coach_name": "  Jorge   Almiron ",
+            "city": "  Santiago  ",
+            "stadium_name": "  Estadio   Monumental ",
+            "founded_year": 1925,
         },
         format="json",
     )
@@ -111,6 +128,9 @@ def test_creates_team_through_injected_use_case():
     team = Team.objects.get(id=UUID(response.data["id"]))
     assert team.name == "Colo-Colo"
     assert team.head_coach_name == "Jorge Almiron"
+    assert team.city == "Santiago"
+    assert team.stadium_name == "Estadio Monumental"
+    assert team.founded_year == 1925
 
 
 def test_rejects_duplicate_team_name_case_insensitively():

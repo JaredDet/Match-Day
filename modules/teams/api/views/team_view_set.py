@@ -65,7 +65,7 @@ class TeamViewSet(ViewSet):
 
         query = injector_instance.get(ListTeamsQuery)
         teams = query.execute(**request_contract.validated_data)
-        return Response(ListTeamsResponse(teams, many=True).data)
+        return Response(ListTeamsResponse(teams, many=True, context={"request": request}).data)
 
     @extend_schema(
         operation_id="teams_retrieve",
@@ -75,7 +75,7 @@ class TeamViewSet(ViewSet):
     def retrieve(self, request, pk=None):
         query = injector_instance.get(GetTeamQuery)
         team = query.execute(pk)
-        return Response(GetTeamResponse(team).data)
+        return Response(GetTeamResponse(team, context={"request": request}).data)
 
     @extend_schema(
         operation_id="teams_update",

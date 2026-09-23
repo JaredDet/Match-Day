@@ -240,7 +240,7 @@ def test_feed_returns_immutable_dtos_and_serializes_without_database_reads(
         GetRecommendationsResponse,
     )
 
-    team = Team.objects.create(name="Club")
+    team = Team.objects.create(name="Club", crest="teams/crests/club.webp")
     visitor_id, _ = record(team)
     injector_instance.get(ProcessRecommendationsUseCase).execute()
     feed = injector_instance.get(GetRecommendationsQuery).execute(visitor_id=visitor_id)
@@ -249,3 +249,35 @@ def test_feed_returns_immutable_dtos_and_serializes_without_database_reads(
     with django_assert_num_queries(0):
         data = GetRecommendationsResponse(feed).data
     assert data["personalized"]
+    items = [item for section in data.values() if isinstance(section, list) for item in section]
+    assert all("image" in item for item in items)
+
+
+def test_content_images_come_from_the_owner_entities():
+    team = Team.objects.create(name="Club", crest="teams/crests/club.webp")
+    news = News.objects.create(
+        title="Noticia",
+        content={"children": ["Contenido"]},
+        cover_image="news/covers/noticia.webp",
+        status=NewsStatus.PUBLISHED,
+        published_at=timezone.now(),
+    )
+    tournament = Tournament.objects.create(
+        slug="copa",
+        name="Copa",
+        country="Chile",
+        category="Copa nacional",
+        logo="tournaments/logos/copa.webp",
+    )
+
+    resolved = injector_instance.get(ContentQueryRepository).resolve(
+        (
+            ContentReference(ContentKind.TEAM, team.id),
+            ContentReference(ContentKind.NEWS, news.id),
+            ContentReference(ContentKind.TOURNAMENT, tournament.id),
+        )
+    )
+
+    assert resolved[f"team:{team.id}"].image == "teams/crests/club.webp"
+    assert resolved[f"news:{news.id}"].image == "news/covers/noticia.webp"
+    assert resolved[f"tournament:{tournament.id}"].image == "tournaments/logos/copa.webp"

@@ -18,6 +18,7 @@ class Tournament(models.Model):
     name = models.CharField(max_length=150)
     country = models.CharField(max_length=100)
     category = models.CharField(max_length=100)
+    logo = models.ImageField(upload_to="tournaments/logos/", null=True, blank=True)
 
     max_teams_per_group = models.PositiveSmallIntegerField(default=DEFAULT_MAX_TEAMS_PER_GROUP)
 
@@ -33,6 +34,7 @@ class Tournament(models.Model):
         name: str,
         country: str,
         category: str,
+        logo=None,
         max_teams_per_group: int = DEFAULT_MAX_TEAMS_PER_GROUP,
     ) -> Tournament:
         if type(max_teams_per_group) is not int or not 1 <= max_teams_per_group <= 32767:
@@ -58,6 +60,7 @@ class Tournament(models.Model):
             name=normalize_name(name, 150),
             country=country,
             category=category,
+            logo=logo,
             max_teams_per_group=max_teams_per_group,
         )
 

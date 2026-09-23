@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.media_url_field import MediaUrlField
 from modules.teams.application.queries.list_teams_query import TeamMatchResult
 
 
@@ -22,5 +23,9 @@ class TeamNextMatchResponse(serializers.Serializer):
 class ListTeamsResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
+    crest = MediaUrlField(allow_null=True)
+    city = serializers.CharField(allow_null=True)
+    stadium_name = serializers.CharField(allow_null=True)
+    founded_year = serializers.IntegerField(allow_null=True)
     last_match = TeamLastMatchResponse(allow_null=True)
     next_match = TeamNextMatchResponse(allow_null=True)

@@ -8,6 +8,11 @@ class TeamErrors:
         "El director técnico del equipo es obligatorio",
         ErrorType.VALIDATION,
     )
+    InvalidFoundedYear = AppException(
+        "invalid_team_founded_year",
+        "El año de fundación del equipo no es válido",
+        ErrorType.VALIDATION,
+    )
     InvalidPlayerPosition = AppException(
         "invalid_player_position",
         "La posición preferida del jugador no es válida",

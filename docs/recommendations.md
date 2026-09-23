@@ -20,6 +20,10 @@ las referencias en lotes y vuelve a comprobar la existencia y publicación al
 servir el resultado. Una noticia que dejó de estar publicada desaparece incluso
 si figuraba en un snapshot. La respuesta contiene `preview`, no el cuerpo completo.
 
+Cada elemento puede incluir una imagen resuelta desde su entidad de origen: la
+portada de una noticia, el escudo de un equipo o el emblema de un torneo. La API
+devuelve una URL de medios y no duplica archivos en recomendaciones.
+
 Las reglas de tiempo y puntuación están en dominio; los casos de uso coordinan
 repositorios y transacciones. El middleware registra la consulta ya resuelta;
 el comando de management solo planifica los casos de uso.

@@ -7,6 +7,7 @@ class Tournament {
   name: string
   country: string
   category: string
+  logo: image?
   max_teams_per_group: integer = 4
 }
 class Season {

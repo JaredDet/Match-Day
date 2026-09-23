@@ -21,6 +21,7 @@ class CreateTournamentUseCase:
         name: str,
         country: str,
         category: str,
+        logo=None,
         max_teams_per_group: int = DEFAULT_MAX_TEAMS_PER_GROUP,
     ) -> UUID:
         tournament = Tournament.create(
@@ -28,6 +29,7 @@ class CreateTournamentUseCase:
             name=name,
             country=country,
             category=category,
+            logo=logo,
             max_teams_per_group=max_teams_per_group,
         )
 

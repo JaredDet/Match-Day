@@ -36,7 +36,7 @@ class RecommendationViewSet(ViewSet):
         result = injector_instance.get(GetRecommendationsQuery).execute(
             visitor_id=get_visitor_id(request)
         )
-        return Response(GetRecommendationsResponse(result).data)
+        return Response(GetRecommendationsResponse(result, context={"request": request}).data)
 
     @extend_schema(
         operation_id="recommendations_heartbeat",

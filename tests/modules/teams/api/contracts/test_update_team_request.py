@@ -20,8 +20,7 @@ def test_rejects_empty_update(data):
     assert not request.is_valid()
 
 
-def test_accepts_clearing_head_coach():
+def test_rejects_clearing_head_coach():
     request = UpdateTeamRequest(data={"head_coach_name": None})
 
-    assert request.is_valid()
-    assert request.validated_data == {"head_coach_name": None}
+    assert not request.is_valid()

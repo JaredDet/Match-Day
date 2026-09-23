@@ -19,6 +19,28 @@ def test_renames_team_with_normalized_name():
     assert team.name == "Nombre nuevo"
 
 
+def test_updates_team_profile():
+    team = Team.create(name="Colo-Colo")
+
+    team.update_profile(
+        crest="teams/crests/colo-colo.webp",
+        city="  Santiago ",
+        stadium_name=" Estadio   Monumental ",
+        founded_year=1925,
+    )
+
+    assert team.crest == "teams/crests/colo-colo.webp"
+    assert team.city == "Santiago"
+    assert team.stadium_name == "Estadio Monumental"
+    assert team.founded_year == 1925
+
+
+@pytest.mark.parametrize("founded_year", [1799, 10000, True, "1925"])
+def test_rejects_invalid_founded_year(founded_year):
+    with pytest.raises(type(TeamErrors.InvalidFoundedYear)):
+        Team.create(name="Colo-Colo", founded_year=founded_year)
+
+
 def test_assigns_player_from_team_as_captain():
     team = Team.create(name="Colo-Colo")
     player = Player.create(team_id=team.id, name="Arturo Vidal")

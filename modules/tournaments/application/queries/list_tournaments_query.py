@@ -15,6 +15,7 @@ class TournamentSummary:
     name: str
     country: str
     category: str
+    logo: str | None
     max_teams_per_group: int
 
 

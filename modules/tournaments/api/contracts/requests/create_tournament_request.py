@@ -8,6 +8,7 @@ class CreateTournamentRequest(serializers.Serializer):
     name = serializers.CharField(max_length=150)
     country = serializers.CharField(max_length=100)
     category = serializers.CharField(max_length=100)
+    logo = serializers.ImageField(required=False, allow_null=True)
     max_teams_per_group = serializers.IntegerField(
         min_value=1, max_value=32767, default=DEFAULT_MAX_TEAMS_PER_GROUP
     )

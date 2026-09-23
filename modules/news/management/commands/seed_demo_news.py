@@ -38,6 +38,13 @@ TEAM_HEAD_COACHES = {
     SPORTING_TEAM_NAME: "Fernando Lagos",
 }
 
+TEAM_PROFILES = {
+    HOME_TEAM_NAME: ("Valparaíso", "Estadio del Horizonte", 1932),
+    AWAY_TEAM_NAME: ("Rancagua", "Estadio Cordillera", 1940),
+    UNION_TEAM_NAME: ("Talca", "Estadio del Valle", 1937),
+    SPORTING_TEAM_NAME: ("Temuco", "Parque del Bosque", 1950),
+}
+
 
 @dataclass(frozen=True, slots=True)
 class DemoNews:
@@ -173,6 +180,9 @@ class Command(BaseCommand):
                     else create_team.execute(
                         name=name,
                         head_coach_name=TEAM_HEAD_COACHES[item.team],
+                        city=TEAM_PROFILES[item.team][0],
+                        stadium_name=TEAM_PROFILES[item.team][1],
+                        founded_year=TEAM_PROFILES[item.team][2],
                     )
                 )
 

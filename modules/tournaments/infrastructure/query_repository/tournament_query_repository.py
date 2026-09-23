@@ -29,5 +29,6 @@ class TournamentQueryRepository:
             name=entity.name,
             country=entity.country,
             category=entity.category,
+            logo=entity.logo.name or None,
             max_teams_per_group=entity.max_teams_per_group,
         )

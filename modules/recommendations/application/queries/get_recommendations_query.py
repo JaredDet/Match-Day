@@ -69,6 +69,7 @@ class GetRecommendationsQuery:
                             title=content.title,
                             endpoint=content.endpoint,
                             preview=content.preview,
+                            image=content.image,
                             score=item["score"],
                             reason=item["reason"],
                         )

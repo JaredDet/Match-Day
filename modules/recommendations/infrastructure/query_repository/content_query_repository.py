@@ -51,6 +51,7 @@ class ContentQueryRepository:
                     "",
                     (team.id,),
                     tuple(sorted(memberships[team.id])),
+                    image=team.crest.name or None,
                 )
             )
         for player in players:
@@ -74,6 +75,7 @@ class ContentQueryRepository:
                     (item.team_id,) if item.team_id else (),
                     tuple(sorted(memberships[item.team_id])) if item.team_id else (),
                     item.published_at,
+                    image=item.cover_image.name or None,
                 )
             )
         for match in matches:
@@ -99,6 +101,7 @@ class ContentQueryRepository:
                     "",
                     (),
                     (tournament.id,),
+                    image=tournament.logo.name or None,
                 )
             )
         return {content.reference.key: content for content in contents}

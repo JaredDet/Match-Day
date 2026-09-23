@@ -35,7 +35,7 @@ def test_rejects_unknown_team():
     repository.save.assert_not_called()
 
 
-def test_updates_and_clears_head_coach():
+def test_updates_head_coach_and_rejects_clearing_it():
     team = Team.create(name="Equipo", head_coach_name="Tecnico anterior")
     repository = Mock()
     repository.get_for_update.return_value = team
@@ -45,9 +45,8 @@ def test_updates_and_clears_head_coach():
 
     assert team.head_coach_name == "Tecnico nuevo"
 
-    use_case.execute(team_id=team.id, head_coach_name=None)
-
-    assert team.head_coach_name is None
+    with pytest.raises(type(TeamErrors.InvalidHeadCoach)):
+        use_case.execute(team_id=team.id, head_coach_name=None)
 
 
 def test_rejects_name_used_by_another_team():

@@ -17,6 +17,10 @@ def test_creates_and_persists_team():
     team_id = use_case.execute(
         name="  Universidad   de Chile  ",
         head_coach_name="  Gustavo   Alvarez  ",
+        crest="teams/crests/la-u.webp",
+        city="  Santiago ",
+        stadium_name=" Estadio   Nacional ",
+        founded_year=1927,
     )
 
     team = repository.save.call_args.args[0]
@@ -24,6 +28,10 @@ def test_creates_and_persists_team():
     assert team.id == team_id
     assert team.name == "Universidad de Chile"
     assert team.head_coach_name == "Gustavo Alvarez"
+    assert team.crest == "teams/crests/la-u.webp"
+    assert team.city == "Santiago"
+    assert team.stadium_name == "Estadio Nacional"
+    assert team.founded_year == 1927
     repository.exists_by_name.assert_called_once_with("Universidad de Chile")
     repository.save.assert_called_once_with(team)
 

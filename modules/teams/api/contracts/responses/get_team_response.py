@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.media_url_field import MediaUrlField
 from modules.teams.application.queries.list_teams_query import TeamMatchResult
 from modules.teams.domain.player import PlayerPosition
 
@@ -39,6 +40,10 @@ class GetTeamResponse(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     head_coach_name = serializers.CharField(allow_null=True)
+    crest = MediaUrlField(allow_null=True)
+    city = serializers.CharField(allow_null=True)
+    stadium_name = serializers.CharField(allow_null=True)
+    founded_year = serializers.IntegerField(allow_null=True)
     statistics = TeamStatisticsResponse()
     players = TeamPlayerDetailResponse(many=True)
     recent_matches = TeamRecentMatchResponse(many=True)

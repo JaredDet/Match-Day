@@ -54,7 +54,9 @@ class TournamentViewSet(ViewSet):
         query = injector_instance.get(ListTournamentsQuery)
         result = query.execute()
 
-        return Response(ListTournamentsResponse(result, many=True).data)
+        return Response(
+            ListTournamentsResponse(result, many=True, context={"request": request}).data
+        )
 
     @extend_schema(
         operation_id="tournaments_retrieve",
@@ -65,7 +67,7 @@ class TournamentViewSet(ViewSet):
         query = injector_instance.get(GetTournamentQuery)
         result = query.execute(slug)
 
-        return Response(GetTournamentResponse(result).data)
+        return Response(GetTournamentResponse(result, context={"request": request}).data)
 
     @extend_schema(
         operation_id="tournaments_list_seasons",

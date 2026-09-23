@@ -94,6 +94,13 @@ TEAM_HEAD_COACHES = {
     SPORTING_TEAM_NAME: "Fernando Lagos",
 }
 
+TEAM_PROFILES = {
+    HOME_TEAM_NAME: ("Valparaíso", STADIUM_NAME, 1932),
+    AWAY_TEAM_NAME: ("Rancagua", "Estadio Cordillera", 1940),
+    UNION_TEAM_NAME: ("Talca", "Estadio del Valle", 1937),
+    SPORTING_TEAM_NAME: ("Temuco", "Parque del Bosque", 1950),
+}
+
 TEAM_PLAYERS = {
     HOME_TEAM_NAME: [
         "Mateo Rojas",
@@ -406,16 +413,23 @@ class Command(BaseCommand):
             aliases.append(HOME_TEAM_CURRENT_NAME)
         team = Team.objects.filter(name__in=aliases).first()
         head_coach_name = TEAM_HEAD_COACHES[name]
+        city, stadium_name, founded_year = TEAM_PROFILES[name]
         if team is None:
             team_id = self.create_team.execute(
                 name=name,
                 head_coach_name=head_coach_name,
+                city=city,
+                stadium_name=stadium_name,
+                founded_year=founded_year,
             )
         else:
             team_id = team.id
             self.update_team.execute(
                 team_id=team_id,
                 head_coach_name=head_coach_name,
+                city=city,
+                stadium_name=stadium_name,
+                founded_year=founded_year,
             )
 
         existing_players = {

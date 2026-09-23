@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.media_url_field import MediaUrlField
 from modules.recommendations.domain.content_reference import ContentKind
 
 
@@ -9,6 +10,7 @@ class RecommendationItemResponse(serializers.Serializer):
     title = serializers.CharField()
     endpoint = serializers.CharField()
     preview = serializers.CharField(allow_blank=True)
+    image = MediaUrlField(allow_null=True)
     score = serializers.FloatField()
     reason = serializers.ChoiceField(
         choices=[

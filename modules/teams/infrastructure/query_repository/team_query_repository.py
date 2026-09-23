@@ -27,7 +27,16 @@ class TeamQueryRepository:
 
         team = (
             Team.objects.filter(id=team_id)
-            .values("id", "name", "head_coach_name", "captain_id")
+            .values(
+                "id",
+                "name",
+                "head_coach_name",
+                "crest",
+                "city",
+                "stadium_name",
+                "founded_year",
+                "captain_id",
+            )
             .first()
         )
         if team is None:
@@ -97,6 +106,10 @@ class TeamQueryRepository:
             id=team["id"],
             name=team["name"],
             head_coach_name=team["head_coach_name"],
+            crest=team["crest"] or None,
+            city=team["city"],
+            stadium_name=team["stadium_name"],
+            founded_year=team["founded_year"],
             statistics=TeamStatistics(
                 matches_played=len(matches),
                 wins=wins,
@@ -117,7 +130,9 @@ class TeamQueryRepository:
             TeamSummary,
         )
 
-        team_rows = tuple(Team.objects.values("id", "name"))
+        team_rows = tuple(
+            Team.objects.values("id", "name", "crest", "city", "stadium_name", "founded_year")
+        )
         normalized_search = search.strip().casefold() if search else ""
         if normalized_search:
             team_rows = tuple(
@@ -191,6 +206,10 @@ class TeamQueryRepository:
             TeamSummary(
                 id=row["id"],
                 name=row["name"],
+                crest=row["crest"] or None,
+                city=row["city"],
+                stadium_name=row["stadium_name"],
+                founded_year=row["founded_year"],
                 last_match=last_by_team.get(row["id"]),
                 next_match=next_by_team.get(row["id"]),
             )

@@ -12,7 +12,7 @@ y contratos request/response y ViewSets en `api`. `models.py` exporta las entida
 
 | Entidad | Responsabilidad |
 | --- | --- |
-| `Tournament` | Slug, nombre, país, categoría y capacidad de grupos |
+| `Tournament` | Slug, nombre, país, categoría, emblema opcional y capacidad de grupos |
 | `Season` | Edición (por ejemplo `2026` o `2026/27`) y equipos inscritos |
 | `Phase` | Grupos, ronda eliminatoria o tercer puesto; orden y estado |
 | `Group` | Grupo A, B, etc. y orden de desempate registrado |

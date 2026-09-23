@@ -8,11 +8,16 @@ class Team {
   +UUID id
   +string name
   +string head_coach_name
+  +image crest
+  +string city
+  +string stadium_name
+  +int founded_year
   +UUID captain_id
   --
   +create(name): Team
   +rename(name): void
   +set_head_coach(name): void
+  +update_profile(crest, city, stadium, year): void
   +assign_captain(player): void
 }
 

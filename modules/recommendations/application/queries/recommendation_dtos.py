@@ -12,6 +12,7 @@ class RecommendationItem:
     title: str
     endpoint: str
     preview: str
+    image: str | None
     score: float
     reason: str
 

@@ -46,6 +46,10 @@ class TeamDetail:
     id: UUID
     name: str
     head_coach_name: str | None
+    crest: str | None
+    city: str | None
+    stadium_name: str | None
+    founded_year: int | None
     statistics: TeamStatistics
     players: tuple[TeamPlayerDetail, ...]
     recent_matches: tuple[TeamRecentMatch, ...]
