@@ -44,7 +44,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        call_command("seed_demo_match", stdout=StringIO())
+        if not Tournament.objects.filter(slug=TOURNAMENT_SLUG).exists():
+            call_command("seed_demo_match", stdout=StringIO())
         teams = tuple(Team.objects.order_by("name")[:4])
         self._ensure_team_crests(teams)
         tournament = self._ensure_tournament()

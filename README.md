@@ -56,6 +56,33 @@ La documentación de la API queda disponible en:
 http://127.0.0.1:8000/api/docs/
 ```
 
+## Docker
+
+Desde este repositorio se puede levantar la solución completa, incluido el
+frontend hermano `../matchday-ui`:
+
+```bash
+docker compose up --build
+```
+
+Quedan disponibles el frontend en `http://localhost:3000`, la API en
+`http://localhost:8000/api/` y Swagger en `http://localhost:8000/api/docs/`.
+La composición crea PostgreSQL y Redis con volúmenes persistentes, aplica las
+migraciones, carga los seeds idempotentes y arranca por separado el monitor del
+reloj, el publicador de noticias y el worker de recomendaciones.
+
+Para detener los contenedores conservando los datos:
+
+```bash
+docker compose down
+```
+
+Para reiniciar completamente la base, Redis y los archivos multimedia demo:
+
+```bash
+docker compose down --volumes
+```
+
 ## Datos de demostración
 
 Crea cuatro equipos ficticios con escudos, sus 64 jugadores, quince partidos,
@@ -246,6 +273,6 @@ uv run python manage.py migrate recommendations
 uv run python manage.py run_recommendations_worker
 ```
 
-Contrato, CSRF, cookies, envio final con sendBeacon y limites en
-[docs/recommendations.md](docs/recommendations.md). La demo del frontend permanece
-sin conectar a estos endpoints.
+Contrato, CSRF, cookies, envío final con `sendBeacon` y límites en
+[docs/recommendations.md](docs/recommendations.md). El frontend consume estos
+endpoints mediante su repositorio de recomendaciones.

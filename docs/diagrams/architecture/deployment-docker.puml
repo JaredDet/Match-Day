@@ -1,0 +1,39 @@
+@startuml MatchdayDockerDeployment
+!include <C4/C4_Deployment>
+
+title Matchday - Despliegue local con Docker Compose
+LAYOUT_LEFT_RIGHT()
+
+Deployment_Node(host, "Equipo local", "Docker Compose") {
+  Deployment_Node(frontend_node, "frontend", "Node.js 22 Alpine") {
+    Container(frontend, "Matchday UI", "Nuxt / Nitro", "Sirve la aplicación en el puerto 3000.")
+  }
+
+  Deployment_Node(backend_node, "backend", "Python 3.12") {
+    Container(api, "API ASGI", "Daphne / Django", "HTTP y WebSocket en el puerto 8000.")
+  }
+
+  Deployment_Node(workers, "Procesos en segundo plano", "Python 3.12") {
+    Container(clock, "Monitor de reloj", "Management command", "Sincroniza relojes cada 30 segundos.")
+    Container(news, "Publicador de noticias", "Management command", "Publica noticias programadas.")
+    Container(recommendations, "Worker de recomendaciones", "Management command", "Procesa actividad y snapshots.")
+  }
+
+  Deployment_Node(data, "Datos persistentes") {
+    ContainerDb(postgres, "PostgreSQL", "PostgreSQL 17", "Datos de la aplicación.")
+    ContainerQueue(redis, "Redis", "Redis 7", "Channel layer y snapshots del reloj.")
+    ContainerDb(media, "Media volume", "Docker volume", "Escudos, logos y portadas.")
+  }
+}
+
+Rel(frontend, api, "Consume", "HTTP / WebSocket")
+Rel(api, postgres, "Lee y escribe")
+Rel(api, redis, "Publica y consume")
+Rel(api, media, "Lee y escribe")
+Rel(clock, postgres, "Sincroniza")
+Rel(clock, redis, "Publica snapshots")
+Rel(news, postgres, "Publica contenido")
+Rel(recommendations, postgres, "Calcula perfiles")
+
+SHOW_LEGEND()
+@enduml

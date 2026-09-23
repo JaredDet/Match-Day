@@ -10,6 +10,8 @@ diagramas que repitan esa información.
   sistemas externos.
 - [Contenedores](architecture/containers.puml): nivel 2 de C4; frontend, backend,
   procesos independientes y almacenamiento.
+- [Despliegue Docker](architecture/deployment-docker.puml): servicios, workers y
+  volúmenes de la composición local.
 - Componentes por módulo, nivel 3 de C4:
   - [Teams](architecture/modules/teams.puml).
   - [Matches](architecture/modules/matches.puml).
