@@ -102,6 +102,8 @@ class MatchSquadPlayerDetail:
     is_sent_off: bool
     sent_off_reason: SentOffReason | None
     is_captain: bool
+    position_x: int | None
+    position_y: int | None
 
 
 @dataclass(frozen=True, slots=True)

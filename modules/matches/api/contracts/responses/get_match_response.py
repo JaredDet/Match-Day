@@ -73,6 +73,15 @@ class MatchSquadPlayerResponse(serializers.Serializer):
         allow_null=True,
     )
     is_captain = serializers.BooleanField()
+    position_x = serializers.IntegerField(allow_null=True)
+    position_y = serializers.IntegerField(allow_null=True)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation["position_x"] is None:
+            representation.pop("position_x")
+            representation.pop("position_y")
+        return representation
 
 
 class PenaltyShootoutParticipantResponse(serializers.Serializer):

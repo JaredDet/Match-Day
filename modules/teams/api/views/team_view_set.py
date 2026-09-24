@@ -15,11 +15,18 @@ from modules.teams.api.contracts.requests.register_team_squad_request import (
 from modules.teams.api.contracts.requests.set_team_captain_request import (
     SetTeamCaptainRequest,
 )
+from modules.teams.api.contracts.requests.team_formation_request import TeamFormationRequest
 from modules.teams.api.contracts.requests.update_player_request import UpdatePlayerRequest
 from modules.teams.api.contracts.requests.update_team_request import UpdateTeamRequest
 from modules.teams.api.contracts.responses.get_team_response import GetTeamResponse
 from modules.teams.api.contracts.responses.list_teams_response import ListTeamsResponse
+from modules.teams.api.contracts.responses.team_formation_response import TeamFormationResponse
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
+from modules.teams.application.commands.manage_team_formation_use_cases import (
+    CreateTeamFormationUseCase,
+    DeleteTeamFormationUseCase,
+    UpdateTeamFormationUseCase,
+)
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
@@ -31,10 +38,37 @@ from modules.teams.application.commands.update_player_use_case import UpdatePlay
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
 from modules.teams.application.queries.get_team_query import GetTeamQuery
 from modules.teams.application.queries.list_teams_query import ListTeamsQuery
+from modules.teams.infrastructure.repository.formation_repository import FormationRepository
 
 
 class TeamViewSet(ViewSet):
     lookup_value_converter = "uuid"
+
+    @action(detail=True, methods=["get", "post"], url_path="formations")
+    def formations(self, request, pk=None):
+        repository = injector_instance.get(FormationRepository)
+        if request.method == "GET":
+            return Response(TeamFormationResponse(repository.list(pk), many=True).data)
+        contract = TeamFormationRequest(data=request.data)
+        contract.is_valid(raise_exception=True)
+        formation_id = injector_instance.get(CreateTeamFormationUseCase).execute(
+            team_id=pk, **contract.validated_data
+        )
+        return Response({"id": str(formation_id)}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["put", "delete"], url_path="formations/<uuid:formation_id>")
+    def formation_detail(self, request, pk=None, formation_id=None):
+        if request.method == "DELETE":
+            injector_instance.get(DeleteTeamFormationUseCase).execute(
+                team_id=pk, formation_id=formation_id
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        contract = TeamFormationRequest(data=request.data)
+        contract.is_valid(raise_exception=True)
+        injector_instance.get(UpdateTeamFormationUseCase).execute(
+            team_id=pk, formation_id=formation_id, **contract.validated_data
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         operation_id="teams_create",

@@ -1,6 +1,11 @@
 import injector
 
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
+from modules.teams.application.commands.manage_team_formation_use_cases import (
+    CreateTeamFormationUseCase,
+    DeleteTeamFormationUseCase,
+    UpdateTeamFormationUseCase,
+)
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
@@ -18,6 +23,7 @@ from modules.teams.infrastructure.query_repository.player_query_repository impor
 from modules.teams.infrastructure.query_repository.team_query_repository import (
     TeamQueryRepository,
 )
+from modules.teams.infrastructure.repository.formation_repository import FormationRepository
 from modules.teams.infrastructure.repository.player_repository import PlayerRepository
 from modules.teams.infrastructure.repository.team_repository import TeamRepository
 
@@ -26,6 +32,16 @@ class TeamsModule(injector.Module):
     def configure(self, binder: injector.Binder) -> None:
         binder.bind(PlayerRepository, to=PlayerRepository, scope=injector.singleton)
         binder.bind(TeamRepository, to=TeamRepository, scope=injector.singleton)
+        binder.bind(FormationRepository, to=FormationRepository, scope=injector.singleton)
+        binder.bind(
+            CreateTeamFormationUseCase, to=CreateTeamFormationUseCase, scope=injector.singleton
+        )
+        binder.bind(
+            UpdateTeamFormationUseCase, to=UpdateTeamFormationUseCase, scope=injector.singleton
+        )
+        binder.bind(
+            DeleteTeamFormationUseCase, to=DeleteTeamFormationUseCase, scope=injector.singleton
+        )
         binder.bind(TeamQueryRepository, to=TeamQueryRepository, scope=injector.singleton)
         binder.bind(PlayerQueryRepository, to=PlayerQueryRepository, scope=injector.singleton)
         binder.bind(CreateTeamUseCase, to=CreateTeamUseCase, scope=injector.singleton)

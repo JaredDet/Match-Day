@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.dependency_injector import injector_instance
+from modules.matches.api.contracts.requests.change_tactical_formation_request import (
+    ChangeTacticalFormationRequest,
+)
 from modules.matches.api.contracts.requests.create_match_request import CreateMatchRequest
 from modules.matches.api.contracts.requests.end_match_period_request import EndMatchPeriodRequest
 from modules.matches.api.contracts.requests.list_matches_request import ListMatchesRequest
@@ -50,6 +53,9 @@ from modules.matches.api.contracts.requests.update_match_possession_request impo
 )
 from modules.matches.api.contracts.responses.get_match_response import GetMatchResponse
 from modules.matches.api.contracts.responses.list_matches_response import ListMatchesResponse
+from modules.matches.application.commands.change_tactical_formation_use_case import (
+    ChangeTacticalFormationUseCase,
+)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.end_match_period_use_case import EndMatchPeriodUseCase
@@ -198,6 +204,19 @@ class MatchViewSet(ViewSet):
                 LineupPlayerInput(**player)
                 for player in request_contract.validated_data.get("substitutes", [])
             ],
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["patch"], url_path="lineups/<str:team_side>/formation")
+    def change_tactical_formation(self, request, pk=None, team_side=None):
+        contract = ChangeTacticalFormationRequest(data=request.data)
+        contract.is_valid(raise_exception=True)
+        try:
+            resolved_team_side = TeamSide(team_side)
+        except ValueError:
+            raise MatchErrors.InvalidTeamSide from None
+        injector_instance.get(ChangeTacticalFormationUseCase).execute(
+            match_id=pk, team_side=resolved_team_side, **contract.validated_data
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -373,6 +373,8 @@ class MatchQueryRepository:
                 "is_sent_off",
                 "sent_off_reason",
                 "is_captain",
+                "position_x",
+                "position_y",
             )
         )
         return tuple(
@@ -390,6 +392,8 @@ class MatchQueryRepository:
                     else None
                 ),
                 is_captain=row["is_captain"],
+                position_x=row["position_x"],
+                position_y=row["position_y"],
             )
             for row in rows
         )

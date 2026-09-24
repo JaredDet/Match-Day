@@ -1,5 +1,8 @@
 import injector
 
+from modules.matches.application.commands.change_tactical_formation_use_case import (
+    ChangeTacticalFormationUseCase,
+)
 from modules.matches.application.commands.create_match_use_case import CreateMatchUseCase
 from modules.matches.application.commands.disallow_goal_use_case import DisallowGoalUseCase
 from modules.matches.application.commands.end_match_period_use_case import EndMatchPeriodUseCase
@@ -111,6 +114,11 @@ class MatchesModule(injector.Module):
         )
         binder.bind(MatchQueryRepository, to=MatchQueryRepository, scope=injector.singleton)
         binder.bind(CreateMatchUseCase, to=CreateMatchUseCase, scope=injector.singleton)
+        binder.bind(
+            ChangeTacticalFormationUseCase,
+            to=ChangeTacticalFormationUseCase,
+            scope=injector.singleton,
+        )
         binder.bind(FinishMatchUseCase, to=FinishMatchUseCase, scope=injector.singleton)
         binder.bind(EndMatchPeriodUseCase, to=EndMatchPeriodUseCase, scope=injector.singleton)
         binder.bind(RegisterCardUseCase, to=RegisterCardUseCase, scope=injector.singleton)

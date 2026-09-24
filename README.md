@@ -68,8 +68,34 @@ docker compose up --build
 Quedan disponibles el frontend en `http://localhost:3000`, la API en
 `http://localhost:8000/api/` y Swagger en `http://localhost:8000/api/docs/`.
 La composición crea PostgreSQL y Redis con volúmenes persistentes, aplica las
-migraciones, carga los seeds idempotentes y arranca por separado el monitor del
-reloj, el publicador de noticias y el worker de recomendaciones.
+migraciones y arranca por separado el monitor del reloj, el publicador de
+noticias y el worker de recomendaciones.
+
+Después de modificar frontend o backend, publica todos los cambios en los
+contenedores con un solo comando. El script reconstruye ambas imágenes, aplica
+las migraciones y recrea la API, los workers y el frontend con la misma versión:
+
+```powershell
+.\scripts\docker-update.ps1
+```
+
+En Linux o macOS:
+
+```bash
+./scripts/docker-update.sh
+```
+
+Los datos demo se cargan de forma explícita para que una actualización no
+modifique datos desplegados. En una instalación vacía, o cuando se quiera
+regenerar deliberadamente la demo, se puede usar:
+
+```powershell
+.\scripts\docker-update.ps1 -SeedDemo
+```
+
+```bash
+SEED_DEMO=1 ./scripts/docker-update.sh
+```
 
 Para detener los contenedores conservando los datos:
 

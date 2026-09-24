@@ -45,6 +45,8 @@ class MatchSquadPlayer(models.Model):
         blank=True,
     )
     is_captain = models.BooleanField(default=False)
+    position_x = models.PositiveSmallIntegerField(null=True, blank=True)
+    position_y = models.PositiveSmallIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -58,6 +60,8 @@ class MatchSquadPlayer(models.Model):
         shirt_number: int,
         role: MatchSquadRole = MatchSquadRole.STARTER,
         is_captain: bool = False,
+        position_x: int | None = None,
+        position_y: int | None = None,
     ) -> "MatchSquadPlayer":
         if not isinstance(team_side, TeamSide):
             raise MatchErrors.InvalidTeamSide
@@ -74,6 +78,11 @@ class MatchSquadPlayer(models.Model):
         if is_captain and role != MatchSquadRole.STARTER:
             raise MatchErrors.InvalidLineupCaptain
 
+        if (position_x is None) != (position_y is None):
+            raise MatchErrors.InvalidFormation
+        if position_x is not None and not (0 <= position_x <= 100 and 0 <= position_y <= 100):
+            raise MatchErrors.InvalidFormation
+
         return cls(
             match=match,
             player=player,
@@ -82,6 +91,8 @@ class MatchSquadPlayer(models.Model):
             role=role,
             is_on_field=role == MatchSquadRole.STARTER,
             is_captain=is_captain,
+            position_x=position_x,
+            position_y=position_y,
         )
 
     def enter_field(self) -> None:

@@ -207,6 +207,18 @@ class Match(models.Model):
         else:
             self.away_formation = formation
 
+    def change_tactical_formation(self, *, team_side: TeamSide, formation: MatchFormation) -> None:
+        if self.status not in (MatchStatus.SCHEDULED, MatchStatus.LIVE):
+            raise MatchErrors.InvalidState
+        if not isinstance(team_side, TeamSide):
+            raise MatchErrors.InvalidTeamSide
+        if not isinstance(formation, MatchFormation):
+            raise MatchErrors.InvalidFormation
+        if team_side == TeamSide.HOME:
+            self.home_formation = formation
+        else:
+            self.away_formation = formation
+
     def add_squad_player(
         self,
         *,
@@ -214,6 +226,8 @@ class Match(models.Model):
         shirt_number: int,
         role: MatchSquadRole = MatchSquadRole.STARTER,
         is_captain: bool = False,
+        position_x: int | None = None,
+        position_y: int | None = None,
     ) -> MatchSquadPlayer:
         team_side = self._resolve_team_side(player.team_id)
         return MatchSquadPlayer.create(
@@ -223,6 +237,8 @@ class Match(models.Model):
             shirt_number=shirt_number,
             role=role,
             is_captain=is_captain,
+            position_x=position_x,
+            position_y=position_y,
         )
 
     @staticmethod

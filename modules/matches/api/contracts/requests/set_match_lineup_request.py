@@ -12,6 +12,8 @@ class LineupPlayerRequest(serializers.Serializer):
         min_value=MIN_SHIRT_NUMBER,
         max_value=MAX_SHIRT_NUMBER,
     )
+    position_x = serializers.IntegerField(min_value=0, max_value=100, required=False)
+    position_y = serializers.IntegerField(min_value=0, max_value=100, required=False)
 
 
 class SetMatchLineupRequest(serializers.Serializer):

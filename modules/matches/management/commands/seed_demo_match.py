@@ -43,6 +43,7 @@ from modules.matches.application.commands.rescind_card_use_case import RescindCa
 from modules.matches.application.commands.set_match_lineup_use_case import (
     LineupPlayerInput,
     SetMatchLineupUseCase,
+    formation_positions,
 )
 from modules.matches.application.commands.start_match_period_use_case import StartMatchPeriodUseCase
 from modules.matches.application.commands.start_match_use_case import StartMatchUseCase
@@ -67,6 +68,9 @@ from modules.matches.domain.penalty_shootout import (
 from modules.matches.domain.shot import ShotOutcome
 from modules.matches.domain.var_review import VarReviewDecision, VarReviewReason
 from modules.teams.application.commands.create_team_use_case import CreateTeamUseCase
+from modules.teams.application.commands.manage_team_formation_use_cases import (
+    CreateTeamFormationUseCase,
+)
 from modules.teams.application.commands.register_player_use_case import RegisterPlayerUseCase
 from modules.teams.application.commands.register_team_squad_use_case import (
     RegisterTeamSquadUseCase,
@@ -75,6 +79,7 @@ from modules.teams.application.commands.set_team_captain_use_case import (
     SetTeamCaptainUseCase,
 )
 from modules.teams.application.commands.update_team_use_case import UpdateTeamUseCase
+from modules.teams.domain.formation import TeamFormation
 from modules.teams.domain.player import Player
 from modules.teams.domain.team import Team
 
@@ -402,6 +407,7 @@ class Command(BaseCommand):
         )
         self.finish_penalty_shootout = injector_instance.get(FinishPenaltyShootoutUseCase)
         self.update_team = injector_instance.get(UpdateTeamUseCase)
+        self.create_formation = injector_instance.get(CreateTeamFormationUseCase)
 
     def _ensure_team(
         self,
@@ -451,7 +457,27 @@ class Command(BaseCommand):
                         name=player_name,
                     )
             player_ids = tuple(existing_players[player_name] for player_name in player_names)
+        self._ensure_formations(team_id)
         return team_id, player_ids
+
+    def _ensure_formations(self, team_id: UUID) -> None:
+        samples = (
+            ("Equilibrada", MatchFormation.FOUR_THREE_THREE, True),
+            ("Bloque medio", MatchFormation.FOUR_FOUR_TWO, False),
+        )
+        for name, shape, is_default in samples:
+            if TeamFormation.objects.filter(team_id=team_id, name=name).exists():
+                continue
+            self.create_formation.execute(
+                team_id=team_id,
+                name=name,
+                shape=shape.value,
+                positions=[
+                    {"slot": slot, "x": x, "y": y}
+                    for slot, (x, y) in enumerate(formation_positions(shape), start=1)
+                ],
+                is_default=is_default,
+            )
 
     @staticmethod
     def _find_fixture(fixture, teams) -> Match | None:
@@ -497,7 +523,7 @@ class Command(BaseCommand):
             }[fixture.target_period]
             expected_substitutions = 2 if fixture.target_period == MatchPeriod.SECOND_HALF else 0
             expected_stat_events = 2 if fixture.target_period != MatchPeriod.SECOND_HALF else 3
-            expected_possession = 50 + fixture.scheduled_at.day % 5
+            expected_possession = 50
         else:
             expected_status = MatchStatus.FINISHED
             expected_period = (
@@ -510,7 +536,7 @@ class Command(BaseCommand):
                 fixture.event_showcase == DemoEventShowcase.PENALTY_INJURY_VAR
             )
             expected_stat_events = 3
-            expected_possession = 50 + fixture.scheduled_at.day % 5
+            expected_possession = 50
         expected_shootout = fixture.shootout_score is not None
         expected_penalty_goals = 1 if fixture.scheduled_at == SCHEDULED_AT else 0
         expected_own_goals = int(fixture.event_showcase == DemoEventShowcase.OWN_GOAL_AND_ASSIST)
@@ -613,7 +639,7 @@ class Command(BaseCommand):
         self.start_match.execute(match_id, started_at=first_half_started_at)
         self.update_possession.execute(
             match_id=match_id,
-            home_percentage=50 + fixture.scheduled_at.day % 5,
+            home_percentage=50,
         )
         home_goals = [18 + index * 22 for index in range(fixture.score[0])]
         away_goals = [31 + index * 24 for index in range(fixture.score[1])]

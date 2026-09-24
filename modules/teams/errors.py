@@ -3,6 +3,16 @@ from core.exceptions import AppException, ErrorType
 
 
 class TeamErrors:
+    InvalidFormation = AppException(
+        "invalid_team_formation",
+        "La formación debe tener once posiciones válidas",
+        ErrorType.VALIDATION,
+    )
+    FormationNotFound = AppException(
+        "team_formation_not_found",
+        "Formación no encontrada",
+        ErrorType.NOT_FOUND,
+    )
     InvalidHeadCoach = AppException(
         "invalid_team_head_coach",
         "El director técnico del equipo es obligatorio",

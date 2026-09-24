@@ -20,10 +20,25 @@ from modules.teams.infrastructure.repository.player_repository import PlayerRepo
 logger = logging.getLogger(__name__)
 
 
+def formation_positions(formation: MatchFormation) -> list[tuple[int, int]]:
+    """Return canonical coordinates from a team's own goal towards midfield."""
+    lines = [1, *(int(value) for value in formation.value.split("-"))]
+    positions: list[tuple[int, int]] = []
+    last_line = max(len(lines) - 1, 1)
+    for line_index, player_count in enumerate(lines):
+        x = 6 + round(line_index * 38 / last_line)
+        for player_index in range(player_count):
+            y = round((player_index + 1) * 100 / (player_count + 1))
+            positions.append((x, y))
+    return positions
+
+
 @dataclass(frozen=True, slots=True)
 class LineupPlayerInput:
     player_id: UUID
     shirt_number: int
+    position_x: int | None = None
+    position_y: int | None = None
 
 
 class SetMatchLineupUseCase:
@@ -98,14 +113,21 @@ class SetMatchLineupUseCase:
             )
             resolved_captain_id = None
 
+        defaults = formation_positions(formation)
         squad_players = [
             match.add_squad_player(
                 player=found_players[player.player_id],
                 shirt_number=player.shirt_number,
                 role=MatchSquadRole.STARTER,
                 is_captain=player.player_id == resolved_captain_id,
+                position_x=player.position_x
+                if player.position_x is not None
+                else defaults[index][0],
+                position_y=player.position_y
+                if player.position_y is not None
+                else defaults[index][1],
             )
-            for player in players
+            for index, player in enumerate(players)
         ]
         squad_players.extend(
             match.add_squad_player(

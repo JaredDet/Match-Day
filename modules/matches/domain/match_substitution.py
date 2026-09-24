@@ -85,6 +85,8 @@ class MatchSubstitution(models.Model):
             raise MatchErrors.InvalidPeriod from None
         validate_match_event(team_side, period, minute, added_minute)
         match.ensure_event_time_reached(period, minute, added_minute)
+        player_in.position_x = player_out.position_x
+        player_in.position_y = player_out.position_y
         player_out.leave_field()
         player_in.enter_field()
         return cls(
