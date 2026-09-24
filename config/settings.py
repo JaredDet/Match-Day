@@ -157,6 +157,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+PUBLIC_BASE_URL = os.getenv("DJANGO_PUBLIC_BASE_URL", "").rstrip("/")
 
 DEVELOPMENT_FRONTEND_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000" if DEBUG else ""
 CORS_ALLOWED_ORIGINS = [

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
@@ -8,5 +9,7 @@ class MediaUrlField(serializers.CharField):
             return None
 
         url = default_storage.url(value)
+        if settings.PUBLIC_BASE_URL:
+            return f"{settings.PUBLIC_BASE_URL}/{url.lstrip('/')}"
         request = self.context.get("request")
         return request.build_absolute_uri(url) if request is not None else url
