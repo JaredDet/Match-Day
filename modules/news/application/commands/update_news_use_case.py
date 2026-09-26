@@ -1,3 +1,4 @@
+from typing import cast
 from uuid import UUID
 
 from django.db import transaction
@@ -27,6 +28,7 @@ class UpdateNewsUseCase:
         news_id: UUID,
         title: str,
         content: dict,
+        preview: str | object = _UNSET,
         cover_image: str | None = _UNSET,
     ) -> None:
         news = self.news_repository.get_for_update(news_id)
@@ -38,6 +40,8 @@ class UpdateNewsUseCase:
 
         news.rename(title)
         news.update_content(content)
+        if preview is not _UNSET:
+            news.update_preview(cast(str, preview))
 
         if cover_image is not _UNSET:
             news.update_cover_image(cover_image)

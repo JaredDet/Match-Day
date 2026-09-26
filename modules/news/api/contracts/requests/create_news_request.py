@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from core.constants import NAME_MAX_LENGTH
+from core.constants import NAME_MAX_LENGTH, NEWS_PREVIEW_MAX_LENGTH
 
 
 class CreateNewsRequest(serializers.Serializer):
@@ -8,3 +8,6 @@ class CreateNewsRequest(serializers.Serializer):
     team_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     cover_image = serializers.ImageField(required=False, allow_null=True)
     content = serializers.JSONField()
+    preview = serializers.CharField(
+        max_length=NEWS_PREVIEW_MAX_LENGTH, required=False, allow_blank=True, default=""
+    )

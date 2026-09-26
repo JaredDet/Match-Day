@@ -28,6 +28,7 @@ class CreateNewsUseCase:
         *,
         title: str,
         content: dict,
+        preview: str = "",
         team_id: UUID | None = None,
         cover_image: str | None = None,
     ) -> UUID:
@@ -40,6 +41,7 @@ class CreateNewsUseCase:
             team_id=team_id,
             title=title,
             cover_image=cover_image,
+            preview=preview,
             content=content,
         )
         self.news_repository.save(news)

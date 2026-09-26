@@ -24,6 +24,7 @@ def test_accepts_news_data():
         "team_id": team_id,
         "cover_image": None,
         "content": content,
+        "preview": "",
     }
 
 
@@ -42,6 +43,7 @@ def test_accepts_general_news_without_team():
         "title": "Noticia general",
         "team_id": None,
         "content": content,
+        "preview": "",
     }
 
 

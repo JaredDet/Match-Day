@@ -1,5 +1,6 @@
 import pytest
 
+from core.constants import NEWS_CONTENT_MAX_LENGTH
 from modules.news.application.news_content_parser import NewsContentParser
 from modules.news.errors import NewsErrors
 
@@ -125,17 +126,17 @@ def test_rejects_mismatched_tags():
 def test_counts_only_visible_text_towards_max_length():
     content = {
         "children": [
-            f"<b>{'a' * 500}</b>",
+            f"<b>{'a' * NEWS_CONTENT_MAX_LENGTH}</b>",
         ]
     }
 
     assert NewsContentParser().parse(content) == content
 
 
-def test_rejects_more_than_500_visible_characters():
+def test_rejects_more_than_the_content_limit_visible_characters():
     content = {
         "children": [
-            "a" * 501,
+            "a" * (NEWS_CONTENT_MAX_LENGTH + 1),
         ]
     }
 
@@ -148,19 +149,19 @@ def test_rejects_more_than_500_visible_characters():
 def test_counts_text_across_all_paragraphs():
     content = {
         "children": [
-            "a" * 250,
-            "<b>" + "b" * 250 + "</b>",
+            "a" * (NEWS_CONTENT_MAX_LENGTH // 2),
+            "<b>" + "b" * (NEWS_CONTENT_MAX_LENGTH - NEWS_CONTENT_MAX_LENGTH // 2) + "</b>",
         ]
     }
 
     assert NewsContentParser().parse(content) == content
 
 
-def test_rejects_more_than_500_characters_across_paragraphs():
+def test_rejects_more_than_the_content_limit_across_paragraphs():
     content = {
         "children": [
-            "a" * 250,
-            "b" * 251,
+            "a" * (NEWS_CONTENT_MAX_LENGTH // 2),
+            "b" * (NEWS_CONTENT_MAX_LENGTH - NEWS_CONTENT_MAX_LENGTH // 2 + 1),
         ]
     }
 

@@ -30,6 +30,7 @@ def test_creates_and_persists_news():
     news_id = use_case.execute(
         title="  Nueva   noticia  ",
         content=content,
+        preview=" Extracto   propio ",
         team_id=team_id,
         cover_image="news/covers/cover.jpg",
     )
@@ -41,6 +42,7 @@ def test_creates_and_persists_news():
     assert news.team_id == team_id
     assert news.title == "Nueva noticia"
     assert news.content == content
+    assert news.preview == "Extracto propio"
     assert news.cover_image == "news/covers/cover.jpg"
     assert news.status == NewsStatus.DRAFT
 

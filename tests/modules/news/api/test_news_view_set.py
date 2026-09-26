@@ -17,6 +17,7 @@ def test_update_preserves_omitted_cover_and_clears_explicit_null(remove_cover):
         title="Original", content={"children": []}, cover_image="news/covers/original.jpg"
     )
     payload = {"title": "Actualizada", "content": {"children": ["Texto"]}}
+    payload["preview"] = "Extracto personalizado"
 
     if remove_cover:
         payload["cover_image"] = None
@@ -28,6 +29,7 @@ def test_update_preserves_omitted_cover_and_clears_explicit_null(remove_cover):
     news.refresh_from_db()
 
     assert news.title == "Actualizada"
+    assert news.preview == "Extracto personalizado"
     assert (news.cover_image.name or None) == (None if remove_cover else "news/covers/original.jpg")
 
 
@@ -38,6 +40,7 @@ def test_creates_news_through_injected_use_case():
         reverse("news-list"),
         {
             "title": "  Nueva   noticia  ",
+            "preview": "Un extracto propio",
             "team_id": str(team.id),
             "content": {
                 "children": [
@@ -53,6 +56,7 @@ def test_creates_news_through_injected_use_case():
 
     assert news.team == team
     assert news.title == "Nueva noticia"
+    assert news.preview == "Un extracto propio"
     assert news.content == {
         "children": [
             "Contenido de la noticia",
@@ -345,6 +349,7 @@ def test_gets_news():
                 "Contenido de la noticia",
             ]
         },
+        "preview": "",
         "status": "PUBLISHED",
         "scheduled_at": None,
         "published_at": "2026-08-20T18:00:00Z",
@@ -496,8 +501,21 @@ def test_list_preview_is_bounded_and_detail_preserves_full_content():
     detail = client.get(reverse("news-detail", args=[str(news.id)]))
 
     assert listing.status_code == 200
-    assert listing.data[0]["preview"] == "a" * 199 + "\u2026"
+    assert listing.data[0]["preview"] == "a" * 250
     assert "content" not in listing.data[0]
     assert detail.status_code == 200
     assert detail.data["content"] == content
-    assert "preview" not in detail.data
+    assert detail.data["preview"] == ""
+
+
+def test_list_uses_custom_plain_text_preview():
+    news = News.objects.create(
+        title="Preview personalizada",
+        preview="  <b>Extracto   destacado</b>  ",
+        content={"children": ["Texto del artículo"]},
+    )
+
+    response = APIClient().get(reverse("news-list"))
+
+    item = next(row for row in response.data if row["id"] == str(news.id))
+    assert item["preview"] == "Extracto destacado"

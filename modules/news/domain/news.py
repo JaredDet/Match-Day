@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
+from html import unescape
 from uuid import UUID
 
 from django.db import models
 
-from core.constants import NAME_MAX_LENGTH
+from core.constants import NAME_MAX_LENGTH, NEWS_PREVIEW_MAX_LENGTH
 from core.text import normalize_whitespace
 from modules.news.errors import NewsErrors
 
@@ -31,6 +33,7 @@ class News(models.Model):
     title = models.CharField(max_length=NAME_MAX_LENGTH)
 
     cover_image = models.ImageField(upload_to="news/covers/", null=True, blank=True)
+    preview = models.CharField(max_length=NEWS_PREVIEW_MAX_LENGTH, blank=True, default="")
     content = models.JSONField(default=dict)
 
     status = models.CharField(
@@ -56,6 +59,7 @@ class News(models.Model):
         *,
         title: str,
         content: dict,
+        preview: str = "",
         team_id: UUID | None = None,
         cover_image: str | None = None,
     ) -> News:
@@ -63,6 +67,7 @@ class News(models.Model):
             team_id=team_id,
             title=cls._normalize_title(title),
             cover_image=cover_image,
+            preview=cls._normalize_preview(preview),
             content=content,
         )
 
@@ -73,6 +78,10 @@ class News(models.Model):
     def update_content(self, content: dict) -> None:
         self._ensure_editable()
         self.content = content
+
+    def update_preview(self, preview: str) -> None:
+        self._ensure_editable()
+        self.preview = self._normalize_preview(preview)
 
     def update_cover_image(self, cover_image: str | None) -> None:
         self._ensure_editable()
@@ -117,6 +126,13 @@ class News(models.Model):
         if not normalized_title:
             raise NewsErrors.InvalidTitle
         return normalized_title
+
+    @staticmethod
+    def _normalize_preview(preview: str) -> str:
+        normalized_preview = normalize_whitespace(re.sub(r"<[^>]*>", "", unescape(preview)))
+        if len(normalized_preview) > NEWS_PREVIEW_MAX_LENGTH:
+            raise NewsErrors.InvalidContent
+        return normalized_preview
 
     class Meta:
         db_table = "news"

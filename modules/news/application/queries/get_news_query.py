@@ -18,6 +18,7 @@ class NewsDetail:
     team_id: UUID | None
     cover_image: str | None
     content: dict
+    preview: str
     status: NewsStatus
     scheduled_at: datetime | None
     published_at: datetime | None

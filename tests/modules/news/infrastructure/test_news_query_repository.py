@@ -85,6 +85,7 @@ def test_gets_all_news_fields():
     assert result.team_id == team.id
     assert result.cover_image is None
     assert result.content == {"blocks": [{"type": "paragraph", "text": "Contenido"}]}
+    assert result.preview == ""
     assert result.status == NewsStatus.PUBLISHED
     assert result.scheduled_at is None
     assert result.published_at == published_at

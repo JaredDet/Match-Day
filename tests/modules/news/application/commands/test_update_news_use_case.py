@@ -32,11 +32,13 @@ def test_updates_and_persists_news():
         news_id=news.id,
         title="  Título   nuevo  ",
         content=content,
+        preview="Resumen corto",
         cover_image="news/covers/new-cover.jpg",
     )
 
     assert news.title == "Título nuevo"
     assert news.content == content
+    assert news.preview == "Resumen corto"
     assert news.cover_image == "news/covers/new-cover.jpg"
     assert news.status == NewsStatus.DRAFT
 
