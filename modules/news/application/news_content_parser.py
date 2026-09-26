@@ -30,9 +30,7 @@ class NewsContentParser:
         return content
 
     def _validate_paragraph(self, paragraph: str) -> int:
-        heading_match = re.fullmatch(
-            r"<(h[1-4])>(.*)</\1>", paragraph, flags=re.DOTALL
-        )
+        heading_match = re.fullmatch(r"<(h[1-4])>(.*)</\1>", paragraph, flags=re.DOTALL)
         if re.match(r"<h[1-4]>", paragraph) and heading_match is None:
             raise NewsErrors.InvalidContent
 
