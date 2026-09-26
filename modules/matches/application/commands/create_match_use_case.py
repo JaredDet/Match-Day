@@ -4,7 +4,8 @@ from uuid import UUID
 from django.db import transaction
 from injector import inject
 
-from modules.matches.domain.match import Match
+from modules.matches.domain.match import Match, MatchFormation
+from modules.matches.domain.match_event import TeamSide
 from modules.matches.errors import MatchErrors
 from modules.matches.infrastructure.repository.match_repository import MatchRepository
 from modules.teams.errors import TeamErrors
@@ -26,6 +27,8 @@ class CreateMatchUseCase:
         scheduled_at: datetime,
         stadium_name: str | None = None,
         referee_name: str | None = None,
+        home_formation: MatchFormation | None = None,
+        away_formation: MatchFormation | None = None,
     ) -> UUID:
         home_team = self.team_repository.get(home_team_id)
         away_team = self.team_repository.get(away_team_id)
@@ -40,6 +43,10 @@ class CreateMatchUseCase:
             stadium_name=stadium_name,
             referee_name=referee_name,
         )
+        if home_formation is not None:
+            match.set_formation(team_side=TeamSide.HOME, formation=home_formation)
+        if away_formation is not None:
+            match.set_formation(team_side=TeamSide.AWAY, formation=away_formation)
 
         if self.match_repository.exists_fixture(match.fixture_key):
             raise MatchErrors.AlreadyExists

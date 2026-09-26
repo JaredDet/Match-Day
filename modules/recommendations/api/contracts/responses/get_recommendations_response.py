@@ -11,6 +11,7 @@ class RecommendationItemResponse(serializers.Serializer):
     endpoint = serializers.CharField()
     preview = serializers.CharField(allow_blank=True)
     image = MediaUrlField(allow_null=True)
+    team_ids = serializers.ListField(child=serializers.UUIDField())
     score = serializers.FloatField()
     reason = serializers.ChoiceField(
         choices=[

@@ -13,6 +13,7 @@ class RecommendationItem:
     endpoint: str
     preview: str
     image: str | None
+    team_ids: tuple[UUID, ...]
     score: float
     reason: str
 

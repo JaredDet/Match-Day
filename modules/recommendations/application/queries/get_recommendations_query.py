@@ -70,6 +70,7 @@ class GetRecommendationsQuery:
                             endpoint=content.endpoint,
                             preview=content.preview,
                             image=content.image,
+                            team_ids=content.team_ids,
                             score=item["score"],
                             reason=item["reason"],
                         )
